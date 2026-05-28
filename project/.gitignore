@@ -1,0 +1,18 @@
+# Claude Code — локальные настройки (не для команды)
+.claude/settings.local.json
+
+# Редакторы / IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Операционные системы
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Локальные временные файлы
+*.tmp
+*.bak
