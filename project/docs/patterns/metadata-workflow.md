@@ -38,3 +38,18 @@
 - Для простого catalog не запускать multi-agent; достаточно quick metadata + self-check.
 - Для средних задач с известными паттернами предпочтителен single-agent autopilot: один контекст, внутреннее ревью, без persisted review/audit файлов.
 - Multi-agent использовать только там, где независимый reviewer/auditor окупает стоимость.
+
+## OpenCode Session Compaction
+
+- В `opencode.json` зафиксированы: `compaction.tail_turns = 3`, `compaction.preserve_recent_tokens = 8000`.
+- Мотив: PM-сессии с автопилотными циклами analyst → reviewer → engineer → auditor длинные; дефолт `tail_turns = 2` рискует обрезать критичный последний круг ревизии. Параметры подобраны экспериментально и подлежат пересмотру после первых длительных прогонов.
+- При появлении симптомов (после компакции теряется состояние автопилота, оркестратор повторно запрашивает уже сделанные шаги) первым шагом поднимать `preserve_recent_tokens`, а не `tail_turns`.
+- Источник правды по семантике полей — `https://opencode.ai/config.json` и страница `https://opencode.ai/docs/config/`.
+- Долговременное состояние всё равно держать в файлах (`PROJECT_CONTEXT.md`, `OPEN_QUESTIONS.md`, `project/docs/specs/`), а не полагаться на context window.
+
+## Read-only Защита Внешних Папок
+
+- `basys-docs/`, `basys-cursor-rules/`, `reference/` — read-only зоны (см. AGENTS.md).
+- Помимо правил permission, на запись стоит hard fallback — `.opencode/plugins/readonly-guard.ts`. Плагин блокирует `edit`, `write` и `apply_patch`, если путь попадает под один из этих префиксов.
+- Плагин НЕ перехватывает `bash` (например, `rm -rf basys-docs`). Для bash полагаемся на `permission.bash` каждого агента.
+- Если защита мешает легитимной операции (например, обновлению `basys-docs/` через skill `basys-docs` с явным git pull), временно отключить плагин нельзя горячо — нужно либо удалить файл, либо изменить список префиксов и перезапустить OpenCode.
