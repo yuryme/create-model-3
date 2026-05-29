@@ -46,7 +46,7 @@ Copy only reusable infrastructure by default:
 
 - `AGENTS.md`
 - `opencode.json`
-- `.opencode/agent/`
+- `.opencode/agents/`
 - `.opencode/commands/`, excluding project-specific commands
 - `.opencode/skills/`
 - `project/docs/workflow.md`

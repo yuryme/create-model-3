@@ -23,7 +23,7 @@ The human PM approves business decisions, scope, and the functional result on a 
 
 ## OpenCode Infrastructure
 
-Before changing `opencode.json`, `.opencode/agent/`, `.opencode/skills/`, plugins, MCP, providers, commands, or permission rules, use the user-level skill `opencode-docs` and verify exact config shapes against `https://opencode.ai/config.json`.
+Before changing `opencode.json`, `.opencode/agents/`, `.opencode/skills/`, plugins, MCP, providers, commands, or permission rules, use the user-level skill `opencode-docs` and verify exact config shapes against `https://opencode.ai/config.json`.
 
 ## BaSYS Skills Source Of Truth
 
@@ -35,6 +35,11 @@ Do not manually edit generated BaSYS skills:
 - `.opencode/skills/excel-import-to-detail/`
 - `.opencode/skills/create-list-form/`
 - `.opencode/skills/create-edit-form/`
+- `.opencode/skills/create-catalog/`
+- `.opencode/skills/create-enum/`
+- `.opencode/skills/create-operation/`
+- `.opencode/skills/create-records/`
+- `.opencode/skills/create-register/`
 
 Update them only through the `basys-cursor-rules-sync` skill and commit generated output after PM approval.
 
@@ -63,4 +68,4 @@ Exception: `$schema` paths inside BaSYS metadata JSON files are relative to the 
 - Do not edit `basys-cursor-rules/`; update it only with `git pull --ff-only` during sync.
 - Before creating, editing, or deleting files, provide a concise action plan and wait for explicit PM approval.
 - Do not preserve full experiment outputs in active context by default; extract durable lessons into `project/docs/patterns/`, ADR, workflow, or skills.
-- Legacy Claude Code project files have been removed; use `.opencode/agent/`, `.opencode/skills/`, and `opencode.json` for project instructions.
+- Legacy Claude Code project files have been removed; use `.opencode/agents/`, `.opencode/skills/`, and `opencode.json` for project instructions.

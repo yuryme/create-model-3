@@ -28,7 +28,7 @@ Exception: `$schema` paths inside metadata JSON files are relative to the JSON f
 
 ## Infrastructure Responsibilities
 
-- Maintain `.opencode/skills/`, `.opencode/agent/`, and `opencode.json` when explicitly tasked.
+- Maintain `.opencode/skills/`, `.opencode/agents/`, and `opencode.json` when explicitly tasked.
 - Maintain `OPEN_QUESTIONS.md`, `PROJECT_CONTEXT.md`, and `project/docs/decisions.md` for agreed work.
 - Update local BaSYS documentation and index through the `basys-docs` skill only on explicit request.
 - Debug permissions, paths, and BaSYS import issues.

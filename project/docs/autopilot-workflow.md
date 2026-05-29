@@ -95,7 +95,7 @@ PM approval gate сделан так, потому что design — место,
 
 ### Orchestrator
 
-- Файл: `.opencode/agent/autopilot-orchestrator.md`.
+- Файл: `.opencode/agents/autopilot-orchestrator.md`.
 - Mode: `primary`.
 - Назначение: координирует subagents в текущей фазе.
 - Может вызывать только `autopilot-*` subagents и `metadata-auditor`.
@@ -104,7 +104,7 @@ PM approval gate сделан так, потому что design — место,
 
 ### autopilot-analyst
 
-- Файл: `.opencode/agent/autopilot-analyst.md`.
+- Файл: `.opencode/agents/autopilot-analyst.md`.
 - Mode: `subagent`, `hidden: true`.
 - Три режима: design, spec, revision.
 - Пишет только в `project/docs/specs/`.
@@ -113,7 +113,7 @@ PM approval gate сделан так, потому что design — место,
 
 ### autopilot-reviewer
 
-- Файл: `.opencode/agent/autopilot-reviewer.md`.
+- Файл: `.opencode/agents/autopilot-reviewer.md`.
 - Mode: `subagent`, `hidden: true`.
 - Три типа review: design, spec, plan.
 - Read-only review одного артефакта против явных критериев.
@@ -123,7 +123,7 @@ PM approval gate сделан так, потому что design — место,
 
 ### autopilot-engineer
 
-- Файл: `.opencode/agent/autopilot-engineer.md`.
+- Файл: `.opencode/agents/autopilot-engineer.md`.
 - Mode: `subagent`, `hidden: true`.
 - Назначение: писать implementation plan, потом реализовывать metadata.
 - Пишет в `project/docs/specs/` и `project/metadata/`.
@@ -133,7 +133,7 @@ PM approval gate сделан так, потому что design — место,
 
 ### metadata-auditor
 
-- Файл: `.opencode/agent/metadata-auditor.md`.
+- Файл: `.opencode/agents/metadata-auditor.md`.
 - Mode: `subagent`, `hidden: true`.
 - Назначение: read-only технический аудит реализованного metadata.
 - Пишет только audit-файл.

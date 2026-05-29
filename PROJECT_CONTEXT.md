@@ -4,7 +4,7 @@
 > **Не дублировать:** обсуждения и очередь вопросов -> `OPEN_QUESTIONS.md`; формальные архитектурные решения -> `project/docs/decisions.md`.
 > **Поддерживает AI-ассистент** — обновляет в конце смысловой главы работы.
 
-**Последнее обновление:** 2026-05-28 — создан чистый workspace `create-model-3` на базе инфраструктуры `create-model-2`; проектные metadata/specs предыдущих задач не перенесены.
+**Последнее обновление:** 2026-05-29 — синхронизированы локальная документация BaSYS (`basys-docs/` -> `7efaffe`) и CursorRules/generated BaSYS skills (`basys-cursor-rules/` -> `87c6197`); индекс `basys-docs-index.md` обновлён.
 
 ---
 
@@ -20,7 +20,7 @@ OpenCode запускается из корня `create-model-3/`. Все пут
 
 - `opencode.json` — проектная конфигурация OpenCode.
 - `AGENTS.md` — постоянная инструкция workspace.
-- `.opencode/agent/` — OpenCode agents.
+- `.opencode/agents/` — OpenCode agents.
 - `.opencode/commands/` — только reusable commands, без project-specific команд завершённых задач.
 - `.opencode/skills/` — BaSYS/OpenCode skills.
 - `project/docs/workflow.md` — основной PM -> analyst -> engineer workflow.
@@ -49,7 +49,6 @@ OpenCode запускается из корня `create-model-3/`. Все пут
 
 ## Что Следующее
 
-1. При необходимости скопировать или заново синхронизировать read-only корпуса `basys-docs/`, `basys-cursor-rules/`, `reference/`.
-2. Синхронизировать `project/metadata/` с новым BaSYS-стендом.
-3. Определить новую предметную область и входные материалы проекта.
-4. Проверить команды OpenCode после запуска из `create-model-3/`.
+1. Синхронизировать `project/metadata/` с новым BaSYS-стендом.
+2. Определить новую предметную область и входные материалы проекта.
+3. Проверить команды OpenCode после запуска из `create-model-3/`.

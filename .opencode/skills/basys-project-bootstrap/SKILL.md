@@ -40,7 +40,7 @@ Before every action that creates, edits, or deletes files, present a concise pla
 
 - `AGENTS.md`
 - `opencode.json`
-- `.opencode/agent/`
+- `.opencode/agents/`
 - `.opencode/commands/`, excluding task-specific commands
 - `.opencode/skills/`
 - `project/docs/workflow.md`
