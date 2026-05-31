@@ -23,6 +23,12 @@ Generated from CursorRules and not edited manually:
 - `.opencode/skills/excel-import-to-detail/`
 - `.opencode/skills/create-list-form/`
 - `.opencode/skills/create-edit-form/`
+- `.opencode/skills/create-catalog/`
+- `.opencode/skills/create-enum/`
+- `.opencode/skills/create-operation/`
+- `.opencode/skills/create-records/`
+- `.opencode/skills/create-register/`
+- `.opencode/skills/create-fill-workflow/`
 
 Project-owned operational skills, not generated from CursorRules:
 
@@ -45,13 +51,20 @@ Project-owned operational skills, not generated from CursorRules:
 - `.cursor/skills/excel-import-to-detail/SKILL.md` -> `.opencode/skills/excel-import-to-detail/SKILL.md`
 - `.cursor/skills/create-list-form/SKILL.md` -> `.opencode/skills/create-list-form/SKILL.md`
 - `.cursor/skills/create-edit-form/SKILL.md` -> `.opencode/skills/create-edit-form/SKILL.md`
+- `.cursor/skills/create-catalog/SKILL.md` -> `.opencode/skills/create-catalog/SKILL.md`
+- `.cursor/skills/create-enum/SKILL.md` -> `.opencode/skills/create-enum/SKILL.md`
+- `.cursor/skills/create-operation/SKILL.md` -> `.opencode/skills/create-operation/SKILL.md`
+- `.cursor/skills/create-records/SKILL.md` -> `.opencode/skills/create-records/SKILL.md`
+- `.cursor/skills/create-register/SKILL.md` -> `.opencode/skills/create-register/SKILL.md`
+- `.cursor/skills/create-fill-workflow/SKILL.md` -> `.opencode/skills/create-fill-workflow/SKILL.md`
+- `.cursor/skills/*/examples/*` -> `.opencode/skills/*/examples/*` for generated skills that ship reference examples.
 
 ## Sync Procedure
 
 1. Check source status: `git -C basys-cursor-rules status --short --branch`.
 2. Pull source updates: `git -C basys-cursor-rules pull --ff-only origin main`.
 3. Regenerate managed OpenCode skills mechanically from the mapping above.
-4. Preserve only OpenCode wrapper changes: frontmatter, generated source header, metadata-root path mapping (`CursorRules root` -> `project/metadata/`), and relative link rewrites from `../../rules/*.mdc` to `../basys-metadata/*.md`.
+4. Preserve only OpenCode wrapper changes: frontmatter adjusted for OpenCode limits (`description` <= 1024 chars), generated source header, metadata-root path mapping (`CursorRules root` -> `project/metadata/`), relative link rewrites from `../../rules/*.mdc` and `mdc:*.mdc` to `../basys-metadata/*.md`, and verbatim reference examples where the upstream skill includes `examples/`.
 5. Do not change the meaning of CursorRules content.
 6. Show PM the diff in generated skills.
 7. Commit generated skills to this repository only after PM approval.
