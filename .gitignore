@@ -7,6 +7,9 @@
 # Локальный read-only корпус примеров из другой инсталляции; может содержать данные стенда
 /reference/
 
+# Рабочее зеркало BaSYS metadata (отдельный git-репозиторий для BaSYS)
+/metadata/
+
 # Локальные настройки агентов (с пользовательскими путями)
 .claude/settings.local.json
 .opencode/settings.local.json
