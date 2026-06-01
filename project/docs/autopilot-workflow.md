@@ -26,7 +26,7 @@
 - нет новых kind конструкций;
 - нет сложных `.bjs`, регистров проведения или cross-kind импортных зависимостей.
 
-Результат quick-режима: изменения в `project/metadata/`, краткая инструкция импорта/проверки и self-check. Design/review/audit/report файлы по умолчанию не создаются.
+Результат quick-режима: изменения в `metadata/`, краткая инструкция импорта/проверки и self-check. Design/review/audit/report файлы по умолчанию не создаются.
 
 ### Single-agent Autopilot
 
@@ -60,7 +60,7 @@ Single-agent может создавать краткое ТЗ, краткий �
 
 ## Metadata Как Рабочее Зеркало
 
-`project/metadata/` всегда означает текущее рабочее состояние целевой BaSYS-инсталляции. Перед экспериментом его нужно синхронизировать со стендом, а после реализации импортировать/проверить на стенде. Отдельный шаг promotion из `experiments/.../metadata` в `project/metadata/` не нужен, если PM явно не попросил изолированную ветку или worktree.
+`metadata/` всегда означает текущее рабочее состояние целевой BaSYS-инсталляции. Перед экспериментом его нужно синхронизировать со стендом, а после реализации импортировать/проверить на стенде. Отдельный шаг promotion из `experiments/.../metadata` в `metadata/` не нужен, если PM явно не попросил изолированную ветку или worktree.
 
 PM не принимает metadata чтением JSON. PM принимает результат через стенд: импорт прошёл, формы открываются, объекты создаются, операции проводятся, acceptance-сценарии работают. JSON/schema/UID/reference checks — зона агента и инструментов.
 
@@ -68,7 +68,7 @@ PM не принимает metadata чтением JSON. PM принимает �
 
 Полные результаты экспериментов не являются постоянным проектным знанием. После run нужно оставить только:
 
-- актуальные изменения `project/metadata/`;
+- актуальные изменения `metadata/`;
 - активное или approved-ТЗ, если оно нужно для дальнейшей работы;
 - import notes для нетривиального порядка импорта;
 - устойчивые уроки, перенесённые в `project/docs/patterns/`, ADR, workflow или skills.
@@ -108,7 +108,7 @@ PM approval gate сделан так, потому что design — место,
 - Mode: `subagent`, `hidden: true`.
 - Три режима: design, spec, revision.
 - Пишет только в `project/docs/specs/`.
-- НЕ редактирует `project/metadata/`.
+- НЕ редактирует `metadata/`.
 - НЕ вызывает другие subagents.
 
 ### autopilot-reviewer
@@ -126,7 +126,7 @@ PM approval gate сделан так, потому что design — место,
 - Файл: `.opencode/agents/autopilot-engineer.md`.
 - Mode: `subagent`, `hidden: true`.
 - Назначение: писать implementation plan, потом реализовывать metadata.
-- Пишет в `project/docs/specs/` и `project/metadata/`.
+- Пишет в `project/docs/specs/` и `metadata/`.
 - Запускается дважды: сначала для plan, потом для реализации; плюс fix-режим.
 - НЕ запускает bash.
 - НЕ вызывает другие subagents.
@@ -170,7 +170,7 @@ project/docs/specs/<sp-id>.md                 ТЗ от analyst (Phase 2)
 project/docs/specs/<sp-id>-spec-review.md     review ТЗ от reviewer (Phase 2)
 project/docs/specs/<sp-id>-plan.md            implementation plan от engineer
 project/docs/specs/<sp-id>-plan-review.md     review plan от reviewer
-project/metadata/...                          metadata от engineer
+metadata/...                                  metadata от engineer
 project/docs/specs/<sp-id>-implementation-report.md  отчёт от engineer
 project/docs/specs/<sp-id>-import-notes.md    инструкция импорта от engineer
 project/docs/specs/<sp-id>-audit.md           технический аудит от auditor
@@ -253,7 +253,7 @@ plan status: approved
   |
   v
 orchestrator -> autopilot-engineer (implementation mode)
-  | engineer creates/edits project/metadata/, writes report and import notes
+  | engineer creates/edits metadata/, writes report and import notes
   v
 orchestrator collects changed-files list via git diff/status
   |
@@ -283,7 +283,7 @@ orchestrator Phase 2 report to PM:
 - невозможность создать operation records по утверждённому ТЗ;
 - невозможность выполнить базовые acceptance-сценарии из ТЗ;
 - противоречие явно утверждённому design или decisions.md;
-- редактирование запрещённых локаций: `reference/`, `basys-docs/`, `basys-cursor-rules/`, generated BaSYS skills, `project/metadata/system/` без явного разрешения;
+- редактирование запрещённых локаций: `reference/`, `basys-docs/`, `basys-cursor-rules/`, generated BaSYS skills, `metadata/system/` без явного разрешения;
 - для design — отсутствие in-scope/out-of-scope, отсутствие метаобъектной таблицы, невозможность реализации, ссылка на несуществующий kind.
 
 Critical defects блокируют завершение цикла и возвращают работу владельцу ошибки.

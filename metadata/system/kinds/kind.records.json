@@ -1,13 +1,13 @@
 {
-  "uid": "5449a8ad-9359-41b2-8ff2-3f415eb4da76",
-  "title": "Enum",
-  "name": "enum",
-  "prefix": "enm",
+  "uid": "3eabc5d2-9cf5-4a74-95c8-ff2c2015ded3",
+  "title": "Регистр записей",
+  "name": "records",
+  "prefix": "regr",
   "storeData": true,
-  "isReference": true,
+  "isReference": false,
   "allowAttachedFiles": false,
   "isFilesColumnUid": null,
-  "isDeletedColumnUid": "1e0063d0-288d-494a-8761-1185300d571d",
+  "isDeletedColumnUid": null,
   "canCreateRecords": false,
   "useDetailsTables": false,
   "useForms": false,
@@ -15,9 +15,9 @@
   "isStandard": false,
   "version": 1,
   "memo": "",
-  "iconClass": "pi pi-list",
-  "orderByExpression": "code",
-  "displayExpression": "title",
+  "iconClass": "pi pi-table",
+  "orderByExpression": "id",
+  "displayExpression": "",
   "recordsSettings": {
     "sourceCreateRecordsColumnUid": "00000000-0000-0000-0000-000000000000",
     "storageMetaObjectKindUid": "00000000-0000-0000-0000-000000000000",
@@ -29,13 +29,13 @@
   },
   "standardColumns": [
     {
-      "uid": "3cceebad-7d5a-4943-a102-6267e22227a8",
-      "title": "Name",
-      "name": "name",
+      "uid": "7f7eb95c-7b70-4e4f-a391-4080d0710589",
+      "title": "Id",
+      "name": "id",
       "hasIndex": false,
       "dataSettings": {
-        "dataTypeUid": "0234c067-7868-46b2-ba8e-e22fae5255cb",
-        "stringLength": 20,
+        "dataTypeUid": "daa57cb0-32eb-4709-b61f-4ea023ae31c3",
+        "stringLength": 0,
         "numberDigits": 0,
         "primaryKey": true,
         "required": false,
@@ -51,39 +51,17 @@
       "memo": null
     },
     {
-      "uid": "1e0063d0-288d-494a-8761-1185300d571d",
-      "title": "Is deleted",
-      "name": "is_deleted",
+      "uid": "8893e1df-525e-4a3f-b421-988294b4a2a8",
+      "title": "Период",
+      "name": "period",
       "hasIndex": true,
       "dataSettings": {
-        "dataTypeUid": "4bff64cf-eb01-4933-9f3d-b902336751f4",
+        "dataTypeUid": "9001eafb-efb1-442f-b288-723bb8002b12",
         "stringLength": 0,
         "numberDigits": 0,
         "primaryKey": false,
-        "required": false,
-        "unique": false,
-        "defaultValue": ""
-      },
-      "renderSettings": {
-        "controlKindUid": null,
-        "showInItem": false,
-        "showInList": false,
-        "listColumnWidth": ""
-      },
-      "memo": null
-    },
-    {
-      "uid": "e647fb57-470e-4547-9a94-2be0f3d0985e",
-      "title": "Code",
-      "name": "code",
-      "hasIndex": true,
-      "dataSettings": {
-        "dataTypeUid": "0234c067-7868-46b2-ba8e-e22fae5255cb",
-        "stringLength": 3,
-        "numberDigits": 0,
-        "primaryKey": false,
         "required": true,
-        "unique": true,
+        "unique": false,
         "defaultValue": ""
       },
       "renderSettings": {
@@ -95,13 +73,79 @@
       "memo": null
     },
     {
-      "uid": "91a26ae4-5723-4109-8322-7e4e59129239",
-      "title": "Title",
-      "name": "title",
+      "uid": "dcb06a92-5d6f-46be-af10-88a4f91f47e6",
+      "title": "Вид объекта",
+      "name": "object_kind",
       "hasIndex": false,
       "dataSettings": {
-        "dataTypeUid": "0234c067-7868-46b2-ba8e-e22fae5255cb",
-        "stringLength": 100,
+        "dataTypeUid": "689d1aac-66d8-478f-852e-0e3881b427bf",
+        "stringLength": 0,
+        "numberDigits": 0,
+        "primaryKey": false,
+        "required": true,
+        "unique": false,
+        "defaultValue": ""
+      },
+      "renderSettings": {
+        "controlKindUid": null,
+        "showInItem": true,
+        "showInList": true,
+        "listColumnWidth": ""
+      },
+      "memo": null
+    },
+    {
+      "uid": "7c2b8ad7-034d-495b-ba80-e300edc50146",
+      "title": "Объект метаданных",
+      "name": "meta_object",
+      "hasIndex": false,
+      "dataSettings": {
+        "dataTypeUid": "a4d064c6-465f-42a5-bbc0-48f743148c36",
+        "stringLength": 0,
+        "numberDigits": 0,
+        "primaryKey": false,
+        "required": true,
+        "unique": false,
+        "defaultValue": ""
+      },
+      "renderSettings": {
+        "controlKindUid": null,
+        "showInItem": true,
+        "showInList": true,
+        "listColumnWidth": ""
+      },
+      "memo": null
+    },
+    {
+      "uid": "78c493f2-e58a-4ce6-8665-27af40000562",
+      "title": "Объект",
+      "name": "object_uid",
+      "hasIndex": true,
+      "dataSettings": {
+        "dataTypeUid": "b327f82a-ea96-416f-9836-785db28eccac",
+        "stringLength": 0,
+        "numberDigits": 0,
+        "primaryKey": false,
+        "required": true,
+        "unique": false,
+        "defaultValue": ""
+      },
+      "renderSettings": {
+        "controlKindUid": null,
+        "showInItem": true,
+        "showInList": true,
+        "listColumnWidth": ""
+      },
+      "memo": null
+    },
+    {
+      "uid": "398c66ad-10ce-4c75-9a7b-f2ba9398972f",
+      "title": "Номер строки",
+      "name": "row",
+      "hasIndex": false,
+      "dataSettings": {
+        "dataTypeUid": "b327f82a-ea96-416f-9836-785db28eccac",
+        "stringLength": 0,
         "numberDigits": 0,
         "primaryKey": false,
         "required": true,

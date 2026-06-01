@@ -1,6 +1,6 @@
 {
   "uid": "61db4320-2255-4b62-8d1e-30b72168ded0",
-  "title": "Excel report",
+  "title": "Отчет Excel",
   "name": "excel_report",
   "prefix": "exr",
   "storeData": false,

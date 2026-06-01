@@ -1,37 +1,37 @@
 {
-  "uid": "14a60875-e241-4e99-b32d-d45b2726d18b",
-  "title": "Operation",
-  "name": "operation",
-  "prefix": "opr",
+  "uid": "032d8377-500f-4631-b435-1f7f69046674",
+  "title": "Справочник",
+  "name": "catalog",
+  "prefix": "cat",
   "storeData": true,
   "isReference": true,
   "allowAttachedFiles": true,
-  "isFilesColumnUid": "9cac33f4-6758-4aab-be4a-b00790bdf452",
-  "isDeletedColumnUid": "95d36e42-5d4d-4c26-adc1-1319e860b45e",
-  "canCreateRecords": true,
-  "useDetailsTables": true,
+  "isFilesColumnUid": "349f72d7-ac0f-40cd-b02d-a5b5f7dcd467",
+  "isDeletedColumnUid": "dc3def1b-bffd-4dc8-b0d5-5d34a57fdcb2",
+  "canCreateRecords": false,
+  "useDetailsTables": false,
   "useForms": true,
-  "usePrintForms": true,
+  "usePrintForms": false,
   "isStandard": false,
   "version": 1,
   "memo": "",
-  "iconClass": "pi pi-file",
-  "orderByExpression": "number desc, date desc",
-  "displayExpression": "Operation #{{number}} from {{date}}",
+  "iconClass": "pi pi-book",
+  "orderByExpression": "title",
+  "displayExpression": "title",
   "recordsSettings": {
-    "sourceCreateRecordsColumnUid": "fee422db-18dc-442a-a8dd-01df76c20a98",
-    "storageMetaObjectKindUid": "3eabc5d2-9cf5-4a74-95c8-ff2c2015ded3",
-    "storagePeriodColumnUid": "8893e1df-525e-4a3f-b421-988294b4a2a8",
-    "storageKindColumnUid": "dcb06a92-5d6f-46be-af10-88a4f91f47e6",
-    "storageMetaObjectColumnUid": "7c2b8ad7-034d-495b-ba80-e300edc50146",
-    "storageObjectColumnUid": "78c493f2-e58a-4ce6-8665-27af40000562",
-    "storageRowColumnUid": "398c66ad-10ce-4c75-9a7b-f2ba9398972f"
+    "sourceCreateRecordsColumnUid": "00000000-0000-0000-0000-000000000000",
+    "storageMetaObjectKindUid": "00000000-0000-0000-0000-000000000000",
+    "storagePeriodColumnUid": "00000000-0000-0000-0000-000000000000",
+    "storageKindColumnUid": "00000000-0000-0000-0000-000000000000",
+    "storageMetaObjectColumnUid": "00000000-0000-0000-0000-000000000000",
+    "storageObjectColumnUid": "00000000-0000-0000-0000-000000000000",
+    "storageRowColumnUid": "00000000-0000-0000-0000-000000000000"
   },
   "standardColumns": [
     {
-      "uid": "a39e7b83-e94d-4646-b620-04434fef2f4c",
-      "title": "Number",
-      "name": "number",
+      "uid": "4a7c739c-6012-4e45-bfc0-b78a06db8aec",
+      "title": "Id",
+      "name": "id",
       "hasIndex": false,
       "dataSettings": {
         "dataTypeUid": "b327f82a-ea96-416f-9836-785db28eccac",
@@ -51,8 +51,8 @@
       "memo": null
     },
     {
-      "uid": "95d36e42-5d4d-4c26-adc1-1319e860b45e",
-      "title": "Is deleted",
+      "uid": "dc3def1b-bffd-4dc8-b0d5-5d34a57fdcb2",
+      "title": "Удалено",
       "name": "is_deleted",
       "hasIndex": true,
       "dataSettings": {
@@ -73,18 +73,18 @@
       "memo": null
     },
     {
-      "uid": "f244de36-53c9-4e93-a5a2-94abbed91e02",
-      "title": "Date",
-      "name": "date",
-      "hasIndex": true,
+      "uid": "e163c0c4-de77-4e58-a468-f3527b573e4a",
+      "title": "Заголовок",
+      "name": "title",
+      "hasIndex": false,
       "dataSettings": {
-        "dataTypeUid": "9001eafb-efb1-442f-b288-723bb8002b12",
-        "stringLength": 0,
+        "dataTypeUid": "0234c067-7868-46b2-ba8e-e22fae5255cb",
+        "stringLength": 100,
         "numberDigits": 0,
         "primaryKey": false,
         "required": true,
         "unique": false,
-        "defaultValue": "now"
+        "defaultValue": ""
       },
       "renderSettings": {
         "controlKindUid": null,
@@ -95,8 +95,8 @@
       "memo": null
     },
     {
-      "uid": "9cac33f4-6758-4aab-be4a-b00790bdf452",
-      "title": "Files",
+      "uid": "349f72d7-ac0f-40cd-b02d-a5b5f7dcd467",
+      "title": "Файлы",
       "name": "is_files",
       "hasIndex": true,
       "dataSettings": {
@@ -111,28 +111,6 @@
       "renderSettings": {
         "controlKindUid": null,
         "showInItem": false,
-        "showInList": true,
-        "listColumnWidth": ""
-      },
-      "memo": null
-    },
-    {
-      "uid": "fee422db-18dc-442a-a8dd-01df76c20a98",
-      "title": "Create records",
-      "name": "create_records",
-      "hasIndex": false,
-      "dataSettings": {
-        "dataTypeUid": "4bff64cf-eb01-4933-9f3d-b902336751f4",
-        "stringLength": 0,
-        "numberDigits": 0,
-        "primaryKey": false,
-        "required": false,
-        "unique": false,
-        "defaultValue": "true"
-      },
-      "renderSettings": {
-        "controlKindUid": null,
-        "showInItem": true,
         "showInList": true,
         "listColumnWidth": ""
       },

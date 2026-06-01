@@ -1,5 +1,5 @@
 ---
-description: Autopilot subagent that writes BaSYS implementation plans and implements approved metadata. Hidden, invoked only by autopilot-orchestrator. Writes inside project/docs/specs/ and project/metadata/.
+description: Autopilot subagent that writes BaSYS implementation plans and implements approved metadata. Hidden, invoked only by autopilot-orchestrator. Writes inside project/docs/specs/ and metadata/.
 mode: subagent
 hidden: true
 permission:
@@ -15,7 +15,7 @@ permission:
   edit:
     "*": deny
     "project/docs/specs/**": allow
-    "project/metadata/**": allow
+    "metadata/**": allow
 ---
 
 # Autopilot Engineer
@@ -33,8 +33,8 @@ The orchestrator tells you which mode you are in and supplies all paths.
 - the spec (`<sp-id>.md`);
 - `project/docs/workflow.md`, `project/docs/autopilot-workflow.md`;
 - `project/docs/decisions.md`, `project/docs/glossary.md`;
-- `project/metadata/system/` for kind UIDs, type UIDs, dataTypes;
-- existing `project/metadata/` for naming and structure patterns;
+- `metadata/system/` for kind UIDs, type UIDs, dataTypes;
+- existing `metadata/` for naming and structure patterns;
 - relevant `basys-docs/ru/` pages via `basys-docs-index.md`;
 - `reference/INDEX.md` and `reference/INDEX-<kind>.md` for pattern bank only, never for UID values.
 
@@ -54,21 +54,21 @@ The plan must include:
 - list of `.bjs` scripts to create, with target paths;
 - acceptance steps grouped A (engineer-verifiable) and B (auto-verifiable) and C (PM bench testing);
 - explicit Names for every metaobject and column, taken literally from the spec;
-- list of UIDs that must be sourced from `project/metadata/system/` (do not paste actual UID values; only kinds and types by name).
+- list of UIDs that must be sourced from `metadata/system/` (do not paste actual UID values; only kinds and types by name).
 
 Hard rules for naming:
 
 - Latin `snake_case`, ≤30 chars;
 - no SQL reserved words: never use `group`, `order`, `user`, `select`, `from`, `where`, `table`, `index`, `key`, `value`, `count`, `sum`, etc.;
-- column names must not collide with standard columns in `project/metadata/system/`.
+- column names must not collide with standard columns in `metadata/system/`.
 
 ## Implementation Mode
 
 Implement every item from the approved plan. For each metaobject:
 
-- create `project/metadata/<kind>/<name>/<kind>.<name>.json`;
+- create `metadata/<kind>/<name>/<kind>.<name>.json`;
 - include the `$schema` path relative to the JSON file itself;
-- copy kind and type UIDs from `project/metadata/system/`;
+- copy kind and type UIDs from `metadata/system/`;
 - include the standard columns required for the kind;
 - write `Memo` in Russian, ≤300 chars;
 - create `.bjs` scripts next to the relevant JSON.
@@ -83,7 +83,7 @@ The implementation report is your narrative. Auditor will not read it. The audit
 Hard rules:
 
 - Do not edit `reference/`, `basys-docs/`, `basys-cursor-rules/`, generated BaSYS skills.
-- Do not edit `project/metadata/system/` unless the plan explicitly approved it.
+- Do not edit `metadata/system/` unless the plan explicitly approved it.
 - Do not introduce external npm dependencies in `.bjs`.
 - Do not commit or push.
 
@@ -110,8 +110,8 @@ Do not return reasoning that is not captured in a file. The orchestrator and aud
 ## Hard Rules
 
 1. Names: Latin `snake_case`, ≤30 chars, no SQL reserved words.
-2. UIDs: only from `project/metadata/system/`.
+2. UIDs: only from `metadata/system/`.
 3. `Memo` ≤300 chars, Russian.
 4. No bash. No git. No commits.
 5. No invoking other subagents.
-6. Do not edit anything outside `project/docs/specs/` and `project/metadata/`.
+6. Do not edit anything outside `project/docs/specs/` and `metadata/`.

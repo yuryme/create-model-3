@@ -1,6 +1,6 @@
 ---
 name: basys-metadata
-description: Rules from BaSYS.CursorRules for creating and editing BaSYS JSON metadata, scripts, forms, reports, records, workflows, menus, and commands. Use when creating or changing project/metadata/.
+description: Rules from BaSYS.CursorRules for creating and editing BaSYS JSON metadata, scripts, forms, reports, records, workflows, menus, and commands. Use when creating or changing metadata/.
 ---
 
 <!--
@@ -15,7 +15,7 @@ DO NOT EDIT MANUALLY. Run basys-cursor-rules sync instead.
 
 ## OpenCode Wrapper Path Mapping
 
-CursorRules describe paths relative to a metadata repository root. In this OpenCode workspace, apply those rules to `project/metadata/` as the metadata root. For example, CursorRules `system/dataTypes.json` means `project/metadata/system/dataTypes.json`, and `catalog/<name>/...` means `project/metadata/catalog/<name>/...`.
+CursorRules describe paths relative to a metadata repository root. In this OpenCode workspace, apply those rules to `metadata/` as the metadata root. For example, CursorRules `system/dataTypes.json` means `metadata/system/dataTypes.json`, and `catalog/<name>/...` means `metadata/catalog/<name>/...`.
 
 # Project Overview
 

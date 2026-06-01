@@ -41,7 +41,7 @@ If you find yourself reaching for the implementation report, stop. Your job is t
 
 - the spec;
 - the listed metadata files;
-- `project/metadata/system/` for UIDs, kinds, types, standard columns;
+- `metadata/system/` for UIDs, kinds, types, standard columns;
 - `project/docs/decisions.md`, `project/docs/glossary.md`;
 - `project/docs/workflow.md`, `project/docs/autopilot-workflow.md`;
 - relevant `basys-docs/ru/` pages.
@@ -63,19 +63,19 @@ For every metadata file in the changed list:
 - every `Name` is Latin `snake_case`;
 - ≤30 characters;
 - not a SQL reserved word: `group`, `order`, `user`, `select`, `from`, `where`, `table`, `index`, `key`, `value`, `count`, `sum`, `case`, `when`, `default`, etc.;
-- does not collide with standard column Names in `project/metadata/system/`.
+- does not collide with standard column Names in `metadata/system/`.
 
 ### UIDs And References
 
-- every `KindUid` exists in `project/metadata/system/kinds.json`;
-- every `TypeUid` exists in `project/metadata/system/dataTypes.json`;
-- every cross-object reference points to an object that exists in `project/metadata/` after this change;
+- every `KindUid` exists in `metadata/system/kinds.json`;
+- every `TypeUid` exists in `metadata/system/dataTypes.json`;
+- every cross-object reference points to an object that exists in `metadata/` after this change;
 - no duplicate object UIDs.
 
 ### Standard Columns
 
 - every metaobject has the standard columns required by its kind;
-- standard columns use UIDs from `project/metadata/system/`, not new ones.
+- standard columns use UIDs from `metadata/system/`, not new ones.
 
 ### Spec Compliance
 
@@ -91,7 +91,7 @@ For every metadata file in the changed list:
 ### Forbidden Edits
 
 - no changes under `reference/`, `basys-docs/`, `basys-cursor-rules/`, `.opencode/skills/basys-metadata/`, `.opencode/skills/excel-import-to-detail/`, `.opencode/skills/create-list-form/`, `.opencode/skills/create-edit-form/`.
-- no unauthorized changes under `project/metadata/system/`.
+- no unauthorized changes under `metadata/system/`.
 
 ### Memo
 

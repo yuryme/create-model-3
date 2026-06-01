@@ -33,7 +33,7 @@ Required behavior:
 1. Parse arguments and identify missing decisions.
 2. Use the native question UI for missing choices when available.
 3. Build an allowlist-based copy plan; do not blindly clone the source directory.
-4. Create a clean target workspace with fresh context files and empty `project/metadata/`.
+4. Create a clean target workspace with fresh context files and empty `metadata/`.
 5. Exclude old metadata, old specs, old inbox materials, reports, audits, summaries, and task-specific commands unless PM explicitly approves them.
 6. Keep `reference/`, `basys-docs/`, and `basys-cursor-rules/` ignored by Git by default.
 7. Check for stale source project references and old task markers in tracked files.
@@ -41,4 +41,4 @@ Required behavior:
 9. If commit is approved, create a single initialization commit.
 10. If push is approved, configure/verify the remote, push `main`, and verify remote refs.
 
-Final response must include target path, commit hash, remote push result if any, ignored local corpora, and next step to sync `project/metadata/` from the new BaSYS stand.
+Final response must include target path, commit hash, remote push result if any, ignored local corpora, and next step to sync `metadata/` from the new BaSYS stand.

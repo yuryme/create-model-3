@@ -33,8 +33,8 @@ The orchestrator tells you which mode you are in and provides all paths.
 - `project/docs/decisions.md`, `project/docs/glossary.md`;
 - `PROJECT_CONTEXT.md`, `OPEN_QUESTIONS.md`;
 - existing `project/docs/specs/` for naming and template patterns;
-- relevant `project/metadata/` for current baseline;
-- `project/metadata/system/` for kind UIDs, type UIDs, standard columns;
+- relevant `metadata/` for current baseline;
+- `metadata/system/` for kind UIDs, type UIDs, standard columns;
 - relevant `basys-docs/ru/` pages via `basys-docs-index.md`;
 - `reference/INDEX.md` and `reference/` patterns when useful as a pattern bank only, never as a UID source.
 
@@ -116,9 +116,9 @@ Process:
 
 ## Hard Rules
 
-1. Do not invent UIDs. Reference kinds and types by Name only; the Engineer will resolve them against `project/metadata/system/`.
+1. Do not invent UIDs. Reference kinds and types by Name only; the Engineer will resolve them against `metadata/system/`.
 2. Do not expand scope beyond what the PM or approved design specifies.
-3. Do not edit `project/metadata/`.
+3. Do not edit `metadata/`.
 4. Do not edit any file outside `project/docs/specs/`.
 5. Do not commit or push.
 6. Do not invoke other subagents.

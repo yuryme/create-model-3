@@ -64,7 +64,7 @@ Project-owned operational skills, not generated from CursorRules:
 1. Check source status: `git -C basys-cursor-rules status --short --branch`.
 2. Pull source updates: `git -C basys-cursor-rules pull --ff-only origin main`.
 3. Regenerate managed OpenCode skills mechanically from the mapping above.
-4. Preserve only OpenCode wrapper changes: frontmatter adjusted for OpenCode limits (`description` <= 1024 chars), generated source header, metadata-root path mapping (`CursorRules root` -> `project/metadata/`), relative link rewrites from `../../rules/*.mdc` and `mdc:*.mdc` to `../basys-metadata/*.md`, and verbatim reference examples where the upstream skill includes `examples/`.
+4. Preserve only OpenCode wrapper changes: frontmatter adjusted for OpenCode limits (`description` <= 1024 chars), generated source header, metadata-root path mapping (`CursorRules root` -> `metadata/`), relative link rewrites from `../../rules/*.mdc` and `mdc:*.mdc` to `../basys-metadata/*.md`, and verbatim reference examples where the upstream skill includes `examples/`.
 5. Do not change the meaning of CursorRules content.
 6. Show PM the diff in generated skills.
 7. Commit generated skills to this repository only after PM approval.

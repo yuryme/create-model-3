@@ -116,7 +116,7 @@ Steps:
 9. When reviewer approves, mark `<sp-id>-plan.md` status: `approved`.
 10. Invoke `autopilot-engineer` in **implementation mode**:
     - input: approved spec and plan;
-    - outputs: metadata in `project/metadata/`, `<sp-id>-implementation-report.md`, `<sp-id>-import-notes.md`.
+    - outputs: metadata in `metadata/`, `<sp-id>-implementation-report.md`, `<sp-id>-import-notes.md`.
 11. Collect the list of changed metadata files using `git status` and `git diff --stat`.
 12. Invoke `metadata-auditor`:
     - input: spec path, list of changed metadata files, output path `<sp-id>-audit.md`;

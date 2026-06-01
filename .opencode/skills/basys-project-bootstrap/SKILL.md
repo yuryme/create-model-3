@@ -29,7 +29,7 @@ Before every action that creates, edits, or deletes files, present a concise pla
 3. Identify source path, target path, target project name, and optional GitHub remote.
 4. Ask PM for missing decisions using the native question UI when available.
 5. Copy only the allowlist from the workflow document.
-6. Create clean `PROJECT_CONTEXT.md`, `OPEN_QUESTIONS.md`, `project/metadata/.gitkeep`, and `inbox/.gitkeep`.
+6. Create clean `PROJECT_CONTEXT.md`, `OPEN_QUESTIONS.md`, `metadata/.gitkeep`, and `inbox/.gitkeep`.
 7. Replace stale source project path/name references in active instructions.
 8. Keep `reference/`, `basys-docs/`, and `basys-cursor-rules/` ignored by Git unless PM explicitly approves another policy.
 9. Run staged checks for whitespace, old task markers, ignored corpora, and secret markers.
@@ -54,7 +54,7 @@ Before every action that creates, edits, or deletes files, present a concise pla
 
 ## Default Exclusions
 
-- Old `project/metadata/` contents.
+- Old `metadata/` contents.
 - Old task specs, plans, reports, reviews, audits, and summaries.
 - Old `inbox/` contents.
 - Task-specific OpenCode commands.
@@ -80,4 +80,4 @@ Final response should include:
 - commit hash if committed;
 - remote URL and pushed refs if pushed;
 - ignored local corpora;
-- any remaining manual next steps, especially syncing `project/metadata/` from the new BaSYS stand.
+- any remaining manual next steps, especially syncing `metadata/` from the new BaSYS stand.

@@ -52,7 +52,7 @@ Exception: `$schema` paths inside BaSYS metadata JSON files are relative to the 
 ## Workspace Structure
 
 - `project/` - Git repository with project metadata, specifications, ADRs, reusable patterns, and documentation.
-- `project/metadata/` - working mirror of the current BaSYS stand. Sync it from the real stand before experiments; apply/import it to the stand after implementation. Do not treat experimental metadata as a separate promoted artifact unless the PM explicitly asks for an isolated branch/worktree.
+- `metadata/` - working mirror of the current BaSYS stand. Sync it from the real stand before experiments; apply/import it to the stand after implementation. Do not treat experimental metadata as a separate promoted artifact unless the PM explicitly asks for an isolated branch/worktree.
 - `project/docs/patterns/` - reusable lessons and implementation patterns extracted from runs. Keep durable rules here instead of preserving full experiment transcripts.
 - `basys-docs/` - local clone of official BaSYS documentation, treated as read-only.
 - `basys-cursor-rules/` - local clone of BaSYS.CursorRules, treated as read-only source for generated BaSYS skills.

@@ -36,7 +36,7 @@ The orchestrator gives you:
 - for `plan` reviews: the path to the approved spec;
 - the path to relevant project context files.
 
-You may also read freely: `project/docs/decisions.md`, `project/docs/glossary.md`, `project/metadata/`, `basys-docs/ru/`, `reference/`, `project/metadata/system/`, `PROJECT_CONTEXT.md`, `OPEN_QUESTIONS.md`.
+You may also read freely: `project/docs/decisions.md`, `project/docs/glossary.md`, `metadata/`, `basys-docs/ru/`, `reference/`, `metadata/system/`, `PROJECT_CONTEXT.md`, `OPEN_QUESTIONS.md`.
 
 Load the `basys-metadata` skill if the review benefits from it.
 
@@ -56,9 +56,9 @@ Critical if any of the following is true:
 - The design contradicts an explicit decision in `project/docs/decisions.md`.
 - The design's in-scope/out-of-scope sections are missing, contradictory, or imply unbounded scope.
 - The high-level metaobject table is missing or omits a kind that is required for the proposed operations.
-- The proposed approach references a kind that does not exist in `project/metadata/system/kinds.json`.
+- The proposed approach references a kind that does not exist in `metadata/system/kinds.json`.
 - Implementation is impossible as described (for example, an operation is specified without any register to receive its records, or a register is specified without any operation to feed it).
-- The design implies edits to forbidden locations: `reference/`, `basys-docs/`, `basys-cursor-rules/`, generated BaSYS skills, `project/metadata/system/`.
+- The design implies edits to forbidden locations: `reference/`, `basys-docs/`, `basys-cursor-rules/`, generated BaSYS skills, `metadata/system/`.
 - The business problem statement is missing or so unclear that the next step (writing the spec) cannot start.
 - The design proposes a metaobject name that is a SQL reserved word; even draft names should avoid this.
 
@@ -77,7 +77,7 @@ Critical if any of the following is true:
 
 - The spec contradicts an explicit decision in `project/docs/decisions.md` or the approved design.
 - The spec proposes a metaobject Name that is a SQL reserved word or longer than 30 characters or not Latin `snake_case`.
-- The spec references a kind or type that does not exist in `project/metadata/system/`.
+- The spec references a kind or type that does not exist in `metadata/system/`.
 - The spec describes operations whose records cannot be produced by the proposed registers.
 - The spec omits a register, catalog, or column that is required for the listed acceptance scenarios.
 - The spec edits, or implies editing, forbidden locations: `reference/`, `basys-docs/`, `basys-cursor-rules/`, generated BaSYS skills.
@@ -96,7 +96,7 @@ Critical if any of the following is true:
 - The plan implements something not in the approved spec.
 - The plan misses metaobjects, columns, or references required by the spec.
 - The plan proposes import order that will fail because of cross-kind dependencies.
-- The plan reuses UIDs without sourcing them from `project/metadata/system/`.
+- The plan reuses UIDs without sourcing them from `metadata/system/`.
 - The plan modifies forbidden locations.
 - The plan does not produce import instructions when cross-kind references exist.
 
@@ -144,7 +144,7 @@ For each:
 
 - list of files you read
 - list of skills you loaded
-- explicit cross-checks you performed (e.g., "verified all referenced kinds exist in project/metadata/system/kinds.json")
+- explicit cross-checks you performed (e.g., "verified all referenced kinds exist in metadata/system/kinds.json")
 ```
 
 Verdict is `needs changes` if there is at least one Critical Finding, otherwise `approved`.

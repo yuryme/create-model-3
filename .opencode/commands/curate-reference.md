@@ -1,15 +1,15 @@
 ---
-description: Curate new patterns from current project/metadata into reference/ — add genuinely new patterns to reference/<pattern-name>/ and update reference/PATTERNS.md
+description: Curate new patterns from current metadata into reference/ — add genuinely new patterns to reference/<pattern-name>/ and update reference/PATTERNS.md
 agent: build
 subtask: true
 ---
 
-Run the reference curation workflow. The goal is to lift genuinely new metadata patterns from `project/metadata/` into `reference/` so the next project can reuse them, without duplicating examples that are already in `reference/PATTERNS.md`.
+Run the reference curation workflow. The goal is to lift genuinely new metadata patterns from `metadata/` into `reference/` so the next project can reuse them, without duplicating examples that are already in `reference/PATTERNS.md`.
 
 Optional argument — single metaobject name to curate (e.g. `recognition_usage`):
 $ARGUMENTS
 
-If the argument is empty, scan `project/metadata/` and propose a candidate list to the PM. If a metaobject name is given, curate only that metaobject and its directly required supporting objects.
+If the argument is empty, scan `metadata/` and propose a candidate list to the PM. If a metaobject name is given, curate only that metaobject and its directly required supporting objects.
 
 Process references:
 @project/docs/patterns/metadata-workflow.md
@@ -26,7 +26,7 @@ Authorization: this command is explicit PM authorization for a curation run. Do 
 
 2. **Build the dedup map.** Open `reference/PATTERNS.md` and build a list of business-capability sections and their entries. Note `reference/INDEX.md` and `reference/metadata/` exist as the legacy export of an unrelated system; do not curate from there, but you may consult `reference/INDEX-*.md` to check whether a given capability is already exemplified in the legacy export.
 
-3. **Identify candidates.** Scan `project/metadata/` (or only the metaobject from `$ARGUMENTS`). Strong candidates:
+3. **Identify candidates.** Scan `metadata/` (or only the metaobject from `$ARGUMENTS`). Strong candidates:
    - operations with `.bjs` command scripts (JS-логика, обычно нестандартная);
    - operations with non-trivial RecordsSettings or non-obvious posting rules;
    - workflows other than plain Excel-import (already covered by skill `excel-import-to-detail`);
@@ -45,7 +45,7 @@ Authorization: this command is explicit PM authorization for a curation run. Do 
 6. **Create the pattern directory.** For every approved candidate, use bash (PowerShell). The `readonly-guard` plugin blocks `edit`/`write`/`apply_patch` inside `reference/`; bash is not gated:
    ```
    New-Item -ItemType Directory -Path "reference\<pattern-name>\metadata" | Out-Null
-   Copy-Item -LiteralPath "project\metadata\<kind>\<name>" -Destination "reference\<pattern-name>\metadata\<kind>\<name>" -Recurse
+    Copy-Item -LiteralPath "metadata\<kind>\<name>" -Destination "reference\<pattern-name>\metadata\<kind>\<name>" -Recurse
    ```
    Do not modify the copied files in any way. Copy 1:1.
 

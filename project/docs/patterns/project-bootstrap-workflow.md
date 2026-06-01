@@ -9,7 +9,7 @@
 - OpenCode config, agents, commands and skills;
 - workflow, ADR, glossary, templates and durable patterns;
 - local read-only corpora when needed;
-- empty `project/metadata/` mirror for the future BaSYS stand.
+- empty `metadata/` mirror for the future BaSYS stand.
 
 Нельзя переносить активные metadata, specs, reports, inbox materials или контекст старой предметной задачи, если PM явно не просит обратное.
 
@@ -62,7 +62,7 @@ Create fresh target files:
 
 - `PROJECT_CONTEXT.md`
 - `OPEN_QUESTIONS.md`
-- `project/metadata/.gitkeep`
+- `metadata/.gitkeep`
 - `inbox/.gitkeep`
 - `.gitignore` entries for local read-only corpora and local settings
 
@@ -70,7 +70,7 @@ Create fresh target files:
 
 Do not copy by default:
 
-- old `project/metadata/` contents;
+- old `metadata/` contents;
 - old `project/docs/specs/` task files except templates;
 - old `project/docs/project-stage-summary.md` unless PM explicitly wants an archive;
 - old `inbox/` contents;
@@ -134,7 +134,7 @@ Do not create a GitHub repository blindly if the CLI/tooling is unavailable or v
 
 - Target workspace exists and opens from its own root.
 - `PROJECT_CONTEXT.md` and `OPEN_QUESTIONS.md` describe the new project, not the old one.
-- `project/metadata/` is empty except `.gitkeep`.
+- `metadata/` is empty except `.gitkeep`.
 - Old task artifacts are absent from tracked files.
 - Local read-only corpora are ignored or absent.
 - Initial commit exists.

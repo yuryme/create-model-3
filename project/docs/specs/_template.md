@@ -18,7 +18,7 @@ depends-on: []
 
 ## Как читать этот документ
 
-Документ описывает изменения, которые Инженер должен внести в метаданные проекта (`project/metadata/`).
+Документ описывает изменения, которые Инженер должен внести в метаданные проекта (`metadata/`).
 
 Структура:
 
@@ -105,7 +105,7 @@ depends-on: []
 | `bank_account` | Расчётный счёт | string(20) | нет | нет | — | Основной банковский счёт |
 
 Обозначения столбцов:
-- **DataType** — имя типа из `project/metadata/system/dataTypes.json` (например, `string`, `integer`, `decimal`, `date`, или ссылка на справочник вида `Справочник.<Name>`).
+- **DataType** — имя типа из `metadata/system/dataTypes.json` (например, `string`, `integer`, `decimal`, `date`, или ссылка на справочник вида `Справочник.<Name>`).
 - **Обязательно** — будет ли поле `Required` в `DataSettings` (`true` или `false`).
 - **Уникально** — будет ли `Unique` в `DataSettings`.
 - **Формула** — если поле вычисляемое, выражение или его словесное описание; иначе `—`.
@@ -279,10 +279,10 @@ depends-on: []
 - [ ] Все метаобъекты из раздела 3 созданы / изменены / удалены согласно действию.
 - [ ] Все JSON валидируются по соответствующим JSON-схемам.
 - [ ] Имена `Name` — латиница `snake_case`, ≤30 символов (ADR-001).
-- [ ] `MetaObjectKindUid` и `DataTypeUid` — взяты из `project/metadata/system/`, не из `reference/` (ADR-002).
+- [ ] `MetaObjectKindUid` и `DataTypeUid` — взяты из `metadata/system/`, не из `reference/` (ADR-002).
 - [ ] `Memo` заполнено у каждого нового объекта и каждой новой колонки.
 - [ ] Свежие UUID v4 у каждого нового `Uid` (объект, колонки, табличные части, команды, источники).
-- [ ] У объектов с видом `IsReference = true` (catalog, enum, operation и т. п.) — запись добавлена в `project/metadata/system/dataTypes.json`.
+- [ ] У объектов с видом `IsReference = true` (catalog, enum, operation и т. п.) — запись добавлена в `metadata/system/dataTypes.json`.
 - [ ] Имена `.bjs`-файлов точно совпадают со значениями `Expression` в JSON.
 - [ ] Все команды, workflow и расчётные правила из ТЗ представлены в metadata или явно отмечены как не требующие отдельного metadata-объекта.
 
