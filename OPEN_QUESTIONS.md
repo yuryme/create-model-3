@@ -2,13 +2,14 @@
 
 ## Обсуждается сейчас
 
-- Подготовить `create-model-3` как чистый workspace для нового проекта.
+- Передача approved-ТЗ части 1a Engineer на implementation plan.
 
 ## В очереди
 
-- Синхронизировать `metadata/` с новым стендом BaSYS.
-- Определить предметную область нового проекта.
-- Проверить OpenCode agents и commands после запуска из `create-model-3/`.
+- Engineer: implementation plan по части 1a, затем реализация metadata.
+- Синхронизировать `metadata/` со стендом BaSYS перед/после реализации 1a.
+- Детализировать части 1b и 1c в `sp-001-bakery-stage1.md` после приёмки 1a.
+- Проверить UX рецептур (шапка `catalog/recipe` + строки `register/recipe_component`) на приёмке; при неудобстве — форма-конструктор во вторую очередь.
 
 ## Отложено
 
@@ -16,6 +17,10 @@ _(пока пусто)_
 
 ## Решено
 
+- ТЗ хлебозавода часть 1a переведено в `approved` (2026-06-02) после двух кругов ревью; критические C1/C2 и M1–M3 закрыты.
+- Рецептуры: `catalog/recipe` (шапка) + `register/recipe_component` (строки состава) из-за `useDetailsTables = false` у вида `catalog` (ADR-2026-06-02).
+- `requirement_calc` запускается по сохранённому `production_task` со скалярным `task_number`; передача DataTable как параметра workflow не используется.
+- Стартовые значения перечислений 1a вводятся вручную при приёмке; fill-workflow вне scope 1a.
 - `create-model-2` завершён, зафиксирован отдельным commit и tag `create-model-2-final`.
 - `create-model-3` создаётся без metadata/specs завершённых задач `create-model-2`.
 - Reusable workflow, patterns, agents, commands и skills сохраняются как основа нового workspace.

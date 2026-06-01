@@ -4,7 +4,7 @@
 > **Не дублировать:** обсуждения и очередь вопросов -> `OPEN_QUESTIONS.md`; формальные архитектурные решения -> `project/docs/decisions.md`.
 > **Поддерживает AI-ассистент** — обновляет в конце смысловой главы работы.
 
-**Последнее обновление:** 2026-06-01 — проверена синхронизация локальной документации BaSYS (`basys-docs/` -> `2e6e431`) и CursorRules/generated BaSYS skills (`basys-cursor-rules/` -> `e472d12`); `basys-docs-index.md` приведён к текущему коммиту документации.
+**Последнее обновление:** 2026-06-02 — ТЗ первой очереди хлебозавода, часть 1a (`project/docs/specs/sp-001-bakery-stage1.md`) переведено в `approved` после двух кругов ревью PM-chat. Закрыты C1 (рецептуры: `catalog/recipe` + `register/recipe_component`, ADR-2026-06-02), C2 (контракт `requirement_calc` через сохранённый `production_task` и скалярный `task_number`) и M1–M3. Части 1b/1c — каркасом. Следующее — engineer implementation plan по части 1a.
 
 ---
 
@@ -49,9 +49,10 @@ OpenCode запускается из корня `create-model-3/`. Все пут
 
 ## Что Следующее
 
-1. Синхронизировать `metadata/` с новым BaSYS-стендом.
-2. Определить новую предметную область и входные материалы проекта.
-3. Проверить команды OpenCode после запуска из `create-model-3/`.
+1. Engineer пишет implementation plan по части 1a (`sp-001-bakery-stage1-plan.md`, status: review), затем PM-chat review плана.
+2. После approved-плана — реализация metadata 1a и отчёт Engineer с инструкцией импорта (ADR-003).
+3. Синхронизировать `metadata/` с BaSYS-стендом перед/после реализации.
+4. После приёмки 1a на стенде — детализировать части 1b и 1c в том же ТЗ.
 
 ## Реестр Сессий
 
