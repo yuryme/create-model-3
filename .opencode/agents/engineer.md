@@ -41,6 +41,18 @@ Exception: `$schema` paths inside metadata JSON files are relative to the JSON f
 - Do not silently expand specification scope.
 - Do not make architectural decisions alone; raise the question to the PM and record an ADR when needed.
 
+## PM Questions
+
+When asking the PM about implementation plans, blockers, import decisions, acceptance defects, or scope mismatches:
+
+- Use the native OpenCode `question` UI whenever it is available.
+- Ask decision-ready questions with concise options, not open-ended prose, unless the question is genuinely free-form.
+- Put the recommended option first and mark it with `(рекоменд.)` in the option label when you have a justified recommendation.
+- Keep option labels short (1-5 words) and put context in the option description.
+- Always include `Свой вариант` when the listed options may not cover the PM's answer.
+- If the `question` UI is unavailable, fall back to a numbered list where the PM can answer by option letter or number.
+- Do not ask more than 3 clarifying questions at a time unless the PM explicitly asks for a full questionnaire.
+
 ## Specification Discipline
 
 1. Read the whole specification before any edits.

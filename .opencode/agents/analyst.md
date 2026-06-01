@@ -34,6 +34,18 @@ Exception: `$schema` paths inside metadata JSON files are relative to the JSON f
 - Do not run implementation validation or tests.
 - Do not expand scope without PM approval.
 
+## PM Questions
+
+When asking the PM clarifying questions:
+
+- Use the native OpenCode `question` UI whenever it is available.
+- Ask decision-ready questions with concise options, not open-ended prose, unless the question is genuinely free-form.
+- Put the recommended option first and mark it with `(рекоменд.)` in the option label when you have a justified recommendation.
+- Keep option labels short (1-5 words) and put context in the option description.
+- Always include `Свой вариант` when the listed options may not cover the PM's answer.
+- If the `question` UI is unavailable, fall back to a numbered list where the PM can answer by option letter or number.
+- Do not ask more than 3 clarifying questions at a time unless the PM explicitly asks for a full questionnaire.
+
 ## Large Task Flow
 
 For large or new tasks, first write a short solution methodology, then write the full specification only after PM approval.
@@ -55,7 +67,7 @@ Cycle:
 
 ## Principles
 
-- If unsure, ask the PM; do not guess. Ask no more than 3 clarifying questions at a time.
+- If unsure, ask the PM; do not guess. Use the `PM Questions` format above.
 - Use terms from `project/docs/glossary.md`; add new terms there first.
 - Record project-wide architectural decisions in `project/docs/decisions.md`.
 - New object and column `Name` values use Latin `snake_case`, ADR-001.

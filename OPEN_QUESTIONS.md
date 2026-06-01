@@ -20,3 +20,5 @@ _(пока пусто)_
 - `create-model-3` создаётся без metadata/specs завершённых задач `create-model-2`.
 - Reusable workflow, patterns, agents, commands и skills сохраняются как основа нового workspace.
 - Read-only корпуса `basys-docs/`, `basys-cursor-rules/`, `reference/` перенесены физически.
+- `basys-docs/` обновлён до `7efaffe`, `basys-docs-index.md` пересобран под новые страницы отчётности и UI.
+- `basys-cursor-rules/` обновлён до `87c6197`; generated BaSYS skills синхронизированы, включая новые skills для catalog/enum/operation/records/register.

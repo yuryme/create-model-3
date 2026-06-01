@@ -4,7 +4,7 @@
 > AI-ассистент использует **этот файл как карту**, конкретные страницы читает точечно через `Read`.
 > Файл живёт **снаружи** клонированной папки, чтобы `git pull` его не затирал.
 
-**Текущая версия документации:** коммит `743a183` от 2026-05-14
+**Текущая версия документации:** коммит `7efaffe` от 2026-05-20
 **Локальный путь к источнику:** `basys-docs/ru/`
 
 ---
@@ -95,6 +95,7 @@
 | [basys-docs/ru/reporting/introduction.md](basys-docs/ru/reporting/introduction.md) | Введение: два стандартных вида — **Панель данных** (рекомендуется по умолчанию) и **Отчёт Excel** (для регламентированных макетов) |
 | [basys-docs/ru/reporting/dataView.md](basys-docs/ru/reporting/dataView.md) | **Панели данных**: визуальный конструктор отчётов (графики, диаграммы, индикаторы, таблицы), QueryBuilder + BaSYS.Fx как источники |
 | [basys-docs/ru/reporting/excelReport.md](basys-docs/ru/reporting/excelReport.md) | **Отчёт Excel**: макет `.xlsx` с маркерами, библиотека ClosedXML.Report, используется для регламентированной отчётности |
+| [basys-docs/ru/reporting/printForms.md](basys-docs/ru/reporting/printForms.md) | **Печатные формы**: Excel-шаблоны, привязанные к конкретному метаобъекту и экземпляру объекта; AutoRetrieveData, источники данных, параметры и маркеры ClosedXML.Report |
 | [basys-docs/ru/reporting/filters.md](basys-docs/ru/reporting/filters.md) | ⚠️ **Файл-заглушка** — только заголовок «Настраиваемые фильтры», содержание не написано |
 
 ---
@@ -105,8 +106,32 @@
 |---|---|
 | [basys-docs/ru/userInterface/index.md](basys-docs/ru/userInterface/index.md) | Оглавление раздела |
 | [basys-docs/ru/userInterface/introduction.md](basys-docs/ru/userInterface/introduction.md) | Способы создания форм: автоматические (Vue.js 3 + PrimeVue 3, рекомендованы по умолчанию) и программируемые компоненты |
-| [basys-docs/ru/userInterface/programmableComponents.md](basys-docs/ru/userInterface/programmableComponents.md) | Программируемые компоненты: Vue.js 3 Options API + PrimeVue 3, для случаев сложной логики |
+| [basys-docs/ru/userInterface/programmableComponents.md](basys-docs/ru/userInterface/programmableComponents.md) | Программируемые компоненты: Vue.js 3 Options API + PrimeVue 3, props рендера, глобальные функции, inject-сервисы и перечень доступных компонентов |
+| [basys-docs/ru/userInterface/formConstructor.md](basys-docs/ru/userInterface/formConstructor.md) | **Конструктор форм**: декларативное дерево `ConstructorFormSettings.Root`, PrimeFlex-сетка, компоненты, привязки `vModel`/`v-bind`/`@Event`, стандартные команды и helper-сборщики форм |
 | [basys-docs/ru/userInterface/bsViewTitleComponent.md](basys-docs/ru/userInterface/bsViewTitleComponent.md) | Компонент `BsViewTitle` — заголовок страницы с индикатором ожидания и признаком модифицированности |
+| [basys-docs/ru/userInterface/bsTextComponent.md](basys-docs/ru/userInterface/bsTextComponent.md) | Компонент `BsText` / `bs-text` — произвольный текстовый блок в формах-конструкторах |
+| [basys-docs/ru/userInterface/bsLabelComponent.md](basys-docs/ru/userInterface/bsLabelComponent.md) | Компонент `BsLabel` / `bs-label` — подпись к полю или элементу формы |
+| [basys-docs/ru/userInterface/bsFormFieldComponent.md](basys-docs/ru/userInterface/bsFormFieldComponent.md) | Компонент `BsFormField` / `bs-form-field` — контейнер поля ввода с подписью и признаком обязательности |
+| [basys-docs/ru/userInterface/bsInputPatternComponent.md](basys-docs/ru/userInterface/bsInputPatternComponent.md) | Компонент `BsInputPattern` / `bs-input-pattern` — поле ввода с маской |
+| [basys-docs/ru/userInterface/bsCollapsibleGroupComponent.md](basys-docs/ru/userInterface/bsCollapsibleGroupComponent.md) | Компонент `BsCollapsibleGroup` / `bs-collapsible-group` — сворачиваемая группа элементов формы |
+| [basys-docs/ru/userInterface/bsObjectReferenceSelectComponent.md](basys-docs/ru/userInterface/bsObjectReferenceSelectComponent.md) | Компонент `BsObjectReferenceSelect` / `bs-object-reference-select` — выбор объектной ссылки с props, событиями и поведением |
+| [basys-docs/ru/userInterface/bsDetailsTableComponent.md](basys-docs/ru/userInterface/bsDetailsTableComponent.md) | Компонент `BsDetailsTable` / `bs-details-table` — редактируемая табличная часть документа или справочника |
+| [basys-docs/ru/userInterface/bsTableViewComponent.md](basys-docs/ru/userInterface/bsTableViewComponent.md) | Компонент `BsTableView` / `bs-table-view` — табличное представление списка с колонками, фильтрами и командами |
+| [basys-docs/ru/userInterface/pvBadgeComponent.md](basys-docs/ru/userInterface/pvBadgeComponent.md) | Компонент PrimeVue `Badge` / `pv-badge` — бейдж, счётчик или статус |
+| [basys-docs/ru/userInterface/pvButtonComponent.md](basys-docs/ru/userInterface/pvButtonComponent.md) | Компонент PrimeVue `Button` / `pv-button` — кнопка формы с props, событиями и настройками конструктора |
+| [basys-docs/ru/userInterface/pvButtonGroupComponent.md](basys-docs/ru/userInterface/pvButtonGroupComponent.md) | Компонент PrimeVue `ButtonGroup` / `pv-button-group` — группа кнопок |
+| [basys-docs/ru/userInterface/pvSplitButtonComponent.md](basys-docs/ru/userInterface/pvSplitButtonComponent.md) | Компонент PrimeVue `SplitButton` / `pv-split-button` — кнопка с выпадающим меню |
+| [basys-docs/ru/userInterface/pvSplitButtonItemComponent.md](basys-docs/ru/userInterface/pvSplitButtonItemComponent.md) | Компонент `SplitButtonItem` / `pv-split-button-item` — пункт меню для `pv-split-button` |
+| [basys-docs/ru/userInterface/pvDividerComponent.md](basys-docs/ru/userInterface/pvDividerComponent.md) | Компонент PrimeVue `Divider` / `pv-divider` — горизонтальный или вертикальный разделитель |
+| [basys-docs/ru/userInterface/pvToolbarComponent.md](basys-docs/ru/userInterface/pvToolbarComponent.md) | Компонент PrimeVue `Toolbar` / `pv-toolbar` — панель инструментов со слотами `start` и `end` |
+| [basys-docs/ru/userInterface/pvTabViewComponent.md](basys-docs/ru/userInterface/pvTabViewComponent.md) | Компонент PrimeVue `TabView` / `pv-tab-view` — набор вкладок |
+| [basys-docs/ru/userInterface/pvTabPanelComponent.md](basys-docs/ru/userInterface/pvTabPanelComponent.md) | Компонент PrimeVue `TabPanel` / `pv-tab-panel` — вкладка внутри `pv-tab-view` |
+| [basys-docs/ru/userInterface/pvCalendarComponent.md](basys-docs/ru/userInterface/pvCalendarComponent.md) | Компонент PrimeVue `Calendar` / `pv-calendar` — поле ввода даты или времени |
+| [basys-docs/ru/userInterface/pvCheckboxComponent.md](basys-docs/ru/userInterface/pvCheckboxComponent.md) | Компонент PrimeVue `Checkbox` / `pv-checkbox` — флажок |
+| [basys-docs/ru/userInterface/pvInputSwitchComponent.md](basys-docs/ru/userInterface/pvInputSwitchComponent.md) | Компонент PrimeVue `InputSwitch` / `pv-input-switch` — переключатель |
+| [basys-docs/ru/userInterface/pvInputTextComponent.md](basys-docs/ru/userInterface/pvInputTextComponent.md) | Компонент PrimeVue `InputText` / `pv-input-text` — однострочное текстовое поле |
+| [basys-docs/ru/userInterface/pvTextareaComponent.md](basys-docs/ru/userInterface/pvTextareaComponent.md) | Компонент PrimeVue `Textarea` / `pv-input-textarea` — многострочное текстовое поле |
+| [basys-docs/ru/userInterface/pvInputNumberComponent.md](basys-docs/ru/userInterface/pvInputNumberComponent.md) | Компонент PrimeVue `InputNumber` / `pv-input-number` — поле ввода числа |
 
 ---
 
