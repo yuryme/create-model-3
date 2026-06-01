@@ -4,7 +4,7 @@
 > **Не дублировать:** обсуждения и очередь вопросов -> `OPEN_QUESTIONS.md`; формальные архитектурные решения -> `project/docs/decisions.md`.
 > **Поддерживает AI-ассистент** — обновляет в конце смысловой главы работы.
 
-**Последнее обновление:** 2026-05-29 — синхронизированы локальная документация BaSYS (`basys-docs/` -> `7efaffe`) и CursorRules/generated BaSYS skills (`basys-cursor-rules/` -> `87c6197`); индекс `basys-docs-index.md` обновлён.
+**Последнее обновление:** 2026-06-01 — проверена синхронизация локальной документации BaSYS (`basys-docs/` -> `2e6e431`) и CursorRules/generated BaSYS skills (`basys-cursor-rules/` -> `e472d12`); `basys-docs-index.md` приведён к текущему коммиту документации.
 
 ---
 
