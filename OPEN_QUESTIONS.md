@@ -2,12 +2,12 @@
 
 ## Обсуждается сейчас
 
-- Передача approved-ТЗ части 1a Engineer на implementation plan.
+- sp-002 — генератор тестовых данных (сеялка) для цепочки 1a: поручение на методику/ТЗ передаётся аналитику (PM передаёт сам).
 
 ## В очереди
 
-- Engineer: implementation plan по части 1a, затем реализация metadata.
-- Синхронизировать `metadata/` со стендом BaSYS перед/после реализации 1a.
+- Функциональная приёмка 1a на стенде (чек-лист C): заявка → проведение в `customer_demand` → задание → `fill_from_orders`/`calc_requirement` → отчёты. После приёмки — `implemented` для ТЗ и плана.
+- sp-002: методика `sp-002-seed-design.md`, затем ТЗ; ключевой вопрос — bootstrap операций (вне scope `create-fill-workflow`).
 - Детализировать части 1b и 1c в `sp-001-bakery-stage1.md` после приёмки 1a.
 - Проверить UX рецептур (шапка `catalog/recipe` + строки `register/recipe_component`) на приёмке; при неудобстве — форма-конструктор во вторую очередь.
 
@@ -17,6 +17,8 @@ _(пока пусто)_
 
 ## Решено
 
+- Metadata части 1a реализованы Engineer и импортированы в BaSYS без ошибок импорта (2026-06-02); 17 metaobject закоммичены локально в `metadata/` (`bd7bbe9`). План реализации + import-notes закоммичены и запушены в workspace-репо. ТЗ/план остаются `approved` до функциональной приёмки.
+- sp-002 (сеялка) опирается на skill `create-fill-workflow` для слоёв enum/catalog/register; операции/документы этот skill не покрывает и требуют отдельного механизма (решается в методике sp-002).
 - ТЗ хлебозавода часть 1a переведено в `approved` (2026-06-02) после двух кругов ревью; критические C1/C2 и M1–M3 закрыты.
 - Рецептуры: `catalog/recipe` (шапка) + `register/recipe_component` (строки состава) из-за `useDetailsTables = false` у вида `catalog` (ADR-2026-06-02).
 - `requirement_calc` запускается по сохранённому `production_task` со скалярным `task_number`; передача DataTable как параметра workflow не используется.
