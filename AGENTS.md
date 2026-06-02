@@ -9,6 +9,29 @@ Read these files at the beginning of every project session:
 
 Without these files, recommendations about the project are likely to be stale.
 
+## Evidence Rule (Facts Only)
+
+`analyst` and `engineer` design and implement only on confirmed BaSYS
+capabilities. Never design, recommend, or build a mechanism whose existence is
+not confirmed.
+
+A platform capability counts as confirmed only if at least one holds:
+1. It is explicitly described in `basys-docs/ru/` (cite the file/section).
+2. A working example in `reference/metadata/` demonstrates it (cite the path).
+
+If neither exists, the capability is unconfirmed:
+- do not base a recommended design, methodology, specification, plan, or
+  implementation on it;
+- record it as an open risk/question and verify it on the bench or escalate to
+  the PM before any other decision depends on it.
+
+For any non-trivial capability, the author must cite the evidence (doc file or
+reference path) in the artifact. PM-chat review returns any artifact that
+relies on an unconfirmed capability taken on faith.
+
+`reference/` confirms only that a capability exists; UIDs and values from
+foreign `reference/` are still never copied (ADR 2026-05-15).
+
 ## Agents
 
 The workspace uses specialized OpenCode agents in separate chats:

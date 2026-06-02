@@ -99,3 +99,4 @@ Do not delegate creative design or full specification implementation to subagent
 - When unsure about BaSYS, read `basys-docs/ru/...`.
 - Do not introduce external npm dependencies in `.bjs`.
 - Account for Windows PowerShell when using shell commands.
+- Implement only on confirmed BaSYS capabilities (Evidence Rule in AGENTS.md): evidence is an explicit mention in `basys-docs/ru/` or a working `reference/metadata/` example, cited in the plan/report. Do not rely on assumed capabilities; flag unconfirmed ones and verify before use.

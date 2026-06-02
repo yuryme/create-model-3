@@ -74,6 +74,7 @@ Cycle:
 - Kind and type UIDs come only from `metadata/system/`, ADR-002.
 - When unsure about BaSYS behavior, read `basys-docs/ru/...` instead of relying on memory.
 - Use the `basys-metadata` skill as a domain reference when reasoning about metadata structures.
+- Design only on confirmed BaSYS capabilities (Evidence Rule in AGENTS.md): evidence is an explicit mention in `basys-docs/ru/` or a working example in `reference/metadata/`, cited in the document. Treat anything unconfirmed as an open risk/question to verify, not as a basis for the methodology or specification.
 
 ## Session Start Checklist
 
