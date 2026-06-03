@@ -1,7 +1,7 @@
 ---
 sp-id: 002
 title: Быстрая загрузка тестовых данных 1a
-status: review
+status: approved
 author: analyst
 created: 2026-06-02
 updated: 2026-06-02
@@ -504,3 +504,4 @@ PM-таблица должна гарантировать, что ключи, и
 |---|---|---|
 | 2026-06-02 | review | Создано ТЗ по approved-методике `sp-002-seed-design.md`. Включены оба workflow, запрет на выдумывание строк, правило не маппить `number` операций и checklist приёмки. |
 | 2026-06-02 | review | Исправлено по ревью: добавлены требования уникальности seed-ключей, явное исключение из `create-fill-workflow` title-prefix и запрет Инженеру генерировать enum `code` без PM. |
+| 2026-06-02 | approved | PM утвердил ТЗ; тестовый набор предоставлен и утверждён в `sp-002-seed-data-1a-dataset.md`. Инженер переходит к implementation plan. |
