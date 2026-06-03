@@ -4,7 +4,7 @@
 > AI-ассистент использует **этот файл как карту**, конкретные страницы читает точечно через `Read`.
 > Файл живёт **снаружи** клонированной папки, чтобы `git pull` его не затирал.
 
-**Текущая версия документации:** коммит `2e6e431` от 2026-05-29
+**Текущая версия документации:** коммит `bdfe322` от 2026-06-03
 **Локальный путь к источнику:** `basys-docs/ru/`
 
 ---
@@ -76,6 +76,7 @@
 |---|---|
 | [basys-docs/ru/workflows/index.md](basys-docs/ru/workflows/index.md) | Оглавление раздела |
 | [basys-docs/ru/workflows/introduction.md](basys-docs/ru/workflows/introduction.md) | Введение: процессы как сценарии из шагов, интеграция и автоматизация, фреймворк Workflow-Core, способы запуска (UI/расписание/событие) |
+| [basys-docs/ru/workflows/workflowParameters.md](basys-docs/ru/workflows/workflowParameters.md) | Параметры процессов: `parameters` JSON-описания, `_parameters.<name>`, типы string/integer/long/number/boolean/date/object/array, defaultValue и required |
 | [basys-docs/ru/workflows/scriptStep.md](basys-docs/ru/workflows/scriptStep.md) | Шаг **Скрипт** (`java_script`): произвольная JS-логика, параметр `Expression` ссылается на `.bjs`-файл |
 | [basys-docs/ru/workflows/httpConnectorStep.md](basys-docs/ru/workflows/httpConnectorStep.md) | Шаг **HTTP Connector** (`http_connector`): GET/POST/PUT/PATCH/DELETE, автоматический разбор JSON/XML ответа |
 | [basys-docs/ru/workflows/dataObjectLoaderStep.md](basys-docs/ru/workflows/dataObjectLoaderStep.md) | Шаг **Загрузка объекта данных** (`data_object_loader`): создание/обновление DataObject из коллекции, маппинг шапки и табличных частей |
