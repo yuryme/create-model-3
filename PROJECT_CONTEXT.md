@@ -4,7 +4,7 @@
 > **Не дублировать:** обсуждения и очередь вопросов -> `OPEN_QUESTIONS.md`; формальные архитектурные решения -> `project/docs/decisions.md`.
 > **Поддерживает AI-ассистент** — обновляет в конце смысловой главы работы.
 
-**Последнее обновление:** 2026-06-02 — ТЗ `sp-002-seed-data-1a.md` переведено в `approved` после двух кругов ревью; создан и утверждён тестовый набор `sp-002-seed-data-1a-dataset.md` (вход §5.2). Следующее — engineer пишет план `sp-002-seed-data-1a-plan.md`. Ранее: methodика sp-002 `approved`; metadata 1a реализованы и импортированы без ошибок (commit `metadata/` `bd7bbe9`), ТЗ/план 1a — `approved` до функциональной приёмки. Введено правило доказательности (Evidence Rule в AGENTS.md, ADR-2026-06-02).
+**Последнее обновление:** 2026-06-02 — план `sp-002-seed-data-1a-plan.md` переведён в `approved` (с двумя обязательными правками реализации: JSON в camelCase как `requirement_calc.json`, счётчик `.bjs` = 14). Следующее — engineer реализует workflow `seed_refs_1a`/`seed_docs_1a`. Ранее: ТЗ и dataset sp-002 `approved`; методика sp-002 `approved`; metadata 1a реализованы и импортированы без ошибок (commit `metadata/` `bd7bbe9`), ТЗ/план 1a — `approved` до функциональной приёмки. Введено правило доказательности (Evidence Rule в AGENTS.md, ADR-2026-06-02).
 
 ---
 
@@ -49,7 +49,7 @@ OpenCode запускается из корня `create-model-3/`. Все пут
 
 ## Что Следующее
 
-1. sp-002 — engineer пишет implementation plan `sp-002-seed-data-1a-plan.md` (status `review`) по approved-ТЗ + dataset; затем PM-chat review плана → реализация двух workflow.
+1. sp-002 — engineer реализует два workflow `seed_refs_1a`/`seed_docs_1a` в `metadata/` по approved-плану (с правками camelCase + счётчик `.bjs`); затем engineer report → PM-chat acceptance.
 2. Функциональная приёмка 1a на стенде (чек-лист C); после неё — `implemented` для ТЗ и плана 1a.
 3. После приёмки 1a — детализировать части 1b и 1c в `sp-001-bakery-stage1.md`.
 4. При необходимости версионировать `metadata/` на GitHub — настроить remote и запушить.
