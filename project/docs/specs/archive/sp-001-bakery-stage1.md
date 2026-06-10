@@ -1,14 +1,24 @@
 ---
 sp-id: 001
-title: Хлебозавод — первая очередь, операционное ядро
-status: approved
+title: "[ЗАМЕНЁН] Хлебозавод — первая очередь, операционное ядро"
+status: superseded
 author: analyst
 created: 2026-06-01
-updated: 2026-06-02
+updated: 2026-06-03
 depends-on:
   - sp-001-bakery-problem-statement.md
   - sp-001-bakery-stage1-design.md
+superseded-by:
+  - sp-001-bakery-stage1a.md
+  - sp-001-bakery-stage1b.md
 ---
+
+> **⚠️ Этот документ заархивирован и не используется в работе.** По решению PM 2026-06-03 единое ТЗ первой очереди разделено на отдельные ТЗ по этапам реализации:
+> - этап 1a (`approved`) — `../sp-001-bakery-stage1a.md`;
+> - этап 1b (`review`) — `../sp-001-bakery-stage1b.md`;
+> - этап 1c — будет создан отдельным ТЗ позже.
+>
+> Файл сохранён только как исторический снимок объединённой версии. Актуальные требования — в этапных файлах.
 
 # ТЗ 001 — Хлебозавод, первая очередь: операционное ядро
 
@@ -49,7 +59,7 @@ depends-on:
 - **Проведение операций по регистрам записей**: `basys-docs/ru/metadata/recordsCreation.md`, разделы «Общая схема работы», «Настройка создания записей», «Источники данных для записей». Документ подтверждает `recordsSettings`, источники header/detail table/RecordsSource, направления Plus/Minus и идемпотентность перепроведения.
 - **Ограничение RecordsSource**: `basys-docs/ru/metadata/recordsCreation.md`, раздел «Источники записей»: выполнение запросов к произвольным таблицам базы данных в источнике записей в текущей версии не поддерживается. Поэтому расчёт средней стоимости и заполнение списания сырья не проектируются как RecordsSource с DB-запросом.
 - **Программируемые команды и загрузка табличных частей**: `basys-docs/ru/commands/programmableCommands.md`, разделы «Контекст выполнения команды», `runWorkflow`, `save`, примеры заполнения `$t.table.clear().load(source)`. Это подтверждает команду заполнения строк списания сырья в `production_output`.
-- **QueryBuilder и запросы к табличным частям**: `basys-docs/ru/calculations/queryBuilder.md`, разделы `from`, `select`, `where`, `groupBy`, `parameter`, пример «Запрос к табличной части». Это подтверждает расчёт агрегатов по регистрам и чтение строк документов/табличных частей в командах и отчётах.
+- **QueryBuilder и запросы к табличным частям**: `basys-docs/ru/calculations/queryBuilder.md`, разделы `from`, `select`, `where`, `groupBy`, `parameter`, пример «Запрос к табличной части». Это подтверждает расчёт агрегатов по регистрам и чтение строк документов/табличных частей в командах и отчётах, включая чтение `operation/production_task.plan_products` по `object_uid`.
 - **Панели данных**: `basys-docs/ru/reporting/dataView.md`, разделы «Панели данных», «Таблица», «Фильтры». Это подтверждает отчёты 1b как `data_view` с табличными компонентами.
 - **DataObject с табличными частями**: `basys-docs/ru/metadata/dataObject.md`, поля `header` и `detailTables`. Это подтверждает табличные части операций `raw_receipt`, `raw_inventory`, `production_output`.
 
@@ -856,15 +866,16 @@ depends-on:
 
 | Регистр-приёмник | Направление | Источник | Условие | Колонки регистра ← Выражения |
 |---|---|---|---|---|
-| `records/raw_stock` | Plus | `raw_items` | `$r.diff_qty > 0 || $r.diff_amount > 0` | `period ← $h.date`, `company ← $h.company`, `warehouse ← $h.warehouse`, `raw_item ← $r.raw_item`, `quantity ← $r.diff_qty`, `amount ← $r.diff_amount` |
-| `records/raw_stock` | Minus | `raw_items` | `$r.diff_qty < 0 || $r.diff_amount < 0` | `period ← $h.date`, `company ← $h.company`, `warehouse ← $h.warehouse`, `raw_item ← $r.raw_item`, `quantity ← -$r.diff_qty`, `amount ← -$r.diff_amount` |
+| `records/raw_stock` | Plus | `raw_items` | `$r.diff_qty > 0 || ($r.diff_qty == 0 && $r.diff_amount > 0)` | `period ← $h.date`, `company ← $h.company`, `warehouse ← $h.warehouse`, `raw_item ← $r.raw_item`, `quantity ← $r.diff_qty`, `amount ← $r.diff_amount` |
+| `records/raw_stock` | Minus | `raw_items` | `$r.diff_qty < 0 || ($r.diff_qty == 0 && $r.diff_amount < 0)` | `period ← $h.date`, `company ← $h.company`, `warehouse ← $h.warehouse`, `raw_item ← $r.raw_item`, `quantity ← -$r.diff_qty`, `amount ← -$r.diff_amount` |
 
 #### Расчёты и бизнес-правила
 
 - Инвентаризация не создаёт долг поставщику и не влияет на готовую продукцию.
 - `fact_qty` не должен быть отрицательным.
 - Если `fact_qty = current_qty` и `fact_amount = current_amount`, запись в `raw_stock` не нужна.
-- Если у строки `diff_qty` и `diff_amount` разных знаков, Инженер должен зафиксировать это как ошибку ввода или явно описать в плане обработки; штатный сценарий предполагает одинаковый знак корректировки количества и стоимости.
+- Условия Plus/Minus должны быть взаимоисключающими. Направление корректировки определяется единым драйвером знака: сначала `diff_qty`; если `diff_qty = 0`, тогда `diff_amount`. Это исключает двойное проведение одной строки при разных знаках количества и стоимости.
+- Если `diff_qty` и `diff_amount` разных знаков, строка всё равно проводится один раз по правилу единого драйвера знака. Такой сценарий допустим только как количественно-стоимостная переоценка; Engineer в implementation plan должен явно проверить, что выбранные выражения с учётом `Direction = Minus` дают ожидаемые знаки в `raw_stock`.
 
 ### 4B.6. CREATE: `operation/production_output` — Выпуск продукции
 
@@ -918,22 +929,23 @@ depends-on:
 
 | Name | Title | Привязка | Kind | Workflow / обработчик | Что делает |
 |---|---|---|---|---|---|
-| `fill_from_task` | Заполнить выпуск по заданию | шапка | programmable command | command `.bjs` | Заполняет `outputs` из строк `production_task.plan_products`, если указан документ-задание. |
+| `fill_from_task` | Заполнить выпуск по заданию | шапка | programmable command | command `.bjs` | Заполняет `outputs` из строк `production_task.plan_products`; если задание не указано, показывает понятную ошибку и не меняет строки. |
 | `calc_raw_writeoff` | Рассчитать списание сырья | шапка | programmable command | command `.bjs` | Рассчитывает `raw_writeoff` по фактическому выпуску, рецептурам и средневзвешенной стоимости сырья. |
 
 ##### Команда `fill_from_task`
 
 - **Вход:** `production_task`.
-- **Читает:** табличную часть `operation/production_task.plan_products` по `object_uid` задания.
+- **Читает:** табличную часть `operation/production_task.plan_products` по `object_uid` задания через QueryBuilder-запрос к таблице вида `operation.production_task.plan_products`; этот способ подтверждён `basys-docs/ru/calculations/queryBuilder.md`, пример «Запрос к табличной части».
 - **Логика:** заполнить `outputs` продукцией из задания; `quantity` по умолчанию равна `planned_qty`; пользователь может скорректировать факт вручную.
 - **Повторный запуск:** очищает и заново заполняет `outputs` только после подтверждения, если в строках уже есть ручные правки.
+- **Ошибки:** если `production_task` не заполнен — показать понятное сообщение «Укажите производственное задание» и не изменять `outputs`.
 
 ##### Команда `calc_raw_writeoff`
 
 - **Вход:** `company`, `date`, `raw_warehouse`, строки `outputs`.
 - **Читает:** `catalog/recipe`, `register/recipe_component`, `catalog/nomenclature`, `records/raw_stock`.
 - **Логика потребности:** рекурсивно раскрыть фактический выпуск по тем же правилам, что `requirement_calc`: продукция → полуфабрикаты → сырьё; полуфабрикаты остаются расчётными узлами и в регистры не пишутся.
-- **Логика средней стоимости:** для каждого `raw_item` рассчитать остаток до списания по `raw_stock` на дату выпуска: `stock_qty_before = Sum(quantity)`, `stock_amount_before = Sum(amount)` по `company`, `raw_warehouse`, `raw_item`. Средняя цена = `stock_amount_before / stock_qty_before`. Стоимость списания = `quantity * avg_price`.
+- **Логика средней стоимости:** для каждого `raw_item` рассчитать остаток до списания по `raw_stock` на дату выпуска: `stock_qty_before = Sum(quantity)`, `stock_amount_before = Sum(amount)` по `company`, `raw_warehouse`, `raw_item`. Если `stock_qty_before <= 0`, команда должна остановиться с понятной ошибкой до расчёта `avg_price`; деление на ноль запрещено. Иначе средняя цена = `stock_amount_before / stock_qty_before`, стоимость списания = `quantity * avg_price`.
 - **Исключение текущего документа:** если `production_output` уже был сохранён и проводился, расчёт остатка до списания должен исключать записи текущего документа по паре `meta_object + object_uid`, чтобы повторный расчёт не учитывал собственное списание.
 - **Загрузка результата:** полностью заменить `raw_writeoff`; для ссылочного поля передавать `raw_item` + `raw_item_display`.
 - **Ошибки:** нет активной рецептуры, больше одной активной рецептуры, цикл рецептур, `recipe.output_qty <= 0`, строка `outputs.quantity <= 0`, компонент типа `product`, нулевой или отрицательный остаток сырья, недостаточный остаток сырья для списания.
@@ -953,6 +965,7 @@ depends-on:
 - Списание сырья проводится только из `raw_writeoff`, а не из RecordsSource с DB-запросом, потому что документация по RecordsSource не подтверждает произвольные запросы к БД внутри источника записей.
 - Недостаток сырья блокирует расчёт списания в 1b; выпуск без списания сырья не является корректным сценарием приёмки.
 - Полуфабрикаты не приходуются и не списываются как складской остаток.
+- Себестоимость готовой продукции в 1b не ведётся: `finished_goods_stock` хранит только количество продукции. Денежная оценка выпуска и себестоимость ГП переносятся в развитие 1c/следующих очередей и не должны выводиться из `raw_writeoff` в этом ТЗ.
 
 ### 4B.7. CREATE: `data_view/raw_stock_report` — Остатки сырья
 
@@ -967,7 +980,7 @@ depends-on:
 
 | Name | Читает | Логика | Результат |
 |---|---|---|---|
-| `rows` | `records/raw_stock`; display-значения `warehouse`, `raw_item` | Сгруппировать записи до `date_to` включительно по организации, складу и сырью; вывести `Sum(quantity)` и `Sum(amount)`, среднюю цену как `amount / quantity`, исключить нулевые остатки по возможности. | DataTable остатков сырья. |
+| `rows` | `records/raw_stock`; display-значения `warehouse`, `raw_item` | Сгруппировать записи до `date_to` включительно по организации, складу и сырью; вывести `Sum(quantity)` и `Sum(amount)`. Среднюю цену считать только при `quantity != 0`: `amount / quantity`; при нулевом количестве выводить пустое значение (`null`) или исключать строку как нулевой остаток. | DataTable остатков сырья. |
 
 #### Фильтры
 
@@ -995,7 +1008,7 @@ depends-on:
 
 | Name | Читает | Логика | Результат |
 |---|---|---|---|
-| `rows` | `records/production_plan` | Сгруппировать записи за период по дате, организации, складу и продукции; вывести `Sum(planned_qty)`, `Sum(output_qty)`, отклонение `planned_qty - output_qty`. | DataTable плана/факта. |
+| `rows` | `records/production_plan` | Отфильтровать записи по `period` за выбранный период, но не группировать по точной дате. Сгруппировать по организации, складу и продукции; вывести `Sum(planned_qty)`, `Sum(output_qty)`, отклонение `planned_qty - output_qty`. Это сводит план из `production_task.plan_date` и факт из `production_output.date` в одну строку за период. | DataTable плана/факта. |
 
 #### Фильтры
 
@@ -1004,11 +1017,12 @@ depends-on:
 | `date_from` | Дата с | Дата&Время | нет | Начало периода. |
 | `date_to` | Дата по | Дата&Время | нет | Конец периода. |
 | `company` | Организация | `catalog/company` | нет | Отбор по организации. |
+| `warehouse` | Склад выпуска | `catalog/warehouse` | нет | Отбор по складу выпуска. |
 | `product` | Продукция | `catalog/nomenclature` | нет | Отбор по продукции. |
 
 #### Индикаторы
 
-- Таблица `plan_fact_table`, ширина Full (12), колонки: дата, склад, продукция, запланировано, выпущено, отклонение.
+- Таблица `plan_fact_table`, ширина Full (12), колонки: организация, склад, продукция, запланировано, выпущено, отклонение. Дата не является ключом группировки; период задаётся фильтрами `date_from`/`date_to`.
 
 ### 4B.9. CREATE: `data_view/fg_stock_report` — Остатки готовой продукции
 
@@ -1152,15 +1166,16 @@ URL для автоформ: `/app#/data-objects/{kind}/{name}`. URL для па
 - [ ] `raw_receipt.recordsSettings` пишет строки `raw_items` в `records/raw_stock` направлением Plus с `quantity` и `amount`.
 - [ ] `raw_receipt.recordsSettings` пишет рост долга поставщику в `records/supplier_settlements` по суммам строк поступления.
 - [ ] `raw_inventory` содержит команду `fill_current_stock` и проведение разниц в `records/raw_stock`.
-- [ ] В `raw_inventory` положительная разница проводится Plus, отрицательная разница проводится Minus, без ручного создания отрицательных записей пользователем.
+- [ ] В `raw_inventory` условия Plus/Minus взаимоисключающие: направление определяется `diff_qty`, а при `diff_qty = 0` — `diff_amount`; строка с разными знаками количества и стоимости не создаёт две записи.
 - [ ] `production_output` содержит команды `fill_from_task` и `calc_raw_writeoff`.
+- [ ] `fill_from_task` при пустом `production_task` показывает понятную ошибку и не изменяет `outputs`; при заполненном задании читает `operation.production_task.plan_products` по `object_uid`.
 - [ ] `production_output.recordsSettings` пишет `outputs` в `records/finished_goods_stock` направлением Plus.
 - [ ] `production_output.recordsSettings` пишет `raw_writeoff` в `records/raw_stock` направлением Minus.
 - [ ] `production_output.recordsSettings` пишет факт выпуска в `records/production_plan` с `planned_qty = 0`, `output_qty = $r.quantity`.
-- [ ] Расчёт средней стоимости сырья выполняется командой/скриптом до проведения и заполняет `raw_writeoff`; не используется RecordsSource с произвольным DB-запросом.
+- [ ] Расчёт средней стоимости сырья выполняется командой/скриптом до проведения и заполняет `raw_writeoff`; не используется RecordsSource с произвольным DB-запросом; при `stock_qty_before <= 0` деление не выполняется и возвращается понятная ошибка.
 - [ ] При загрузке строк в табличные части через `$t.<table>.load(source)` для ссылочных полей передаются пары `field` + `field_display`.
-- [ ] `raw_stock_report` читает `records/raw_stock`, группирует количество и стоимость и имеет фильтры `date_to`, `company`, `warehouse`, `raw_item`.
-- [ ] `production_plan_report` читает `records/production_plan`, показывает план, факт и отклонение.
+- [ ] `raw_stock_report` читает `records/raw_stock`, группирует количество и стоимость, имеет фильтры `date_to`, `company`, `warehouse`, `raw_item` и защищает среднюю цену от деления на ноль.
+- [ ] `production_plan_report` читает `records/production_plan`, фильтрует по `period`, группирует по организации, складу и продукции без точной даты и показывает план, факт и отклонение.
 - [ ] `fg_stock_report` читает `records/finished_goods_stock` и имеет фильтры `date_to`, `company`, `warehouse`, `product`.
 
 #### C. Функциональные проверки на стенде (PM)
@@ -1172,12 +1187,14 @@ URL для автоформ: `/app#/data-objects/{kind}/{name}`. URL для па
 - [ ] Можно создать инвентаризацию сырья и выполнить `fill_current_stock`; учётные остатки заполняются из `raw_stock`.
 - [ ] После ввода фактического остатка и сохранения инвентаризации в `raw_stock` появляется корректировка только на разницу.
 - [ ] Можно создать выпуск продукции, заполнить `outputs` из производственного задания или вручную.
+- [ ] Если в выпуске не указано производственное задание, команда `fill_from_task` показывает понятную ошибку и не изменяет строки выпуска.
 - [ ] Команда `calc_raw_writeoff` заполняет `raw_writeoff` по рецептурам и средневзвешенной цене сырья.
+- [ ] При нулевом или отрицательном остатке сырья команда `calc_raw_writeoff` не делит на ноль и возвращает понятную ошибку.
 - [ ] При недостаточном остатке сырья команда списания возвращает понятную ошибку и не формирует некорректное списание.
 - [ ] После сохранения выпуска в `finished_goods_stock` появляется приход готовой продукции.
 - [ ] После сохранения выпуска в `raw_stock` появляется расход сырья по строкам `raw_writeoff`.
 - [ ] После сохранения выпуска в `production_plan` появляется факт выпуска (`output_qty`) без изменения плановых записей 1a.
-- [ ] Отчёт «План/факт выпуска» показывает план из `production_task` и факт из `production_output`.
+- [ ] Отчёт «План/факт выпуска» показывает план из `production_task` и факт из `production_output` в одной строке по организации, складу и продукции за выбранный период, даже если плановая дата и дата выпуска различаются внутри периода.
 - [ ] Отчёт «Остатки готовой продукции» показывает выпущенную продукцию на выбранную дату.
 
 ---
@@ -1189,6 +1206,7 @@ URL для автоформ: `/app#/data-objects/{kind}/{name}`. URL для па
 - Стартовые строки перечислений (`nomenclature_type`, `counterparty_role`) не являются metadata JSON. Для 1a PM принимает ручной ввод enum-значений при приёмке; отдельный fill-workflow не входит в это ТЗ.
 - Решение PM 2026-06-02 по 1b: `supplier_settlements` создаётся уже в 1b; `raw_receipt` увеличивает долг поставщику. Погашение долга через `payment_out` остаётся в 1c.
 - Решение PM 2026-06-02 по 1b: списание сырья в `production_output` рассчитывается через табличную часть `raw_writeoff`, заполняемую командой/скриптом до проведения; не через RecordsSource с DB-запросом.
+- Решение по 1b: себестоимость готовой продукции не ведётся; `finished_goods_stock` хранит только количество. Стоимостная оценка ГП переносится за пределы 1b.
 
 ### Открытые вопросы/риски 1b для review
 
@@ -1206,3 +1224,4 @@ URL для автоформ: `/app#/data-objects/{kind}/{name}`. URL для па
 | 2026-06-02 | review | Правки после rejected: рецептуры переведены на `catalog/recipe` + `register/recipe_component`; контракт `requirement_calc` переведён на сохранённый `production_task` и скалярный `task_number`; отчёт заявок читает `customer_demand`; добавлены требования к `*_display` при загрузке ссылочных полей; enum-значения фиксируются как ручной ввод при приёмке 1a. |
 | 2026-06-02 | approved | Повторное ревью PM-chat: C1/C2 и M1–M3 закрыты, согласованность с методикой/ADR/глоссарием подтверждена. PM одобрил. ТЗ готово к передаче Engineer на implementation plan по части 1a. |
 | 2026-06-02 | review | Детализирована часть 1b: `raw_receipt`, `raw_inventory`, `production_output`, `raw_stock`, `finished_goods_stock`, `supplier_settlements`, отчёты 1b, средневзвешенное списание сырья через `raw_writeoff`, чек-лист 1b. Общий статус документа оставлен `approved` для части 1a; часть 1b имеет статус `review`. |
+| 2026-06-03 | review | Исправлены замечания PM-chat review по 1b: взаимоисключающие условия инвентаризации, группировка план/факт за период без точной даты, защита деления на ноль в средней цене, ошибка `fill_from_task` без задания, явное исключение себестоимости ГП из 1b. |
