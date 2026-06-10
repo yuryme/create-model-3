@@ -1,0 +1,413 @@
+{
+  "schemaVersion": "architecture-view-json-v0.1",
+  "meta": {
+    "id": "sp-001-bakery-stage1b-architecture-view",
+    "title": "Хлебозавод — этап 1b, карта архитектуры для PM",
+    "status": "draft",
+    "version": 1,
+    "sourceDesign": "project/docs/specs/sp-001-bakery-stage1b.design.json"
+  },
+  "summary": {
+    "goal": "Показать, какие метаобъекты будут созданы или использованы на этапе 1b и как между ними проходят основные связи.",
+    "businessResult": "Поступление и инвентаризация ведут сырьевой склад; выпуск списывает сырье, приходует готовую продукцию и пишет факт выпуска; отчеты читают регистры.",
+    "createdObjectsCount": 9,
+    "reusedObjectsCount": 4,
+    "createdObjects": [
+      "raw_stock",
+      "finished_goods_stock",
+      "supplier_settlements",
+      "raw_receipt",
+      "raw_inventory",
+      "production_output",
+      "raw_stock_report",
+      "production_plan_report",
+      "fg_stock_report"
+    ],
+    "reusedObjects": [
+      "production_plan",
+      "production_task",
+      "recipe",
+      "recipe_component"
+    ]
+  },
+  "groups": [
+    {
+      "id": "GROUP-documents",
+      "title": "Документы пользователя",
+      "description": "Объекты, с которыми пользователь работает вручную.",
+      "nodeIds": [
+        "OP-raw_receipt",
+        "OP-raw_inventory",
+        "OP-production_output"
+      ]
+    },
+    {
+      "id": "GROUP-storage",
+      "title": "Где хранится результат",
+      "description": "Регистры, в которых накапливаются остатки, долг поставщику и план-факт.",
+      "nodeIds": [
+        "RECORDS-raw_stock",
+        "RECORDS-finished_goods_stock",
+        "RECORDS-supplier_settlements",
+        "RECORDS-production_plan"
+      ]
+    },
+    {
+      "id": "GROUP-existing-inputs",
+      "title": "Используется из этапа 1a",
+      "description": "Существующие объекты, которые нужны выпуску продукции.",
+      "nodeIds": [
+        "OP-production_task",
+        "CAT-recipe",
+        "REG-recipe_component"
+      ]
+    },
+    {
+      "id": "GROUP-reports",
+      "title": "Отчеты для контроля",
+      "description": "Отчеты, которые показывают итог пользователю и PM на приемке.",
+      "nodeIds": [
+        "REPORT-raw_stock_report",
+        "REPORT-production_plan_report",
+        "REPORT-fg_stock_report"
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "id": "OP-raw_receipt",
+      "kind": "operation",
+      "name": "raw_receipt",
+      "title": "Поступление сырья",
+      "lifecycle": "create",
+      "pmDescription": "Кладовщик оформляет закупку сырья у поставщика.",
+      "visualType": "document"
+    },
+    {
+      "id": "OP-raw_inventory",
+      "kind": "operation",
+      "name": "raw_inventory",
+      "title": "Инвентаризация сырья",
+      "lifecycle": "create",
+      "pmDescription": "Кладовщик корректирует учетный остаток сырья до фактического.",
+      "visualType": "document"
+    },
+    {
+      "id": "OP-production_output",
+      "kind": "operation",
+      "name": "production_output",
+      "title": "Выпуск продукции",
+      "lifecycle": "create",
+      "pmDescription": "Начальник производства оформляет фактический выпуск и списание сырья.",
+      "visualType": "document"
+    },
+    {
+      "id": "OP-production_task",
+      "kind": "operation",
+      "name": "production_task",
+      "title": "Производственное задание",
+      "lifecycle": "reuse-existing",
+      "pmDescription": "Уже созданный на 1a источник планового выпуска для документа выпуска.",
+      "visualType": "existing-document"
+    },
+    {
+      "id": "CAT-recipe",
+      "kind": "catalog",
+      "name": "recipe",
+      "title": "Рецептура",
+      "lifecycle": "reuse-existing",
+      "pmDescription": "Уже созданная на 1a шапка рецептуры: что производится и в каком количестве.",
+      "visualType": "existing-reference"
+    },
+    {
+      "id": "REG-recipe_component",
+      "kind": "register",
+      "name": "recipe_component",
+      "title": "Состав рецептуры",
+      "lifecycle": "reuse-existing",
+      "pmDescription": "Уже созданные на 1a строки рецептуры: какие компоненты нужны для выпуска.",
+      "visualType": "existing-reference"
+    },
+    {
+      "id": "RECORDS-raw_stock",
+      "kind": "records",
+      "name": "raw_stock",
+      "title": "Остатки сырья",
+      "lifecycle": "create",
+      "pmDescription": "Хранит движения количества и стоимости сырья по складам.",
+      "visualType": "storage"
+    },
+    {
+      "id": "RECORDS-finished_goods_stock",
+      "kind": "records",
+      "name": "finished_goods_stock",
+      "title": "Остатки готовой продукции",
+      "lifecycle": "create",
+      "pmDescription": "Хранит количество готовой продукции после выпуска.",
+      "visualType": "storage"
+    },
+    {
+      "id": "RECORDS-supplier_settlements",
+      "kind": "records",
+      "name": "supplier_settlements",
+      "title": "Расчеты с поставщиками",
+      "lifecycle": "create",
+      "pmDescription": "Хранит рост долга перед поставщиками при поступлении сырья.",
+      "visualType": "storage"
+    },
+    {
+      "id": "RECORDS-production_plan",
+      "kind": "records",
+      "name": "production_plan",
+      "title": "План/факт выпуска",
+      "lifecycle": "reuse-existing",
+      "pmDescription": "Уже созданный на 1a регистр, в который 1b добавляет факт выпуска.",
+      "visualType": "existing-storage"
+    },
+    {
+      "id": "REPORT-raw_stock_report",
+      "kind": "data_view",
+      "name": "raw_stock_report",
+      "title": "Остатки сырья",
+      "lifecycle": "create",
+      "pmDescription": "Показывает остатки сырья по складам и позициям.",
+      "visualType": "report"
+    },
+    {
+      "id": "REPORT-production_plan_report",
+      "kind": "data_view",
+      "name": "production_plan_report",
+      "title": "План/факт выпуска",
+      "lifecycle": "create",
+      "pmDescription": "Показывает сравнение запланированного и фактического выпуска за период.",
+      "visualType": "report"
+    },
+    {
+      "id": "REPORT-fg_stock_report",
+      "kind": "data_view",
+      "name": "fg_stock_report",
+      "title": "Остатки готовой продукции",
+      "lifecycle": "create",
+      "pmDescription": "Показывает остатки готовой продукции после выпуска.",
+      "visualType": "report"
+    }
+  ],
+  "edges": [
+    {
+      "id": "EDGE-raw-receipt-writes-raw-stock",
+      "from": "OP-raw_receipt",
+      "to": "RECORDS-raw_stock",
+      "type": "writes",
+      "title": "приход сырья",
+      "pmDescription": "Поступление увеличивает остаток сырья."
+    },
+    {
+      "id": "EDGE-raw-receipt-writes-supplier-settlements",
+      "from": "OP-raw_receipt",
+      "to": "RECORDS-supplier_settlements",
+      "type": "writes",
+      "title": "рост долга поставщику",
+      "pmDescription": "Поступление увеличивает задолженность перед поставщиком."
+    },
+    {
+      "id": "EDGE-raw-inventory-reads-raw-stock",
+      "from": "RECORDS-raw_stock",
+      "to": "OP-raw_inventory",
+      "type": "reads",
+      "title": "учетный остаток",
+      "pmDescription": "Инвентаризация подтягивает текущий учетный остаток сырья."
+    },
+    {
+      "id": "EDGE-raw-inventory-writes-raw-stock",
+      "from": "OP-raw_inventory",
+      "to": "RECORDS-raw_stock",
+      "type": "writes",
+      "title": "корректировка остатка",
+      "pmDescription": "Инвентаризация корректирует сырьевой остаток до факта."
+    },
+    {
+      "id": "EDGE-production-task-to-output",
+      "from": "OP-production_task",
+      "to": "OP-production_output",
+      "type": "provides-input",
+      "title": "план выпуска",
+      "pmDescription": "Выпуск может быть заполнен по производственному заданию."
+    },
+    {
+      "id": "EDGE-recipe-to-output",
+      "from": "CAT-recipe",
+      "to": "OP-production_output",
+      "type": "provides-rules",
+      "title": "рецептуры",
+      "pmDescription": "Рецептуры определяют, какое сырье нужно списать на выпуск."
+    },
+    {
+      "id": "EDGE-recipe-component-to-output",
+      "from": "REG-recipe_component",
+      "to": "OP-production_output",
+      "type": "provides-rules",
+      "title": "состав рецептур",
+      "pmDescription": "Строки состава рецептур дают нормы компонентов."
+    },
+    {
+      "id": "EDGE-raw-stock-to-output",
+      "from": "RECORDS-raw_stock",
+      "to": "OP-production_output",
+      "type": "reads",
+      "title": "остаток и средняя цена сырья",
+      "pmDescription": "Выпуск смотрит остаток сырья и среднюю стоимость перед списанием."
+    },
+    {
+      "id": "EDGE-output-writes-fg-stock",
+      "from": "OP-production_output",
+      "to": "RECORDS-finished_goods_stock",
+      "type": "writes",
+      "title": "приход готовой продукции",
+      "pmDescription": "Выпуск увеличивает остаток готовой продукции."
+    },
+    {
+      "id": "EDGE-output-writes-raw-stock",
+      "from": "OP-production_output",
+      "to": "RECORDS-raw_stock",
+      "type": "writes",
+      "title": "списание сырья",
+      "pmDescription": "Выпуск уменьшает остаток сырья."
+    },
+    {
+      "id": "EDGE-output-writes-production-plan",
+      "from": "OP-production_output",
+      "to": "RECORDS-production_plan",
+      "type": "writes",
+      "title": "факт выпуска",
+      "pmDescription": "Выпуск добавляет факт в план-факт выпуска."
+    },
+    {
+      "id": "EDGE-raw-stock-to-report",
+      "from": "RECORDS-raw_stock",
+      "to": "REPORT-raw_stock_report",
+      "type": "reads",
+      "title": "отчет по сырью",
+      "pmDescription": "Отчет показывает остатки сырья."
+    },
+    {
+      "id": "EDGE-production-plan-to-report",
+      "from": "RECORDS-production_plan",
+      "to": "REPORT-production_plan_report",
+      "type": "reads",
+      "title": "отчет план/факт",
+      "pmDescription": "Отчет сравнивает план и факт выпуска."
+    },
+    {
+      "id": "EDGE-fg-stock-to-report",
+      "from": "RECORDS-finished_goods_stock",
+      "to": "REPORT-fg_stock_report",
+      "type": "reads",
+      "title": "отчет по готовой продукции",
+      "pmDescription": "Отчет показывает остатки готовой продукции."
+    },
+    {
+      "id": "EDGE-user-step-receipt-to-inventory",
+      "from": "OP-raw_receipt",
+      "to": "OP-raw_inventory",
+      "type": "user-sequence",
+      "title": "2. сверить остатки",
+      "pmDescription": "После поступления пользователь при необходимости делает инвентаризацию, чтобы привести учетный остаток сырья к фактическому."
+    },
+    {
+      "id": "EDGE-user-step-inventory-to-output",
+      "from": "OP-raw_inventory",
+      "to": "OP-production_output",
+      "type": "user-sequence",
+      "title": "3. оформить выпуск",
+      "pmDescription": "После проверки сырьевого склада пользователь оформляет выпуск продукции."
+    },
+    {
+      "id": "EDGE-user-step-task-to-output",
+      "from": "OP-production_task",
+      "to": "OP-production_output",
+      "type": "user-sequence",
+      "title": "задание выбирается в выпуске",
+      "pmDescription": "Производственное задание уже создано на этапе 1a; в выпуске пользователь выбирает его и заполняет строки выпуска по заданию."
+    }
+  ],
+  "views": [
+    {
+      "id": "VIEW-main-map",
+      "title": "Общая карта объектов 1b",
+      "description": "Главный экран визуализации для PM: документы слева, регистры в центре, отчеты справа, существующие объекты 1a сверху.",
+      "includedGroups": [
+        "GROUP-documents",
+        "GROUP-storage",
+        "GROUP-existing-inputs",
+        "GROUP-reports"
+      ],
+      "includedEdgeTypes": [
+        "writes",
+        "reads",
+        "provides-input",
+        "provides-rules"
+      ]
+    },
+    {
+      "id": "VIEW-user-pipeline",
+      "title": "Порядок работы пользователя",
+      "description": "Pipeline-схема: в какой последовательности пользователь создает и использует документы на этапе 1b.",
+      "layout": "pipeline",
+      "includedNodeIds": [
+        "OP-raw_receipt",
+        "OP-raw_inventory",
+        "OP-production_task",
+        "OP-production_output"
+      ],
+      "includedEdgeTypes": [
+        "user-sequence"
+      ]
+    },
+    {
+      "id": "VIEW-posting-only",
+      "title": "Какие документы что записывают",
+      "description": "Упрощенный вид только для проведения документов в регистры.",
+      "includedNodeIds": [
+        "OP-raw_receipt",
+        "OP-raw_inventory",
+        "OP-production_output",
+        "RECORDS-raw_stock",
+        "RECORDS-finished_goods_stock",
+        "RECORDS-supplier_settlements",
+        "RECORDS-production_plan"
+      ],
+      "includedEdgeTypes": [
+        "writes"
+      ]
+    },
+    {
+      "id": "VIEW-reports-only",
+      "title": "Какие отчеты откуда берут данные",
+      "description": "Упрощенный вид для проверки отчетности этапа 1b.",
+      "includedNodeIds": [
+        "RECORDS-raw_stock",
+        "RECORDS-finished_goods_stock",
+        "RECORDS-production_plan",
+        "REPORT-raw_stock_report",
+        "REPORT-production_plan_report",
+        "REPORT-fg_stock_report"
+      ],
+      "includedEdgeTypes": [
+        "reads"
+      ]
+    }
+  ],
+  "legend": {
+    "lifecycle": {
+      "create": "Будет создано на этапе 1b",
+      "reuse-existing": "Уже есть из этапа 1a и используется в 1b"
+    },
+    "edgeTypes": {
+      "writes": "Документ записывает данные в регистр",
+      "reads": "Объект читает данные",
+      "provides-input": "Существующий объект дает исходные данные",
+      "provides-rules": "Существующий объект задает правила расчета",
+      "user-sequence": "Последовательность действий пользователя"
+    }
+  }
+}
