@@ -1,13 +1,19 @@
 # BaSYS-AI Workspace For OpenCode
 
-Read these files at the beginning of every project session:
+At the beginning of every project session, read the fast-start files first:
 
 - `PROJECT_CONTEXT.md` - current project state: where we are, what is done, what is next.
 - `OPEN_QUESTIONS.md` - open questions and accepted decisions.
+- `project/docs/session-state.md` - current run state and compaction-safe operational memory.
+
+Load workflow/pattern files lazily by task type:
+
 - `project/docs/workflow.md` - mandatory PM -> analyst -> engineer workflow with review loops.
 - `project/docs/patterns/metadata-workflow.md` - reusable metadata workflow lessons and artifact-retention rules.
 
-Without these files, recommendations about the project are likely to be stale.
+Use `project/docs/workflow.md` when coordinating specs, reviews, analyst/engineer work, approvals or autopilot. Use `project/docs/patterns/metadata-workflow.md` when creating, editing or reviewing BaSYS metadata, forms, reports, commands, workflows, records or menus. For pure informational questions, quick status checks or OpenCode infrastructure discussion, do not pre-read the lazy files unless the task needs them.
+
+Without the fast-start files, recommendations about the project are likely to be stale. Without the lazy files, workflow/metadata recommendations may be incomplete.
 
 ## Evidence Rule (Facts Only)
 
@@ -43,6 +49,21 @@ The workspace uses specialized OpenCode agents in separate chats:
 PM assistant coordinates the workflow but does not replace `analyst` for design work or `engineer` for metadata implementation.
 
 The human PM approves business decisions, scope, and the functional result on a BaSYS stand. The PM is not expected to read or approve metadata JSON line-by-line; technical metadata checks are the responsibility of agents and tools.
+
+## Session Memory
+
+`project/docs/session-state.md` is the operational memory for the current OpenCode run. It is short-lived state, not a project history archive.
+
+Update `project/docs/session-state.md` when at least one applies:
+
+- a long or autonomous run starts;
+- PM makes an important decision that affects the current run;
+- active files, blockers or next steps change materially;
+- the session is likely to compact before the work is finished.
+
+At the end of a meaningful work chapter, move durable facts into `PROJECT_CONTEXT.md`, `OPEN_QUESTIONS.md`, ADRs or `project/docs/patterns/`, then reset `session-state.md` for the next run. Do not preserve full experiment transcripts there.
+
+OpenCode compaction is assisted by `.opencode/plugins/session-memory.ts`, which injects `PROJECT_CONTEXT.md`, `OPEN_QUESTIONS.md` and `project/docs/session-state.md` into the compaction context. Restart OpenCode after changing plugin files.
 
 ## OpenCode Infrastructure
 

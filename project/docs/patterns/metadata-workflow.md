@@ -49,6 +49,9 @@
 - При появлении симптомов (после компакции теряется состояние автопилота, оркестратор повторно запрашивает уже сделанные шаги) первым шагом поднимать `preserve_recent_tokens`, а не `tail_turns`.
 - Источник правды по семантике полей — `https://opencode.ai/config.json` и страница `https://opencode.ai/docs/config/`.
 - Долговременное состояние всё равно держать в файлах (`PROJECT_CONTEXT.md`, `OPEN_QUESTIONS.md`, `project/docs/specs/`), а не полагаться на context window.
+- Оперативное состояние текущего run держать в `project/docs/session-state.md`: текущая задача, статус, решения PM, активные файлы, blockers, next steps. Это не архив истории и не замена `PROJECT_CONTEXT.md`.
+- `.opencode/plugins/session-memory.ts` подмешивает `PROJECT_CONTEXT.md`, `OPEN_QUESTIONS.md` и `project/docs/session-state.md` в `experimental.session.compacting`. Плагин помогает компакции, но не заменяет дисциплину checkpoint: агент всё равно должен обновлять `session-state.md` перед длинным run, после важных решений и перед рисковой компакцией.
+- После завершения смысловой главы устойчивые факты переносить в `PROJECT_CONTEXT.md`, `OPEN_QUESTIONS.md`, ADR или patterns; `session-state.md` очищать или переводить на следующую задачу.
 
 ## Read-only Защита Внешних Папок
 
