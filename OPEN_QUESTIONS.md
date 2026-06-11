@@ -3,12 +3,7 @@
 ## Обсуждается сейчас
 
 - sp-002 — план `sp-002-seed-data-1a-plan.md` переведён в `approved`; engineer реализует два workflow `seed_refs_1a`/`seed_docs_1a` в `metadata/`.
-- sp-001 часть 1b — детализация `review` возвращена analyst (PM-chat review 2026-06-02, `needs changes`). Findings к исправлению до повторного ревью:
-  - **Major 1.** `raw_inventory` проведение в `raw_stock`: условия Plus/Minus через `||` (`diff_qty`/`diff_amount`) при разных знаках дают двойную искажённую запись. Сделать условия взаимоисключающими (один знаковый драйвер) либо блокировать сохранение при разных знаках через команду/валидацию, а не «контролем пользователя».
-  - **Major 2.** `production_plan_report`: план пишется с `period = plan_date`, факт — с `period = production_output.date`; группировка по точной дате разводит план и факт в разные строки. Группировать по продукции/складу/организации за период, дату — только фильтром.
-  - **Medium 3.** Деление на ноль в средней цене: `avg_price` в `calc_raw_writeoff` (остаток) и `amount/quantity` в `raw_stock_report` — добавить защиту при нулевом количестве (в отчёте явно отсутствует).
-  - **Minor.** `production_output.production_task` необязателен, но `fill_from_task` без него не работает — добавить понятную ошибку; подкрепить чтение чужой detail-table ссылкой на `queryBuilder.md`; явно зафиксировать, что себестоимость ГП в 1b не ведётся (решение для 1c).
-  - Проверено ок: перенос `supplier_settlements` в 1b, средневзвешенное списание через `raw_writeoff` без RecordsSource-DB-запроса (evidence), факт в `production_plan` как `planned_qty=0/output_qty=факт`, исключение текущего документа по `meta_object+object_uid`, имена/служебные колонки, чек-листы 1b A/B/C.
+- Судьба legacy `sp-001-bakery-stage1b.md` после конвертации в `sp-001-bakery-stage1b.json`: оставить до приёмки 1b и затем заархивировать, или удалить сейчас.
 
 ## В очереди
 
@@ -24,7 +19,10 @@ _(пока пусто)_
 
 ## Решено
 
+- Формат ТЗ переведён на `spec-json-v0.1` (PM 2026-06-10): ТЗ — JSON `<sp-id>.json` по `_spec-json.schema.json` (draft 2020-12), валидация `validate_spec.py` (Python+jsonschema) обязательна. Решения PM: формат везде (ручной и autopilot); полная JSON-schema + валидация; 1b сконвертирован как первый носитель (`sp-001-bakery-stage1b.json`). Markdown-ТЗ `_template.md` deprecated. Агенты и процессные доки обновлены (ADR 2026-06-10). Требуется перезапуск OpenCode для применения изменений `.opencode/agents/*`.
+- sp-001 1b design-пакет — PM одобрил направление и правки (N1/N2/M1/M2) 2026-06-10: openQuestions синхронизированы, контракт `production_plan` (1a §4.12) зафиксирован, проведение инвентаризации разбито на Plus/Minus, долг поставщику построчно. ТЗ 1b теперь ведётся как `sp-001-bakery-stage1b.json`.
 - sp-002 — план реализации `sp-002-seed-data-1a-plan.md` `approved` (2026-06-02): scope = только два новых workflow, без правок существующей metadata и `system/dataTypes.json`, dataset используется буквально, composite `SearchBy` вынесен как bench-риск. При approve зафиксированы две обязательные правки для реализации: JSON в camelCase (как `requirement_calc.json`, не PascalCase reference) и счётчик `.bjs` = 14.
+- sp-001 1b — PM 2026-06-10 изменил архитектурное решение по стоимости сырья и именованию регистров: `raw_movement` ведёт движения количества сырья; `raw_cost_movement` хранит движения стоимости сырья; `finished_goods_movement` ведёт движения готовой продукции; `supplier_debt_movement` ведёт движения долга поставщикам. Расход стоимости сырья и средневзвешенная оценка переносятся в будущий документ закрытия месяца; инвентаризация 1b корректирует только количество.
 - sp-002 — ТЗ `sp-002-seed-data-1a.md` `approved` (2026-06-02) после двух кругов ревью: закрыты уникальность seed-ключей (§5.3), исключение из `create-fill-workflow` title-prefix для multi-target `seed_refs_1a`, запрет engineer генерировать enum `code` без PM. Тестовый набор `sp-002-seed-data-1a-dataset.md` создан PM-chat и `approved` как вход §5.2 (3 рецептуры, многоуровневая цепочка P-001 → S-001 → сырьё, 2 заявки, 1 задание).
 - sp-002 — методика загрузки тестовых данных 1a `approved` (2026-06-02) после трёх кругов ревью. Архитектура: два ручных workflow `seed_refs_1a` (enum/catalog/register + рецептуры/прайс) и `seed_docs_1a` (документы с `CreateRecords=true`), без оркестратора. Операции — только Create, `number` не маппится, документы неидемпотентны (маркер в `comment`). Введено правило доказательности (ADR-2026-06-02) после двух инцидентов с фантазийными допущениями.
 - Metadata части 1a реализованы Engineer и импортированы в BaSYS без ошибок импорта (2026-06-02); 17 metaobject закоммичены локально в `metadata/` (`bd7bbe9`). План реализации + import-notes закоммичены и запушены в workspace-репо. ТЗ/план остаются `approved` до функциональной приёмки.

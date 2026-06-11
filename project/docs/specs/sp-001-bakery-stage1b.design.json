@@ -3,8 +3,8 @@
   "meta": {
     "id": "sp-001-bakery-stage1b",
     "title": "Хлебозавод — этап 1b, склад сырья и выпуск",
-    "status": "design-draft",
-    "version": 1,
+    "status": "approved",
+    "version": 2,
     "domain": "bakery-operations",
     "sourceInputs": [
       "project/docs/specs/sp-001-bakery-stage1-design.md",
@@ -13,7 +13,7 @@
   },
   "problem": {
     "summary": "Добавить к операционному ядру хлебозавода учет сырья, выпуск готовой продукции и отчеты по остаткам и план-факту.",
-    "businessGoal": "Пользователь должен учесть поступление сырья, скорректировать остатки инвентаризацией, выпустить продукцию со списанием сырья по рецептурам и увидеть остатки сырья, готовой продукции и план-факт выпуска.",
+    "businessGoal": "Пользователь должен учесть поступление сырья, отдельно отразить известную стоимость поступления, скорректировать количественные остатки инвентаризацией, выпустить продукцию со списанием количества сырья по рецептурам и увидеть остатки сырья, готовой продукции и план-факт выпуска.",
     "targetUsers": [
       "кладовщик",
       "начальник производства",
@@ -25,10 +25,11 @@
       "Нет оперативных отчетов по остаткам сырья и готовой продукции."
     ],
     "successCriteria": [
-      "Поступление сырья увеличивает сырьевой остаток и долг поставщику.",
-      "Инвентаризация корректирует сырьевой остаток без двойного движения одной строки.",
-      "Выпуск продукции приходует готовую продукцию, списывает сырье и пишет факт выпуска.",
-      "Отчеты показывают остатки сырья, остатки готовой продукции и план-факт выпуска."
+      "Поступление сырья увеличивает движение сырья и движение долга поставщику.",
+      "Поступление сырья отдельно отражает стоимость поступления в raw_cost_movement.",
+      "Инвентаризация корректирует только количественное движение сырья без двойного движения одной строки.",
+      "Выпуск продукции приходует готовую продукцию, списывает количество сырья и пишет факт выпуска.",
+      "Отчеты показывают количественные остатки сырья, остатки готовой продукции и план-факт выпуска."
     ]
   },
   "scope": {
@@ -36,7 +37,8 @@
       "Поступление сырья от поставщика.",
       "Инвентаризация сырья.",
       "Выпуск продукции.",
-      "Остатки сырья по количеству и стоимости.",
+      "Остатки сырья по количеству.",
+      "Стоимость поступления сырья в отдельном регистре raw_cost_movement.",
       "Остатки готовой продукции по количеству.",
       "Факт выпуска в existing records/production_plan.",
       "Рост долга поставщику при поступлении сырья.",
@@ -44,8 +46,9 @@
     ],
     "outOfScope": [
       "Отгрузка клиентам.",
-      "Оплата поставщику и погашение supplier_settlements.",
+      "Оплата поставщику и погашение supplier_debt_movement.",
       "Поступление денег от клиентов.",
+      "Расчет расхода стоимости сырья и средневзвешенной стоимости списания.",
       "Себестоимость готовой продукции.",
       "FIFO/FEFO, партии, сроки годности.",
       "Складской учет полуфабрикатов.",
@@ -53,19 +56,20 @@
     ],
     "assumptions": [
       "Объекты этапа 1a импортированы и доступны до реализации 1b.",
-      "Номенклатура использует типы raw, semi_finished, product из этапа 1a.",
-      "Поступление сырья должно сразу фиксировать рост долга поставщику, хотя погашение долга остается в 1c."
+      "Номенклатура использует типы raw, semi_product, product из этапа 1a.",
+      "Поступление сырья должно сразу фиксировать движение долга поставщику, хотя погашение долга остается в 1c.",
+      "Стоимостное списание сырья будет проектироваться отдельно в документе закрытия месяца."
     ]
   },
   "architectureDecisions": [
     {
       "id": "DEC-001",
-      "title": "Сырье учитывается накопительным регистром raw_stock",
-      "decision": "Создать records/raw_stock с аналитиками company, warehouse, raw_item и ресурсами quantity, amount.",
-      "rationale": "Для 1b нужно считать остаток сырья на дату по складу и позиции, а также средневзвешенную стоимость для списания в производство.",
+      "title": "Количество и стоимость сырья разделены по разным регистрам",
+      "decision": "Создать records/raw_movement с аналитиками company, warehouse, raw_item и ресурсом quantity; создать records/raw_cost_movement с теми же аналитиками и ресурсом amount.",
+      "rationale": "1b должен вести оперативный склад без расчета средней стоимости при выпуске. Стоимость поступления известна сразу и отражается отдельно; расход стоимости сырья переносится в закрытие месяца.",
       "alternativesRejected": [
-        "Не вести стоимость сырья в регистре и считать списание только количественно.",
-        "Вести отдельные регистры приходов и расходов сырья."
+        "Хранить quantity и amount в едином регистре сырья.",
+        "Рассчитывать средневзвешенную стоимость при каждом выпуске 1b."
       ],
       "evidence": [
         {
@@ -75,7 +79,8 @@
         }
       ],
       "affects": [
-        "RECORDS-raw_stock",
+        "RECORDS-raw_movement",
+        "RECORDS-raw_cost_movement",
         "OP-raw_receipt",
         "OP-raw_inventory",
         "OP-production_output",
@@ -86,10 +91,10 @@
     {
       "id": "DEC-002",
       "title": "Поступление сырья пишет приход сырья и долг поставщику",
-      "decision": "operation/raw_receipt проводит строки raw_items в records/raw_stock направлением Plus и в records/supplier_settlements направлением Plus.",
-      "rationale": "При закупке одновременно увеличивается складской остаток сырья и кредиторская задолженность перед поставщиком.",
+      "decision": "operation/raw_receipt проводит строки raw_items в records/raw_movement направлением Plus по quantity, в records/raw_cost_movement направлением Plus по amount и в records/supplier_debt_movement направлением Plus по amount.",
+      "rationale": "При закупке одновременно увеличивается количественный складской остаток сырья, отражается известная стоимость поступления и возникает кредиторская задолженность перед поставщиком.",
       "alternativesRejected": [
-        "Отложить supplier_settlements до этапа 1c.",
+        "Отложить движение долга поставщикам до этапа 1c.",
         "Фиксировать долг поставщику только отчетом без регистра записей."
       ],
       "evidence": [
@@ -101,19 +106,20 @@
       ],
       "affects": [
         "OP-raw_receipt",
-        "RECORDS-raw_stock",
-        "RECORDS-supplier_settlements"
+        "RECORDS-raw_movement",
+        "RECORDS-raw_cost_movement",
+        "RECORDS-supplier_debt_movement"
       ],
       "status": "accepted"
     },
     {
       "id": "DEC-003",
-      "title": "Инвентаризация корректирует raw_stock одной записью на строку",
-      "decision": "operation/raw_inventory рассчитывает diff_qty и diff_amount; направление Plus или Minus выбирается по единому знаковому драйверу, чтобы строка не могла создать двойное движение.",
-      "rationale": "Review выявил риск двойного проведения при разных знаках количества и стоимости. Правило направления должно быть архитектурным, а не оставаться на усмотрение implementation.",
+      "title": "Инвентаризация корректирует raw_movement одной записью на строку",
+      "decision": "operation/raw_inventory рассчитывает diff_qty и проводит строку в raw_movement направлением Plus или Minus только по знаку diff_qty.",
+      "rationale": "После разделения количества и стоимости инвентаризация 1b корректирует только quantity. Это исключает прежний риск двойного проведения по разным знакам quantity/amount.",
       "alternativesRejected": [
-        "Разрешить условия Plus/Minus через независимые OR-выражения.",
-        "Переложить контроль разных знаков только на пользователя."
+        "Корректировать стоимость сырья в инвентаризации 1b.",
+        "Оставить стоимостную разницу в регистре движения сырья."
       ],
       "evidence": [
         {
@@ -124,19 +130,19 @@
       ],
       "affects": [
         "OP-raw_inventory",
-        "RECORDS-raw_stock",
+        "RECORDS-raw_movement",
         "CMD-fill_current_stock"
       ],
       "status": "accepted"
     },
     {
       "id": "DEC-004",
-      "title": "Выпуск продукции списывает сырье по средневзвешенной стоимости",
-      "decision": "operation/production_output заполняет raw_writeoff командой calc_raw_writeoff, рассчитывая потребность по рецептурам и среднюю цену как stock_amount_before / stock_qty_before.",
-      "rationale": "PM выбрал средневзвешенную оценку сырья. Произвольный DB-запрос внутри RecordsSource не используется, потому что возможность не подтверждена документацией.",
+      "title": "Выпуск продукции списывает сырье только количественно",
+      "decision": "operation/production_output заполняет raw_writeoff командой calc_raw_writeoff, рассчитывая количественную потребность по рецептурам и проверяя достаточность quantity в raw_movement.",
+      "rationale": "Оперативный выпуск не должен зависеть от расчета стоимости сырья. Расход стоимости по средней стоимости будет сформирован будущим закрытием месяца.",
       "alternativesRejected": [
         "Списывать сырье через RecordsSource с произвольным DB-запросом.",
-        "Списывать сырье без стоимостной оценки.",
+        "Рассчитывать средневзвешенную стоимость при проведении выпуска 1b.",
         "Использовать FIFO/FEFO в первой очереди."
       ],
       "evidence": [
@@ -159,7 +165,7 @@
       "affects": [
         "OP-production_output",
         "CMD-calc_raw_writeoff",
-        "RECORDS-raw_stock",
+        "RECORDS-raw_movement",
         "CAT-recipe",
         "REG-recipe_component"
       ],
@@ -168,7 +174,7 @@
     {
       "id": "DEC-005",
       "title": "Готовая продукция в 1b хранится только в количестве",
-      "decision": "Создать records/finished_goods_stock с quantity без amount; себестоимость готовой продукции не рассчитывать в 1b.",
+      "decision": "Создать records/finished_goods_movement с quantity без amount; себестоимость готовой продукции не рассчитывать в 1b.",
       "rationale": "1b должен дать оперативный склад готовой продукции, но денежная оценка выпуска и себестоимость ГП перенесены за пределы этапа.",
       "alternativesRejected": [
         "Рассчитывать себестоимость готовой продукции уже в 1b.",
@@ -182,7 +188,7 @@
         }
       ],
       "affects": [
-        "RECORDS-finished_goods_stock",
+        "RECORDS-finished_goods_movement",
         "OP-production_output",
         "REPORT-fg_stock_report"
       ],
@@ -236,8 +242,8 @@
         "REPORT-raw_stock_report",
         "REPORT-production_plan_report",
         "REPORT-fg_stock_report",
-        "RECORDS-raw_stock",
-        "RECORDS-finished_goods_stock",
+        "RECORDS-raw_movement",
+        "RECORDS-finished_goods_movement",
         "RECORDS-production_plan"
       ],
       "status": "accepted"
@@ -246,33 +252,45 @@
   "targetArchitecture": {
     "metadataObjects": [
       {
-        "id": "RECORDS-raw_stock",
+        "id": "RECORDS-raw_movement",
         "kind": "records",
-        "name": "raw_stock",
-        "title": "Остатки сырья",
-        "purpose": "Хранит движения количества и стоимости сырья по организации, складу и сырьевой номенклатуре.",
+        "name": "raw_movement",
+        "title": "Движение сырья",
+        "purpose": "Хранит количественные движения сырья по организации, складу и сырьевой номенклатуре.",
         "lifecycle": "create",
         "sourceDecisionIds": [
           "DEC-001"
         ]
       },
       {
-        "id": "RECORDS-finished_goods_stock",
+        "id": "RECORDS-raw_cost_movement",
         "kind": "records",
-        "name": "finished_goods_stock",
-        "title": "Остатки готовой продукции",
-        "purpose": "Хранит оперативные остатки готовой продукции по количеству между выпуском и будущей отгрузкой.",
+        "name": "raw_cost_movement",
+        "title": "Движение стоимости сырья",
+        "purpose": "Хранит стоимостные движения сырья отдельно от количественного склада; в 1b получает только стоимость поступления.",
+        "lifecycle": "create",
+        "sourceDecisionIds": [
+          "DEC-001",
+          "DEC-002"
+        ]
+      },
+      {
+        "id": "RECORDS-finished_goods_movement",
+        "kind": "records",
+        "name": "finished_goods_movement",
+        "title": "Движение готовой продукции",
+        "purpose": "Хранит количественные движения готовой продукции между выпуском и будущей отгрузкой.",
         "lifecycle": "create",
         "sourceDecisionIds": [
           "DEC-005"
         ]
       },
       {
-        "id": "RECORDS-supplier_settlements",
+        "id": "RECORDS-supplier_debt_movement",
         "kind": "records",
-        "name": "supplier_settlements",
-        "title": "Расчеты с поставщиками",
-        "purpose": "Фиксирует рост кредиторской задолженности при поступлении сырья; погашение будет добавлено в 1c.",
+        "name": "supplier_debt_movement",
+        "title": "Движение долга поставщикам",
+        "purpose": "Фиксирует движения кредиторской задолженности при поступлении сырья; погашение будет добавлено в 1c.",
         "lifecycle": "create",
         "sourceDecisionIds": [
           "DEC-002"
@@ -305,7 +323,7 @@
         "kind": "operation",
         "name": "raw_inventory",
         "title": "Инвентаризация сырья",
-        "purpose": "Корректирует учетный остаток сырья до фактического количества и стоимости.",
+        "purpose": "Корректирует учетный остаток сырья до фактического количества.",
         "lifecycle": "create",
         "sourceDecisionIds": [
           "DEC-003"
@@ -362,7 +380,7 @@
         "kind": "data_view",
         "name": "raw_stock_report",
         "title": "Остатки сырья",
-        "purpose": "Показывает количество, стоимость и среднюю цену сырья на дату.",
+        "purpose": "Показывает количественные остатки сырья на дату.",
         "lifecycle": "create",
         "sourceDecisionIds": [
           "DEC-007"
@@ -395,7 +413,7 @@
       {
         "id": "FLOW-raw-receipt",
         "title": "Поступление сырья",
-        "summary": "Кладовщик оформляет поступление сырья; система увеличивает сырьевой остаток и долг поставщику.",
+        "summary": "Кладовщик оформляет поступление сырья; система увеличивает количественный сырьевой остаток, отражает стоимость поступления и долг поставщику.",
         "actors": [
           "кладовщик"
         ],
@@ -403,12 +421,13 @@
           "Создать raw_receipt.",
           "Заполнить организацию, поставщика, склад сырья и строки raw_items.",
           "Провести документ.",
-          "Проверить приход в raw_stock и рост supplier_settlements."
+          "Проверить движение количества в raw_movement, стоимость поступления в raw_cost_movement и движение долга в supplier_debt_movement."
         ],
         "objects": [
           "OP-raw_receipt",
-          "RECORDS-raw_stock",
-          "RECORDS-supplier_settlements"
+          "RECORDS-raw_movement",
+          "RECORDS-raw_cost_movement",
+          "RECORDS-supplier_debt_movement"
         ],
         "sourceDecisionIds": [
           "DEC-001",
@@ -418,21 +437,21 @@
       {
         "id": "FLOW-raw-inventory",
         "title": "Инвентаризация сырья",
-        "summary": "Кладовщик подтягивает учетный остаток, вводит факт и проводит корректировку сырьевого склада.",
+        "summary": "Кладовщик подтягивает учетный количественный остаток, вводит факт и проводит количественную корректировку сырьевого склада.",
         "actors": [
           "кладовщик"
         ],
         "steps": [
           "Создать raw_inventory.",
           "Запустить fill_current_stock.",
-          "Ввести fact_qty и fact_amount.",
+          "Ввести fact_qty.",
           "Провести документ.",
-          "Проверить, что строка дала не более одного движения raw_stock."
+          "Проверить, что строка дала не более одного движения raw_movement."
         ],
         "objects": [
           "OP-raw_inventory",
           "CMD-fill_current_stock",
-          "RECORDS-raw_stock"
+          "RECORDS-raw_movement"
         ],
         "sourceDecisionIds": [
           "DEC-001",
@@ -442,7 +461,7 @@
       {
         "id": "FLOW-production-output",
         "title": "Выпуск продукции",
-        "summary": "Начальник производства оформляет выпуск, рассчитывает сырье к списанию и проводит выпуск.",
+        "summary": "Начальник производства оформляет выпуск, рассчитывает количество сырья к списанию и проводит выпуск.",
         "actors": [
           "начальник производства"
         ],
@@ -451,15 +470,15 @@
           "Заполнить выпуск по production_task через fill_from_task или вручную.",
           "Рассчитать raw_writeoff через calc_raw_writeoff.",
           "Провести документ.",
-          "Проверить finished_goods_stock, raw_stock и production_plan."
+          "Проверить finished_goods_movement, raw_movement и production_plan."
         ],
         "objects": [
           "OP-production_output",
           "OP-production_task",
           "CMD-fill_from_task",
           "CMD-calc_raw_writeoff",
-          "RECORDS-finished_goods_stock",
-          "RECORDS-raw_stock",
+          "RECORDS-finished_goods_movement",
+          "RECORDS-raw_movement",
           "RECORDS-production_plan"
         ],
         "sourceDecisionIds": [
@@ -472,13 +491,13 @@
     "dataFlows": [
       {
         "id": "DATAFLOW-raw-stock",
-        "title": "Движения сырья",
+        "title": "Количественные движения сырья",
         "from": [
           "OP-raw_receipt",
           "OP-raw_inventory",
           "OP-production_output"
         ],
-        "to": "RECORDS-raw_stock",
+        "to": "RECORDS-raw_movement",
         "readBy": [
           "REPORT-raw_stock_report",
           "CMD-fill_current_stock",
@@ -492,12 +511,25 @@
         ]
       },
       {
+        "id": "DATAFLOW-raw-cost-movement",
+        "title": "Стоимостные движения сырья",
+        "from": [
+          "OP-raw_receipt"
+        ],
+        "to": "RECORDS-raw_cost_movement",
+        "readBy": [],
+        "sourceDecisionIds": [
+          "DEC-001",
+          "DEC-002"
+        ]
+      },
+      {
         "id": "DATAFLOW-finished-goods",
         "title": "Движения готовой продукции",
         "from": [
           "OP-production_output"
         ],
-        "to": "RECORDS-finished_goods_stock",
+        "to": "RECORDS-finished_goods_movement",
         "readBy": [
           "REPORT-fg_stock_report"
         ],
@@ -525,25 +557,39 @@
     ],
     "postingFlows": [
       {
-        "id": "POSTING-raw-receipt-to-raw-stock",
-        "title": "raw_receipt -> raw_stock",
+        "id": "POSTING-raw-receipt-to-raw-movement",
+        "title": "raw_receipt -> raw_movement",
         "sourceObject": "OP-raw_receipt",
         "targetRecords": [
-          "RECORDS-raw_stock"
+          "RECORDS-raw_movement"
         ],
         "direction": "Plus",
-        "summary": "Строки raw_items увеличивают quantity и amount сырья.",
+        "summary": "Строки raw_items увеличивают quantity сырья.",
         "sourceDecisionIds": [
           "DEC-001",
           "DEC-002"
         ]
       },
       {
-        "id": "POSTING-raw-receipt-to-supplier-settlements",
-        "title": "raw_receipt -> supplier_settlements",
+        "id": "POSTING-raw-receipt-to-raw-cost-movement",
+        "title": "raw_receipt -> raw_cost_movement",
         "sourceObject": "OP-raw_receipt",
         "targetRecords": [
-          "RECORDS-supplier_settlements"
+          "RECORDS-raw_cost_movement"
+        ],
+        "direction": "Plus",
+        "summary": "Суммы строк raw_items увеличивают стоимость поступления сырья.",
+        "sourceDecisionIds": [
+          "DEC-001",
+          "DEC-002"
+        ]
+      },
+      {
+        "id": "POSTING-raw-receipt-to-supplier-debt-movement",
+        "title": "raw_receipt -> supplier_debt_movement",
+        "sourceObject": "OP-raw_receipt",
+        "targetRecords": [
+          "RECORDS-supplier_debt_movement"
         ],
         "direction": "Plus",
         "summary": "Суммы строк raw_items увеличивают долг поставщику.",
@@ -552,24 +598,39 @@
         ]
       },
       {
-        "id": "POSTING-raw-inventory-to-raw-stock",
-        "title": "raw_inventory -> raw_stock",
+        "id": "POSTING-raw-inventory-to-raw-movement-plus",
+        "title": "raw_inventory -> raw_movement (Plus)",
         "sourceObject": "OP-raw_inventory",
         "targetRecords": [
-          "RECORDS-raw_stock"
+          "RECORDS-raw_movement"
         ],
-        "direction": "Plus-or-Minus",
-        "summary": "Разница fact-current проводится один раз по единому знаковому драйверу.",
+        "direction": "Plus",
+        "condition": "$r.diff_qty > 0",
+        "summary": "Положительная разница fact-current приходует количество (quantity ← $r.diff_qty).",
         "sourceDecisionIds": [
           "DEC-003"
         ]
       },
       {
-        "id": "POSTING-production-output-to-fg-stock",
-        "title": "production_output -> finished_goods_stock",
+        "id": "POSTING-raw-inventory-to-raw-movement-minus",
+        "title": "raw_inventory -> raw_movement (Minus)",
+        "sourceObject": "OP-raw_inventory",
+        "targetRecords": [
+          "RECORDS-raw_movement"
+        ],
+        "direction": "Minus",
+        "condition": "$r.diff_qty < 0",
+        "summary": "Отрицательная разница fact-current списывает количество (quantity ← -$r.diff_qty). Условия Plus/Minus взаимоисключающие: одна строка дает не более одного движения.",
+        "sourceDecisionIds": [
+          "DEC-003"
+        ]
+      },
+      {
+        "id": "POSTING-production-output-to-fg-movement",
+        "title": "production_output -> finished_goods_movement",
         "sourceObject": "OP-production_output",
         "targetRecords": [
-          "RECORDS-finished_goods_stock"
+          "RECORDS-finished_goods_movement"
         ],
         "direction": "Plus",
         "summary": "Строки outputs увеличивают количество готовой продукции.",
@@ -578,14 +639,14 @@
         ]
       },
       {
-        "id": "POSTING-production-output-to-raw-stock",
-        "title": "production_output -> raw_stock",
+        "id": "POSTING-production-output-to-raw-movement",
+        "title": "production_output -> raw_movement",
         "sourceObject": "OP-production_output",
         "targetRecords": [
-          "RECORDS-raw_stock"
+          "RECORDS-raw_movement"
         ],
         "direction": "Minus",
-        "summary": "Строки raw_writeoff уменьшают quantity и amount сырья.",
+        "summary": "Строки raw_writeoff уменьшают quantity сырья; стоимость списания в 1b не формируется.",
         "sourceDecisionIds": [
           "DEC-004"
         ]
@@ -610,7 +671,7 @@
         "name": "fill_current_stock",
         "title": "Заполнить учетные остатки",
         "ownerObjectId": "OP-raw_inventory",
-        "purpose": "Заполняет current_qty и current_amount по raw_stock на дату документа, исключая текущий документ при повторном расчете.",
+        "purpose": "Заполняет current_qty по raw_movement на дату документа, исключая текущий документ при повторном расчете.",
         "sourceDecisionIds": [
           "DEC-003"
         ]
@@ -630,7 +691,7 @@
         "name": "calc_raw_writeoff",
         "title": "Рассчитать списание сырья",
         "ownerObjectId": "OP-production_output",
-        "purpose": "Рассчитывает raw_writeoff по outputs, рецептурам и средневзвешенной стоимости сырья; блокирует деление на ноль и недостаток сырья.",
+        "purpose": "Рассчитывает количественный raw_writeoff по outputs и рецептурам; проверяет нулевой/недостаточный остаток сырья.",
         "sourceDecisionIds": [
           "DEC-004"
         ]
@@ -640,16 +701,14 @@
     "reports": [
       {
         "reportId": "REPORT-raw_stock_report",
-        "source": "RECORDS-raw_stock",
+        "source": "RECORDS-raw_movement",
         "groupBy": [
           "company",
           "warehouse",
           "raw_item"
         ],
         "metrics": [
-          "sum(quantity)",
-          "sum(amount)",
-          "avg_price = amount / quantity when quantity != 0"
+          "sum(quantity)"
         ],
         "sourceDecisionIds": [
           "DEC-007"
@@ -675,7 +734,7 @@
       },
       {
         "reportId": "REPORT-fg_stock_report",
-        "source": "RECORDS-finished_goods_stock",
+        "source": "RECORDS-finished_goods_movement",
         "groupBy": [
           "company",
           "warehouse",
@@ -709,9 +768,10 @@
       "title": "Регистры 1b",
       "goal": "Создать новые records и подготовить existing production_plan к использованию факта выпуска.",
       "includes": [
-        "RECORDS-raw_stock",
-        "RECORDS-finished_goods_stock",
-        "RECORDS-supplier_settlements",
+          "RECORDS-raw_movement",
+          "RECORDS-raw_cost_movement",
+          "RECORDS-finished_goods_movement",
+          "RECORDS-supplier_debt_movement",
         "RECORDS-production_plan"
       ],
       "dependsOn": [],
@@ -723,7 +783,7 @@
     {
       "id": "PHASE-1b-2",
       "title": "Операции склада сырья",
-      "goal": "Создать поступление и инвентаризацию сырья с проведением в raw_stock и supplier_settlements.",
+      "goal": "Создать поступление и инвентаризацию сырья с проведением в raw_movement, raw_cost_movement и supplier_debt_movement.",
       "includes": [
         "OP-raw_receipt",
         "OP-raw_inventory",
@@ -740,7 +800,7 @@
     {
       "id": "PHASE-1b-3",
       "title": "Выпуск продукции",
-      "goal": "Создать production_output с расчетом списания сырья, приходом ГП и фактом выпуска.",
+      "goal": "Создать production_output с расчетом количественного списания сырья, приходом ГП и фактом выпуска.",
       "includes": [
         "OP-production_output",
         "OP-production_task",
@@ -777,7 +837,7 @@
   "acceptanceScenarios": [
     {
       "id": "ACC-001",
-      "title": "Поступление сырья увеличивает остаток и долг поставщику",
+      "title": "Поступление сырья увеличивает движения сырья и долга поставщику",
       "role": "кладовщик",
       "preconditions": [
         "Есть организация, поставщик, склад сырья и сырьевая номенклатура."
@@ -785,18 +845,20 @@
       "steps": [
         "Создать raw_receipt с одной или несколькими строками сырья.",
         "Провести документ.",
-        "Проверить движения raw_stock.",
-        "Проверить движения supplier_settlements."
+        "Проверить движения raw_movement.",
+        "Проверить движения raw_cost_movement.",
+        "Проверить движения supplier_debt_movement."
       ],
-      "expectedResult": "Количество и стоимость сырья увеличены; долг поставщику увеличен на сумму поступления.",
+      "expectedResult": "Количество сырья увеличено в raw_movement; стоимость поступления отражена в raw_cost_movement; долг поставщику увеличен на сумму поступления в supplier_debt_movement.",
       "coveredDecisionIds": [
         "DEC-001",
         "DEC-002"
       ],
       "coveredObjectIds": [
         "OP-raw_receipt",
-        "RECORDS-raw_stock",
-        "RECORDS-supplier_settlements"
+        "RECORDS-raw_movement",
+        "RECORDS-raw_cost_movement",
+        "RECORDS-supplier_debt_movement"
       ]
     },
     {
@@ -804,14 +866,14 @@
       "title": "Инвентаризация корректирует сырье без двойного движения",
       "role": "кладовщик",
       "preconditions": [
-        "В raw_stock есть учетный остаток сырья."
+        "В raw_movement есть учетный остаток сырья."
       ],
       "steps": [
         "Создать raw_inventory.",
         "Запустить fill_current_stock.",
         "Ввести фактические остатки.",
         "Провести документ.",
-        "Проверить, что каждая строка дала не более одного движения raw_stock."
+        "Проверить, что каждая строка дала не более одного движения raw_movement."
       ],
       "expectedResult": "Остаток сырья скорректирован до факта; строка с разницей не создает одновременно Plus и Minus движения.",
       "coveredDecisionIds": [
@@ -821,12 +883,12 @@
       "coveredObjectIds": [
         "OP-raw_inventory",
         "CMD-fill_current_stock",
-        "RECORDS-raw_stock"
+        "RECORDS-raw_movement"
       ]
     },
     {
       "id": "ACC-003",
-      "title": "Выпуск продукции списывает сырье и пишет факт",
+      "title": "Выпуск продукции списывает количество сырья и пишет факт",
       "role": "начальник производства",
       "preconditions": [
         "Есть производственное задание 1a.",
@@ -838,9 +900,9 @@
         "Заполнить outputs через fill_from_task.",
         "Рассчитать raw_writeoff через calc_raw_writeoff.",
         "Провести документ.",
-        "Проверить finished_goods_stock, raw_stock и production_plan."
+        "Проверить finished_goods_movement, raw_movement и production_plan."
       ],
-      "expectedResult": "Готовая продукция оприходована, сырье списано по средневзвешенной стоимости, факт выпуска отражен в production_plan.",
+      "expectedResult": "Готовая продукция оприходована, количество сырья списано без расчета стоимости, факт выпуска отражен в production_plan.",
       "coveredDecisionIds": [
         "DEC-004",
         "DEC-005",
@@ -853,8 +915,8 @@
         "CMD-calc_raw_writeoff",
         "CAT-recipe",
         "REG-recipe_component",
-        "RECORDS-finished_goods_stock",
-        "RECORDS-raw_stock",
+        "RECORDS-finished_goods_movement",
+        "RECORDS-raw_movement",
         "RECORDS-production_plan"
       ]
     },
@@ -869,7 +931,7 @@
         "Открыть raw_stock_report.",
         "Открыть production_plan_report.",
         "Открыть fg_stock_report.",
-        "Проверить группировки и защиту средней цены от деления на ноль."
+        "Проверить группировки; raw_stock_report показывает количество без стоимости и средней цены."
       ],
       "expectedResult": "Отчеты показывают агрегированные остатки и план-факт; production_plan_report сводит план и факт за период в одну строку по продукции/складу/организации.",
       "coveredDecisionIds": [
@@ -882,13 +944,44 @@
         "REPORT-raw_stock_report",
         "REPORT-production_plan_report",
         "REPORT-fg_stock_report",
-        "RECORDS-raw_stock",
-        "RECORDS-finished_goods_stock",
+        "RECORDS-raw_movement",
+        "RECORDS-finished_goods_movement",
         "RECORDS-production_plan"
       ]
     }
   ],
-  "openQuestions": [],
+  "openQuestions": [
+    {
+      "id": "OQ-001",
+      "title": "Scope будущего документа закрытия месяца",
+      "detail": "В 1b создается raw_cost_movement, но расход стоимости сырья не формируется. Следующее ТЗ по закрытию месяца должно определить документ, период, метод средней стоимости, округление, обработку нулевых/отрицательных остатков и записи Minus в raw_cost_movement.",
+      "blocking": false,
+      "specRef": "project/docs/specs/sp-001-bakery-stage1b.md#8",
+      "relatedRiskIds": [
+        "RISK-002"
+      ]
+    },
+    {
+      "id": "OQ-002",
+      "title": "Вариант хранения факта выпуска в production_plan",
+      "detail": "В этом ТЗ выбран вариант: production_output пишет отдельные записи в существующий records/production_plan с planned_qty = 0, output_qty = факт. Если PM захочет отдельный регистр факта выпуска вместо общего production_plan, ТЗ возвращается Analyst до реализации.",
+      "blocking": false,
+      "specRef": "project/docs/specs/sp-001-bakery-stage1b.md#8",
+      "relatedDecisionIds": [
+        "DEC-006"
+      ]
+    },
+    {
+      "id": "OQ-003",
+      "title": "Отображение сальдо supplier_debt_movement в 1b",
+      "detail": "Регистр supplier_debt_movement создается в 1b, но отдельный supplier_debt_report остается в 1c. Если PM хочет видеть кредиторку сразу после поступления сырья, минимальный отчет добавляется в 1b отдельным решением.",
+      "blocking": false,
+      "specRef": "project/docs/specs/sp-001-bakery-stage1b.md#8",
+      "relatedObjectIds": [
+        "RECORDS-supplier_debt_movement"
+      ]
+    }
+  ],
   "risks": [
     {
       "id": "RISK-001",
@@ -902,19 +995,19 @@
     },
     {
       "id": "RISK-002",
-      "title": "Средняя цена требует защиты от деления на ноль",
-      "impact": "calc_raw_writeoff и raw_stock_report могут дать ошибку при нулевом остатке.",
-      "mitigation": "При stock_qty_before <= 0 команда останавливается; в отчете avg_price считается только при quantity != 0.",
+      "title": "Закрытие месяца еще не проектировалось",
+      "impact": "В 1b будет отражена стоимость поступления сырья, но расход стоимости сырья останется не сформированным до отдельного документа закрытия месяца.",
+      "mitigation": "Зафиксировать в следующем ТЗ документ закрытия месяца: период, метод средней стоимости, округление, обработку нулевых/отрицательных остатков и записи Minus в raw_cost_movement.",
       "sourceDecisionIds": [
-        "DEC-004",
-        "DEC-007"
+        "DEC-001",
+        "DEC-004"
       ]
     },
     {
       "id": "RISK-003",
       "title": "Повторный расчет остатков должен исключать текущий документ",
-      "impact": "При перепроведении raw_inventory или production_output расчет может учитывать собственные движения.",
-      "mitigation": "Команды чтения raw_stock исключают записи текущего документа по meta_object + object_uid.",
+      "impact": "При перепроведении raw_inventory или production_output расчет количественного остатка может учитывать собственные движения.",
+      "mitigation": "Команды чтения raw_movement исключают записи текущего документа по meta_object + object_uid.",
       "sourceDecisionIds": [
         "DEC-003",
         "DEC-004"
@@ -922,7 +1015,7 @@
     }
   ],
   "architectureView": {
-    "summary": "Этап 1b добавляет склад сырья и выпуск: сырье приходит через raw_receipt, корректируется raw_inventory, списывается production_output; готовая продукция приходуется production_output; отчеты читают регистры.",
+    "summary": "Этап 1b добавляет склад сырья и выпуск: количество сырья приходит через raw_receipt, корректируется raw_inventory и списывается production_output; стоимость поступления сырья пишется в raw_cost_movement; готовая продукция приходуется production_output; отчеты читают регистры.",
     "sections": [
       {
         "id": "VIEW-business-flow",
@@ -937,9 +1030,10 @@
         "id": "VIEW-data-storage",
         "title": "Где хранятся данные",
         "items": [
-          "RECORDS-raw_stock",
-          "RECORDS-finished_goods_stock",
-          "RECORDS-supplier_settlements",
+          "RECORDS-raw_movement",
+          "RECORDS-raw_cost_movement",
+          "RECORDS-finished_goods_movement",
+          "RECORDS-supplier_debt_movement",
           "RECORDS-production_plan"
         ]
       },
@@ -947,12 +1041,24 @@
         "id": "VIEW-posting",
         "title": "Проведение документов",
         "items": [
-          "POSTING-raw-receipt-to-raw-stock",
-          "POSTING-raw-receipt-to-supplier-settlements",
-          "POSTING-raw-inventory-to-raw-stock",
-          "POSTING-production-output-to-fg-stock",
-          "POSTING-production-output-to-raw-stock",
+          "POSTING-raw-receipt-to-raw-movement",
+          "POSTING-raw-receipt-to-raw-cost-movement",
+          "POSTING-raw-receipt-to-supplier-debt-movement",
+          "POSTING-raw-inventory-to-raw-movement-plus",
+          "POSTING-raw-inventory-to-raw-movement-minus",
+          "POSTING-production-output-to-fg-movement",
+          "POSTING-production-output-to-raw-movement",
           "POSTING-production-output-to-production-plan"
+        ]
+      },
+      {
+        "id": "VIEW-calculations",
+        "title": "Расчёты",
+        "items": [
+          "CMD-fill_current_stock",
+          "CMD-fill_from_task",
+          "CMD-calc_raw_writeoff",
+          "RISK-002"
         ]
       },
       {
@@ -968,7 +1074,7 @@
     "suggestedDiagrams": [
       {
         "type": "mermaid-flowchart",
-        "title": "Сырье: поступление, инвентаризация, списание"
+        "title": "Сырье: количество, стоимость поступления, списание количества"
       },
       {
         "type": "mermaid-flowchart",

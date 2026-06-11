@@ -1,0 +1,330 @@
+{
+  "$schema": "./_spec-json.schema.json",
+  "schemaVersion": "spec-json-v0.1",
+  "meta": {
+    "spId": "NNN",
+    "title": "<Краткое название одной строкой>",
+    "status": "draft",
+    "version": 1,
+    "author": "analyst",
+    "created": "YYYY-MM-DD",
+    "updated": "YYYY-MM-DD",
+    "stage": "<опционально, напр. 1b>",
+    "domain": "<опционально>",
+    "dependsOn": [],
+    "sourceInputs": [
+      "project/docs/specs/sp-NNN-...-design.md"
+    ]
+  },
+  "context": {
+    "summary": "Своими словами 3-8 предложений: какая бизнес-задача решается, кто и в каких сценариях пользуется, какие альтернативы отвергнуты. Архитектурное обоснование не дублировать — источник в *-design.md.",
+    "evidence": [
+      {
+        "capability": "Проведение операций по регистрам записей через recordsSettings.",
+        "type": "basys-docs",
+        "path": "basys-docs/ru/metadata/recordsCreation.md",
+        "section": "Общая схема работы; Настройка создания записей",
+        "note": "Подтверждает направления Plus/Minus и идемпотентность перепроведения."
+      }
+    ]
+  },
+  "scope": {
+    "inScope": [
+      "Что входит в задачу."
+    ],
+    "outOfScope": [
+      "Смежные темы, которые сюда НЕ входят."
+    ],
+    "assumptions": [
+      "Допущения, на которых построен spec."
+    ]
+  },
+  "metaObjects": [
+    {
+      "id": "CAT-vendor",
+      "action": "CREATE",
+      "kind": "catalog",
+      "name": "vendor",
+      "title": "Поставщики",
+      "purpose": "Контрагенты, у которых компания закупает товары и услуги.",
+      "lifecycle": "create",
+      "properties": [
+        {
+          "field": "Memo",
+          "value": "Контрагенты-поставщики.",
+          "required": true
+        },
+        {
+          "field": "OrderByExpression",
+          "value": "name",
+          "required": false,
+          "note": "дефолт задан видом"
+        }
+      ],
+      "headerColumns": [
+        {
+          "name": "inn",
+          "title": "ИНН",
+          "dataType": "string(12)",
+          "required": true,
+          "unique": true,
+          "memo": "Идентификатор юрлица."
+        },
+        {
+          "name": "amount",
+          "title": "Сумма",
+          "dataType": "decimal(2)",
+          "required": false,
+          "formula": "quantity * price",
+          "columnKind": "Stored",
+          "memo": "Пример вычисляемого хранимого поля."
+        }
+      ],
+      "detailTables": [
+        {
+          "name": "goods",
+          "title": "Товары",
+          "serviceColumnsNote": "Служебные id, object_uid, row_number Инженер добавляет первыми.",
+          "columns": [
+            {
+              "name": "product",
+              "title": "Продукт",
+              "dataType": "catalog/nomenclature",
+              "required": true,
+              "memo": "Закупаемая позиция."
+            }
+          ]
+        }
+      ],
+      "indexes": [
+        "name"
+      ],
+      "references": [
+        "Колонка default_currency ссылается на catalog/currency."
+      ],
+      "businessRules": [
+        "Пример бизнес-правила объекта."
+      ],
+      "sourceDecisionIds": [
+        "DEC-001"
+      ]
+    },
+    {
+      "id": "OP-receipt",
+      "action": "CREATE",
+      "kind": "operation",
+      "name": "receipt",
+      "title": "Поступление",
+      "purpose": "Документ поступления с проведением по регистрам.",
+      "lifecycle": "create",
+      "detailTables": [
+        {
+          "name": "rows",
+          "title": "Строки",
+          "columns": [
+            {
+              "name": "quantity",
+              "title": "Количество",
+              "dataType": "decimal(3)",
+              "required": true,
+              "memo": "Количество."
+            }
+          ]
+        }
+      ],
+      "recordsSettings": [
+        {
+          "id": "POST-receipt-to-stock",
+          "target": "records/stock",
+          "direction": "Plus",
+          "source": "rows",
+          "condition": "$r.quantity > 0",
+          "columnMappings": [
+            {
+              "column": "period",
+              "expression": "$h.date"
+            },
+            {
+              "column": "quantity",
+              "expression": "$r.quantity"
+            }
+          ],
+          "note": "Приход количества."
+        }
+      ],
+      "commands": [
+        {
+          "id": "CMD-fill_rows",
+          "name": "fill_rows",
+          "title": "Заполнить строки",
+          "binding": "header",
+          "kind": "programmable command",
+          "handler": "command .bjs",
+          "input": "ссылка на источник",
+          "reads": [
+            "catalog/nomenclature"
+          ],
+          "changes": [
+            "табличная часть rows"
+          ],
+          "logicSteps": [
+            "Прочитать источник.",
+            "Заполнить строки."
+          ],
+          "validations": [
+            "Источник указан."
+          ],
+          "onRerun": "Очищает и заполняет заново после подтверждения.",
+          "errors": [
+            "Источник не указан — понятная ошибка."
+          ]
+        }
+      ],
+      "calculations": [
+        {
+          "rule": "calc_total",
+          "when": "перед проведением",
+          "dataSource": "табличная часть rows",
+          "logic": "сумма quantity * price",
+          "result": "total",
+          "errors": [
+            "пустые значения считать как 0"
+          ]
+        }
+      ],
+      "sourceDecisionIds": [
+        "DEC-002"
+      ]
+    },
+    {
+      "id": "RECORDS-stock",
+      "action": "CREATE",
+      "kind": "records",
+      "name": "stock",
+      "title": "Движение остатков",
+      "purpose": "Регистр движений, заполняется проведением receipt.",
+      "lifecycle": "create",
+      "headerColumns": [
+        {
+          "name": "quantity",
+          "title": "Количество",
+          "dataType": "decimal(3)",
+          "required": true,
+          "memo": "Количество движения."
+        }
+      ],
+      "indexes": [
+        "period",
+        "object_uid"
+      ],
+      "businessRules": [
+        "Стандартные колонки records Инженер добавляет по виду."
+      ]
+    },
+    {
+      "id": "REPORT-stock_report",
+      "action": "CREATE",
+      "kind": "data_view",
+      "name": "stock_report",
+      "title": "Остатки",
+      "purpose": "Табличный отчёт по остаткам.",
+      "lifecycle": "create",
+      "report": {
+        "properties": [
+          {
+            "field": "Memo",
+            "value": "Отчёт по остаткам на дату.",
+            "required": true
+          }
+        ],
+        "dataSources": [
+          {
+            "name": "rows",
+            "reads": "records/stock",
+            "logic": "Сгруппировать до date_to по складу и продукту; вывести Sum(quantity).",
+            "result": "DataTable остатков."
+          }
+        ],
+        "filters": [
+          {
+            "name": "date_to",
+            "title": "На дату",
+            "dataType": "date",
+            "required": true,
+            "memo": "Дата расчёта остатка."
+          }
+        ],
+        "indicators": [
+          "Таблица stock_table: склад, продукт, количество."
+        ]
+      }
+    }
+  ],
+  "menu": {
+    "note": "Если в menu/main есть autoFill для нужных видов — ручные пункты не добавлять.",
+    "items": [
+      {
+        "group": "Раздел",
+        "title": "Поступления",
+        "url": "/app#/data-objects/operation/receipt",
+        "icon": "pi pi-inbox",
+        "condition": "если нет autoFill"
+      }
+    ]
+  },
+  "implementationOrder": [
+    "Создать records/stock.",
+    "Создать operation/receipt с проведением в stock.",
+    "Создать data_view/stock_report."
+  ],
+  "dataTypesNotes": {
+    "addToDataTypes": [
+      "operation/receipt"
+    ],
+    "doNotAdd": [
+      "records/stock",
+      "data_view/stock_report"
+    ],
+    "note": "records и data_view не являются reference-типами."
+  },
+  "acceptanceChecklist": {
+    "fileSelfCheck": [
+      "Все объекты из metaObjects созданы согласно action.",
+      "Все JSON валидируются по схемам из metadata/system/schemas/.",
+      "Name — латиница snake_case <=30 символов."
+    ],
+    "declarativeJson": [
+      "receipt.recordsSettings пишет rows в records/stock направлением Plus."
+    ],
+    "functionalStand": [
+      "Можно создать receipt, провести, и в stock появляются записи."
+    ]
+  },
+  "openQuestions": [
+    {
+      "id": "OQ-001",
+      "title": "Пример открытого вопроса",
+      "detail": "Описание нерешённого вопроса для PM.",
+      "blocking": false,
+      "specRef": "project/docs/specs/sp-NNN-....json"
+    }
+  ],
+  "risks": [
+    {
+      "id": "RISK-001",
+      "title": "Пример риска",
+      "impact": "Что произойдёт.",
+      "mitigation": "Как смягчается.",
+      "sourceDecisionIds": [
+        "DEC-001"
+      ]
+    }
+  ],
+  "changelog": [
+    {
+      "date": "YYYY-MM-DD",
+      "status": "draft",
+      "change": "Создано Аналитиком."
+    }
+  ]
+}

@@ -166,7 +166,7 @@ Subagents общаются только через файлы. Orchestrator пе
 inbox/<sp-id>.md или иной                    вход от PM (business-task)
 project/docs/specs/<sp-id>-design.md          design от analyst (Phase 1)
 project/docs/specs/<sp-id>-design-review.md   review design от reviewer (Phase 1)
-project/docs/specs/<sp-id>.md                 ТЗ от analyst (Phase 2)
+project/docs/specs/<sp-id>.json               ТЗ от analyst, формат spec-json-v0.1 (Phase 2)
 project/docs/specs/<sp-id>-spec-review.md     review ТЗ от reviewer (Phase 2)
 project/docs/specs/<sp-id>-plan.md            implementation plan от engineer
 project/docs/specs/<sp-id>-plan-review.md     review plan от reviewer
@@ -229,7 +229,10 @@ orchestrator reads design, verifies status: approved
   |
   v
 orchestrator -> autopilot-analyst (spec mode)
-  | analyst writes <sp-id>.md (status: review)
+  | analyst writes <sp-id>.json (spec-json-v0.1, meta.status: review)
+  v
+orchestrator validates <sp-id>.json against _spec-json.schema.json (python + jsonschema)
+  | schema-invalid -> back to autopilot-analyst (revision mode)
   v
 orchestrator -> autopilot-reviewer (type: spec)
   | reviewer writes <sp-id>-spec-review.md

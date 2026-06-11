@@ -31,7 +31,8 @@ Execution:
 1. Verify the input file has `status: approved`. If not, stop and ask the PM.
 2. Derive `<sp-id>` from the design filename (strip the `-design` suffix).
 3. Execute the full multi-agent cycle from `project/docs/autopilot-workflow.md`:
-   - autopilot-analyst writes the spec;
+   - autopilot-analyst writes the spec as `<sp-id>.json` (format `spec-json-v0.1`);
+   - validate the spec: `python project/docs/specs/validate_spec.py project/docs/specs/<sp-id>.json`; if schema-invalid, send back to autopilot-analyst (revision) until it validates;
    - autopilot-reviewer reviews the spec;
    - loop on critical defects until reviewer approves;
    - autopilot-engineer writes the implementation plan;

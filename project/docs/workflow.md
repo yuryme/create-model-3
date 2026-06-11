@@ -17,6 +17,10 @@ PM принимает результат через поведение сист�
 
 Процессные артефакты не должны засорять основной контекст проекта. В `project/docs/specs/` остаются только активные или действительно нужные approved-ТЗ/инструкции. Длинные design/review/audit/report файлы экспериментов после завершения либо удаляются, либо архивируются вне активного контекста. Устойчивые выводы переносятся в `project/docs/patterns/`, ADR, workflow или skills.
 
+Если у методики или ТЗ есть companion-файлы структурного дизайна или визуализации (`*.design.json`, `*.architecture-view.json`, `*.architecture-view.html`), они считаются частью того же аналитического артефакта и review-пакета. Аналитик обновляет их в том же проходе, что и исходный артефакт; PM-chat review проверяет согласованность исходного артефакта, `.design.json` и визуализации. Нельзя оставлять companion-файлы устаревшими без явной пометки stale и отдельного решения PM.
+
+**Формат ТЗ.** ТЗ (спецификация) пишется в формате `spec-json-v0.1`: JSON-файл `<sp-id>.json` по схеме `project/docs/specs/_spec-json.schema.json` (образец — `_spec-template.json`). Архитектурное обоснование остаётся в `*-design.md` / `*.design.json`; ТЗ — строимый контракт для Инженера. Статус ТЗ — в `meta.status`. Markdown-шаблон `_template.md` устарел и для новых ТЗ не используется. Валидация ТЗ против схемы — обязательная точка ревью (`python` + `jsonschema`). Методики (`*-design.md`), планы (`*-plan.md`), ревью, отчёты, import-notes и audit остаются в markdown.
+
 ## Основная схема
 
 ```text
@@ -27,14 +31,14 @@ PM-chat
   |  уточняет ввод, собирает контекст, готовит поручение
   v
 analyst
-  |  пишет методику <sp-id>-design.md, если задача крупная
+  |  пишет методику <sp-id>-design.md и companion-файлы, если они используются
   v
 PM-chat review методики
   |-- approved -----------------------------|
   |-- rejected / needs changes --> analyst -|
   v
 analyst
-  |  пишет ТЗ <sp-id>.md, status: review
+  |  пишет ТЗ <sp-id>.json (формат spec-json-v0.1, schema _spec-json.schema.json), meta.status: review, и синхронизирует companion-файлы
   v
 PM-chat review ТЗ
   |-- approved -----------------------------|

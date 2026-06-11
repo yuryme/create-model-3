@@ -15,6 +15,7 @@ permission:
     "git diff*": allow
     "git status*": allow
     "git log*": allow
+    "python*validate_spec.py*": allow
   task:
     "*": deny
     "autopilot-*": allow
@@ -99,30 +100,33 @@ Steps:
 
 1. Derive `<sp-id>` from the design filename (strip the `-design` suffix).
 2. Invoke `autopilot-analyst` in **spec mode**:
-   - input: design path;
-   - output: `project/docs/specs/<sp-id>.md` (status: review).
-3. Invoke `autopilot-reviewer` with type `spec`:
-   - artifact: `<sp-id>.md`;
+   - input: design path (and `*.design.json` if present);
+   - output: `project/docs/specs/<sp-id>.json` (spec-json-v0.1, `meta.status: review`).
+3. Validate the spec against the schema:
+   - run `python project/docs/specs/validate_spec.py project/docs/specs/<sp-id>.json`;
+   - if exit code is non-zero (schema-invalid), invoke `autopilot-analyst` in revision mode with the validator output as critical findings, then re-validate. Do not proceed to spec review until the spec validates.
+4. Invoke `autopilot-reviewer` with type `spec`:
+   - artifact: `<sp-id>.json`;
    - output: `<sp-id>-spec-review.md`.
-4. If critical: invoke `autopilot-analyst` in revision mode; loop back to step 3.
-5. When reviewer approves, mark `<sp-id>.md` status: `approved`.
-6. Invoke `autopilot-engineer` in **plan mode**:
-   - input: spec path;
+5. If critical: invoke `autopilot-analyst` in revision mode; loop back to step 3 (re-validate, then re-review).
+6. When reviewer approves, mark `<sp-id>.json` `meta.status: approved`.
+7. Invoke `autopilot-engineer` in **plan mode**:
+   - input: spec path (`<sp-id>.json`);
    - output: `<sp-id>-plan.md` (status: review).
-7. Invoke `autopilot-reviewer` with type `plan`:
+8. Invoke `autopilot-reviewer` with type `plan`:
    - artifact: `<sp-id>-plan.md`;
    - output: `<sp-id>-plan-review.md`.
-8. If critical: invoke `autopilot-engineer` in fix mode; loop back to step 7.
-9. When reviewer approves, mark `<sp-id>-plan.md` status: `approved`.
-10. Invoke `autopilot-engineer` in **implementation mode**:
-    - input: approved spec and plan;
+9. If critical: invoke `autopilot-engineer` in fix mode; loop back to step 8.
+10. When reviewer approves, mark `<sp-id>-plan.md` status: `approved`.
+11. Invoke `autopilot-engineer` in **implementation mode**:
+    - input: approved spec (`<sp-id>.json`) and plan;
     - outputs: metadata in `metadata/`, `<sp-id>-implementation-report.md`, `<sp-id>-import-notes.md`.
-11. Collect the list of changed metadata files using `git status` and `git diff --stat`.
-12. Invoke `metadata-auditor`:
-    - input: spec path, list of changed metadata files, output path `<sp-id>-audit.md`;
+12. Collect the list of changed metadata files using `git status` and `git diff --stat`.
+13. Invoke `metadata-auditor`:
+    - input: spec path (`<sp-id>.json`), list of changed metadata files, output path `<sp-id>-audit.md`;
     - do NOT pass the implementation report path.
-13. If auditor reports critical defects, invoke `autopilot-engineer` in fix mode; loop back to step 12.
-14. Produce a Phase 2 report to the PM.
+14. If auditor reports critical defects, invoke `autopilot-engineer` in fix mode; loop back to step 13.
+15. Produce a Phase 2 report to the PM.
 
 ## Subagent Invocation Discipline
 

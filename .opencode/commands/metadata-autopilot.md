@@ -37,7 +37,7 @@ Artifact discipline:
 - `metadata/` is the working mirror of the BaSYS stand.
 - Do not create list/edit forms by default. If forms, assigned forms, UX, layout, buttons, hidden/grouped fields, or a user-facing workflow are not explicit requirements, leave `ListFormUid`/`ItemFormUid = null` and use BaSYS autoforms. If forms seem necessary, ask the PM first.
 - Avoid persisted `*-review.md` and `*-audit.md` files in single-agent mode.
-- Keep specs/plans/import notes concise and only when they will be reused.
+- Keep specs/plans/import notes concise and only when they will be reused. If you do persist a ТЗ/specification file, write it as `<sp-id>.json` in the `spec-json-v0.1` format (schema `project/docs/specs/_spec-json.schema.json`, example `_spec-template.json`); the markdown ТЗ template `_template.md` is deprecated. Validate it with `python project/docs/specs/validate_spec.py <path>`.
 - Extract durable lessons to `project/docs/patterns/`, ADR, workflow, or skills; do not keep full experiment logs in active context.
 
 Mandatory constraints:

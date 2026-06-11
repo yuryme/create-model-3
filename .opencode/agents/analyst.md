@@ -63,7 +63,18 @@ Cycle:
 2. Study context: `project/docs/decisions.md`, `project/docs/glossary.md`, `project/docs/specs/`, `metadata/`, `basys-docs/`, `reference/`.
 3. Write methodology in `project/docs/specs/<NN>-design.md` using `_design-template.md`.
 4. Send it to PM review and do not start the full specification.
-5. After PM approves the methodology, write the specification in `project/docs/specs/<NN>-<short-name>.md` using `_template.md`.
+5. After PM approves the methodology, write the specification (ТЗ) in `project/docs/specs/<NN>-<short-name>.json` in the `spec-json-v0.1` format, using `project/docs/specs/_spec-json.schema.json` as the contract and `_spec-template.json` as the worked example.
+
+## Specification Format
+
+The ТЗ is a JSON artifact in the `spec-json-v0.1` format, not markdown:
+
+- Set `$schema` to `./_spec-json.schema.json` and `schemaVersion` to `spec-json-v0.1`.
+- The architecture rationale stays in `*-design.md` / `*.design.json`; the ТЗ is the buildable contract for the Engineer.
+- Cover the schema sections: `meta`, `context` (with `evidence`), `scope`, `metaObjects`, `menu`, `implementationOrder`, `dataTypesNotes`, `acceptanceChecklist` (buckets A/B/C), `openQuestions`, `risks`, `changelog`.
+- Status lives in `meta.status` (`draft` -> `review` -> `approved` -> `implemented`) and is mirrored in `changelog`.
+- The result must be valid JSON conforming to `_spec-json.schema.json`. Ask PM-chat or the Engineer to run the validator (`python` + `jsonschema`) before approval if you cannot.
+- The legacy markdown ТЗ template `_template.md` is deprecated; do not write new ТЗ in markdown.
 
 ## Principles
 
@@ -90,7 +101,7 @@ Cycle:
 
 ## Handoff To Engineer
 
-- A new specification starts with `status: review`.
-- After PM approval, status becomes `approved`.
+- A new specification (spec-json) starts with `meta.status: review`.
+- After PM approval, `meta.status` becomes `approved`.
 - Only an `approved` specification can go to the Engineer.
-- After Engineer implementation and PM acceptance, status becomes `implemented`.
+- After Engineer implementation and PM acceptance, `meta.status` becomes `implemented`.

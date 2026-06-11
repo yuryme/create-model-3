@@ -1,0 +1,1386 @@
+{
+  "$schema": "./_spec-json.schema.json",
+  "schemaVersion": "spec-json-v0.1",
+  "meta": {
+    "spId": "sp-001-bakery-stage1b",
+    "title": "Хлебозавод — этап 1b, склад сырья и выпуск",
+    "status": "approved",
+    "version": 1,
+    "author": "analyst",
+    "created": "2026-06-02",
+    "updated": "2026-06-10",
+    "stage": "1b",
+    "domain": "bakery-operations",
+    "dependsOn": [
+      "sp-001-bakery-problem-statement.md",
+      "sp-001-bakery-stage1-design.md",
+      "sp-001-bakery-stage1a.md"
+    ],
+    "sourceInputs": [
+      "project/docs/specs/sp-001-bakery-stage1-design.md",
+      "project/docs/specs/sp-001-bakery-stage1b.design.json"
+    ]
+  },
+  "context": {
+    "summary": "Этап 1b добавляет к операционному ядру хлебозавода склад сырья и выпуск продукции: документы поступления сырья от поставщика, инвентаризации сырья и выпуска продукции; регистры количественных движений сырья, стоимостных движений сырья, движений готовой продукции и долга поставщикам; отчёты по остаткам сырья, плану/факту выпуска и остаткам готовой продукции. Результат: учесть поступление сырья (с ростом долга поставщику и отражением известной стоимости поступления), скорректировать количественные остатки инвентаризацией, выпустить продукцию со списанием количества сырья по рецептурам, увидеть количественные остатки сырья и готовой продукции и план/факт выпуска. Пользователи: кладовщик (поступление, инвентаризация), начальник производства (выпуск), руководитель (отчёты). Архитектурное обоснование не дублируется — источник sp-001-bakery-stage1-design.md и sp-001-bakery-stage1b.design.json. Этап 1b опирается на объекты 1a, которые должны быть импортированы до реализации 1b.",
+    "evidence": [
+      {
+        "capability": "Проведение операций по регистрам записей: recordsSettings, источники header/detail table/RecordsSource, направления Plus/Minus, идемпотентность перепроведения.",
+        "type": "basys-docs",
+        "path": "basys-docs/ru/metadata/recordsCreation.md",
+        "section": "Общая схема работы; Настройка создания записей; Источники данных для записей"
+      },
+      {
+        "capability": "Ограничение RecordsSource: выполнение произвольных запросов к таблицам БД в источнике записей в текущей версии не поддерживается; поэтому списание сырья по рецептурам — команда до проведения, а не RecordsSource с DB-запросом.",
+        "type": "basys-docs",
+        "path": "basys-docs/ru/metadata/recordsCreation.md",
+        "section": "Источники записей"
+      },
+      {
+        "capability": "Программируемые команды и загрузка табличных частей ($t.table.clear().load(source)), runWorkflow, save.",
+        "type": "basys-docs",
+        "path": "basys-docs/ru/commands/programmableCommands.md",
+        "section": "Контекст выполнения команды; runWorkflow; save"
+      },
+      {
+        "capability": "QueryBuilder и запросы к табличным частям (from/select/where/groupBy/parameter), включая чтение operation/production_task.plan_products по object_uid.",
+        "type": "basys-docs",
+        "path": "basys-docs/ru/calculations/queryBuilder.md",
+        "section": "from; select; where; groupBy; parameter; Запрос к табличной части"
+      },
+      {
+        "capability": "Панели данных: отчёты как data_view с табличными компонентами и фильтрами.",
+        "type": "basys-docs",
+        "path": "basys-docs/ru/reporting/dataView.md",
+        "section": "Панели данных; Таблица; Фильтры"
+      },
+      {
+        "capability": "DataObject с табличными частями (поля header и detailTables) для операций raw_receipt, raw_inventory, production_output.",
+        "type": "basys-docs",
+        "path": "basys-docs/ru/metadata/dataObject.md",
+        "section": "header; detailTables"
+      }
+    ]
+  },
+  "scope": {
+    "inScope": [
+      "Поступление сырья от поставщика с движением количества в raw_movement, стоимостью поступления в raw_cost_movement и движением долга поставщику в supplier_debt_movement.",
+      "Инвентаризация сырья как количественная корректировка через raw_movement до фактических остатков.",
+      "Выпуск продукции: движение готовой продукции в finished_goods_movement, количественное списание сырья через raw_movement по рецептурам, факт выпуска в production_plan.",
+      "Отчёты 1b: остатки сырья, план/факт выпуска, остатки готовой продукции."
+    ],
+    "outOfScope": [
+      "Отгрузка клиентам и списание готовой продукции на клиента (1c).",
+      "Поступление денег от клиентов и оплата поставщику, погашение supplier_debt_movement (1c).",
+      "Себестоимость готовой продукции; в 1b finished_goods_movement хранит только количество.",
+      "Расчёт расхода стоимости сырья и средневзвешенной стоимости списания (будущий документ закрытия месяца).",
+      "Стоимостная инвентаризация/переоценка сырья; в 1b инвентаризация корректирует только количество.",
+      "Доставка, маршруты, возвраты, партии, сроки годности, FIFO/FEFO.",
+      "Полный финансовый контур, статьи ДДС, касса/банк, авансы, договоры.",
+      "Складской учёт полуфабрикатов (только узлы рецептур).",
+      "Формы-конструкторы и программируемые формы, если автоформ достаточно."
+    ],
+    "assumptions": [
+      "Объекты этапа 1a импортированы и доступны до реализации 1b: company, warehouse, counterparty, nomenclature, recipe, recipe_component, production_task, production_plan.",
+      "Номенклатура использует типы raw, semi_product, product из этапа 1a.",
+      "Поступление сырья сразу фиксирует движение долга поставщику, хотя погашение долга остаётся в 1c.",
+      "Стоимостное списание сырья будет проектироваться отдельно в документе закрытия месяца."
+    ]
+  },
+  "metaObjects": [
+    {
+      "id": "RECORDS-raw_movement",
+      "action": "CREATE",
+      "kind": "records",
+      "name": "raw_movement",
+      "title": "Движение сырья",
+      "purpose": "Хранит количественные движения сырья по организации, складу и сырьевой номенклатуре.",
+      "lifecycle": "create",
+      "properties": [
+        {
+          "field": "Memo",
+          "value": "Регистр записей количественных движений сырья на складах хлебозавода.",
+          "required": true
+        },
+        {
+          "field": "OrderByExpression",
+          "value": "period, raw_item",
+          "required": false
+        }
+      ],
+      "headerColumns": [
+        {
+          "name": "company",
+          "title": "Организация",
+          "dataType": "catalog/company",
+          "required": true,
+          "unique": false,
+          "memo": "Организация учёта."
+        },
+        {
+          "name": "warehouse",
+          "title": "Склад сырья",
+          "dataType": "catalog/warehouse",
+          "required": true,
+          "unique": false,
+          "memo": "Склад, на котором учитывается сырьё."
+        },
+        {
+          "name": "raw_item",
+          "title": "Сырьё",
+          "dataType": "catalog/nomenclature",
+          "required": true,
+          "unique": false,
+          "memo": "Номенклатура с типом raw."
+        },
+        {
+          "name": "quantity",
+          "title": "Количество",
+          "dataType": "decimal(3)",
+          "required": true,
+          "unique": false,
+          "memo": "Количество движения; приход положительный, расход отрицательный через направление записи."
+        }
+      ],
+      "indexes": [
+        "period",
+        "object_uid",
+        "period + raw_item + warehouse",
+        "company + raw_item + warehouse"
+      ],
+      "businessRules": [
+        "Стандартные колонки records (id, period, object_kind, meta_object, object_uid, row) Инженер добавляет по metadata/system/kinds/kind.records.json.",
+        "raw_movement хранит только количественные движения; остаток считается суммированием quantity по company, warehouse, raw_item на дату.",
+        "Стоимость сырья в raw_movement не хранится; для неё используется отдельный records/raw_cost_movement.",
+        "Партионный учёт, FIFO/FEFO и сроки годности в 1b не реализуются.",
+        "Полуфабрикаты в raw_movement не попадают."
+      ],
+      "sourceDecisionIds": [
+        "DEC-001"
+      ]
+    },
+    {
+      "id": "RECORDS-raw_cost_movement",
+      "action": "CREATE",
+      "kind": "records",
+      "name": "raw_cost_movement",
+      "title": "Движение стоимости сырья",
+      "purpose": "Хранит стоимостные движения сырья отдельно от количественного склада; в 1b получает только стоимость поступления.",
+      "lifecycle": "create",
+      "properties": [
+        {
+          "field": "Memo",
+          "value": "Регистр записей стоимостных движений сырья, отделённый от количественного складского регистра.",
+          "required": true
+        },
+        {
+          "field": "OrderByExpression",
+          "value": "period, raw_item",
+          "required": false
+        }
+      ],
+      "headerColumns": [
+        {
+          "name": "company",
+          "title": "Организация",
+          "dataType": "catalog/company",
+          "required": true,
+          "unique": false,
+          "memo": "Организация учёта."
+        },
+        {
+          "name": "warehouse",
+          "title": "Склад сырья",
+          "dataType": "catalog/warehouse",
+          "required": true,
+          "unique": false,
+          "memo": "Склад, с которым связано стоимостное движение сырья."
+        },
+        {
+          "name": "raw_item",
+          "title": "Сырьё",
+          "dataType": "catalog/nomenclature",
+          "required": true,
+          "unique": false,
+          "memo": "Номенклатура с типом raw."
+        },
+        {
+          "name": "amount",
+          "title": "Стоимость",
+          "dataType": "decimal(2)",
+          "required": true,
+          "unique": false,
+          "memo": "Сумма стоимостного движения сырья."
+        }
+      ],
+      "indexes": [
+        "period",
+        "object_uid",
+        "period + raw_item + warehouse",
+        "company + raw_item + warehouse"
+      ],
+      "businessRules": [
+        "В 1b raw_cost_movement получает только приход стоимости от operation/raw_receipt.",
+        "Расход стоимости сырья по средней стоимости в 1b не формируется; его будет создавать будущий документ закрытия месяца.",
+        "Инвентаризация 1b не пишет в raw_cost_movement; стоимостная корректировка/переоценка сырья вне scope 1b.",
+        "Остаток стоимости сырья может быть рассчитан суммированием amount, но отдельный стоимостный отчёт в 1b не создаётся."
+      ],
+      "sourceDecisionIds": [
+        "DEC-001",
+        "DEC-002"
+      ]
+    },
+    {
+      "id": "RECORDS-finished_goods_movement",
+      "action": "CREATE",
+      "kind": "records",
+      "name": "finished_goods_movement",
+      "title": "Движение готовой продукции",
+      "purpose": "Хранит количественные движения готовой продукции между выпуском и будущей отгрузкой.",
+      "lifecycle": "create",
+      "properties": [
+        {
+          "field": "Memo",
+          "value": "Регистр записей оперативного остатка готовой продукции между выпуском и отгрузкой.",
+          "required": true
+        },
+        {
+          "field": "OrderByExpression",
+          "value": "period, product",
+          "required": false
+        }
+      ],
+      "headerColumns": [
+        {
+          "name": "company",
+          "title": "Организация",
+          "dataType": "catalog/company",
+          "required": true,
+          "unique": false,
+          "memo": "Организация учёта."
+        },
+        {
+          "name": "warehouse",
+          "title": "Склад ГП",
+          "dataType": "catalog/warehouse",
+          "required": true,
+          "unique": false,
+          "memo": "Склад готовой продукции."
+        },
+        {
+          "name": "product",
+          "title": "Продукция",
+          "dataType": "catalog/nomenclature",
+          "required": true,
+          "unique": false,
+          "memo": "Номенклатура с типом product."
+        },
+        {
+          "name": "quantity",
+          "title": "Количество",
+          "dataType": "decimal(3)",
+          "required": true,
+          "unique": false,
+          "memo": "Количество движения готовой продукции."
+        }
+      ],
+      "indexes": [
+        "period",
+        "object_uid",
+        "period + product + warehouse",
+        "company + product + warehouse"
+      ],
+      "businessRules": [
+        "В 1b регистр получает только приход от operation/production_output.",
+        "Расход готовой продукции при отгрузке будет добавлен в 1c документом operation/shipment.",
+        "Партионный учёт готовой продукции и сроки годности не реализуются.",
+        "Регистр хранит только количество; себестоимость готовой продукции в 1b не ведётся."
+      ],
+      "sourceDecisionIds": [
+        "DEC-005"
+      ]
+    },
+    {
+      "id": "RECORDS-supplier_debt_movement",
+      "action": "CREATE",
+      "kind": "records",
+      "name": "supplier_debt_movement",
+      "title": "Движение долга поставщикам",
+      "purpose": "Фиксирует движения кредиторской задолженности при поступлении сырья; погашение будет добавлено в 1c.",
+      "lifecycle": "create",
+      "properties": [
+        {
+          "field": "Memo",
+          "value": "Регистр записей движений кредиторской задолженности перед поставщиками по управленческому учёту хлебозавода.",
+          "required": true
+        },
+        {
+          "field": "OrderByExpression",
+          "value": "period, supplier",
+          "required": false
+        }
+      ],
+      "headerColumns": [
+        {
+          "name": "company",
+          "title": "Организация",
+          "dataType": "catalog/company",
+          "required": true,
+          "unique": false,
+          "memo": "Организация, у которой возник долг."
+        },
+        {
+          "name": "supplier",
+          "title": "Поставщик",
+          "dataType": "catalog/counterparty",
+          "required": true,
+          "unique": false,
+          "memo": "Контрагент с ролью поставщик или клиент и поставщик."
+        },
+        {
+          "name": "amount",
+          "title": "Сумма долга",
+          "dataType": "decimal(2)",
+          "required": true,
+          "unique": false,
+          "memo": "Сумма изменения задолженности: приход увеличивает кредиторку, расход в 1c уменьшит."
+        }
+      ],
+      "indexes": [
+        "period",
+        "object_uid",
+        "period + supplier",
+        "company + supplier"
+      ],
+      "businessRules": [
+        "supplier_debt_movement перенесён из 1c в 1b (PM 2026-06-02) и переименован к движенческому имени (PM 2026-06-10): поступление сырья сразу фиксирует движение долга поставщику.",
+        "В 1b регистр используется только на увеличение долга от raw_receipt; уменьшение долга оплатой payment_out остаётся в 1c.",
+        "Поступление сырья пишет рост долга поставщику построчно из табличной части raw_items (одно движение на строку, amount = $r.amount); агрегация по поставщику в 1b не используется.",
+        "Отчёт кредиторки supplier_debt_report остаётся в 1c, если PM отдельно не попросит минимальное отображение сальдо уже в 1b.",
+        "Договоры, авансы, счета поставщиков и раздельные валюты не входят."
+      ],
+      "sourceDecisionIds": [
+        "DEC-002"
+      ]
+    },
+    {
+      "id": "RECORDS-production_plan",
+      "action": "MODIFY",
+      "kind": "records",
+      "name": "production_plan",
+      "title": "План/факт выпуска",
+      "purpose": "Existing регистр 1a; в 1b получает факт выпуска из production_output. Состав колонок не меняется.",
+      "lifecycle": "reuse-existing",
+      "businessRules": [
+        "Контракт существующего регистра задан в sp-001-bakery-stage1a.md §4.12: колонки company (catalog/company), warehouse (catalog/warehouse, «Склад выпуска»), product (catalog/nomenclature), planned_qty (decimal(3)), output_qty (decimal(3), дефолт 0).",
+        "1b не изменяет состав колонок production_plan; если фактические имена/типы колонок 1a отличаются от §4.12, расхождение возвращается Analyst до реализации.",
+        "В 1b в регистр пишется факт выпуска отдельной записью planned_qty = 0, output_qty = фактический выпуск (см. production_output.recordsSettings)."
+      ],
+      "modify": {
+        "changes": [
+          "Состав колонок не меняется; добавляются только новые записи факта выпуска через проведение production_output."
+        ]
+      },
+      "sourceDecisionIds": [
+        "DEC-006"
+      ]
+    },
+    {
+      "id": "OP-raw_receipt",
+      "action": "CREATE",
+      "kind": "operation",
+      "name": "raw_receipt",
+      "title": "Поступление сырья",
+      "purpose": "Оформляет закупку сырья, приход на склад и рост долга поставщику.",
+      "lifecycle": "create",
+      "properties": [
+        {
+          "field": "Memo",
+          "value": "Документ прихода сырья от поставщика на склад и возникновения долга поставщику.",
+          "required": true
+        },
+        {
+          "field": "OrderByExpression",
+          "value": "number desc, date desc",
+          "required": false
+        },
+        {
+          "field": "DisplayExpression",
+          "value": "Поступление сырья №{{number}} от {{date}}",
+          "required": false
+        },
+        {
+          "field": "ListFormUid / ItemFormUid",
+          "value": "автоформа",
+          "required": false
+        }
+      ],
+      "headerColumns": [
+        {
+          "name": "company",
+          "title": "Организация",
+          "dataType": "catalog/company",
+          "required": true,
+          "unique": false,
+          "memo": "Организация, закупающая сырьё."
+        },
+        {
+          "name": "supplier",
+          "title": "Поставщик",
+          "dataType": "catalog/counterparty",
+          "required": true,
+          "unique": false,
+          "memo": "Поставщик сырья."
+        },
+        {
+          "name": "warehouse",
+          "title": "Склад сырья",
+          "dataType": "catalog/warehouse",
+          "required": true,
+          "unique": false,
+          "memo": "Склад, на который приходуется сырьё."
+        },
+        {
+          "name": "comment",
+          "title": "Комментарий",
+          "dataType": "string(300)",
+          "required": false,
+          "unique": false,
+          "memo": "Примечание по поступлению."
+        }
+      ],
+      "detailTables": [
+        {
+          "name": "raw_items",
+          "title": "Сырьё",
+          "serviceColumnsNote": "Служебные колонки id, object_uid, row_number Инженер добавляет первыми в этом порядке.",
+          "columns": [
+            {
+              "name": "raw_item",
+              "title": "Сырьё",
+              "dataType": "catalog/nomenclature",
+              "required": true,
+              "memo": "Сырьё с типом raw."
+            },
+            {
+              "name": "quantity",
+              "title": "Количество",
+              "dataType": "decimal(3)",
+              "required": true,
+              "memo": "Количество поступившего сырья."
+            },
+            {
+              "name": "price",
+              "title": "Цена",
+              "dataType": "decimal(2)",
+              "required": true,
+              "memo": "Цена закупки за единицу."
+            },
+            {
+              "name": "amount",
+              "title": "Сумма",
+              "dataType": "decimal(2)",
+              "required": true,
+              "formula": "$r.quantity * $r.price",
+              "memo": "Стоимость строки поступления."
+            },
+            {
+              "name": "comment",
+              "title": "Комментарий",
+              "dataType": "string(200)",
+              "required": false,
+              "memo": "Примечание по строке."
+            }
+          ]
+        }
+      ],
+      "recordsSettings": [
+        {
+          "id": "POST-raw_receipt-raw_movement",
+          "target": "records/raw_movement",
+          "direction": "Plus",
+          "source": "raw_items",
+          "condition": "$r.quantity > 0",
+          "columnMappings": [
+            { "column": "period", "expression": "$h.date" },
+            { "column": "company", "expression": "$h.company" },
+            { "column": "warehouse", "expression": "$h.warehouse" },
+            { "column": "raw_item", "expression": "$r.raw_item" },
+            { "column": "quantity", "expression": "$r.quantity" }
+          ],
+          "note": "Приход количества сырья без стоимости."
+        },
+        {
+          "id": "POST-raw_receipt-raw_cost_movement",
+          "target": "records/raw_cost_movement",
+          "direction": "Plus",
+          "source": "raw_items",
+          "condition": "$r.amount > 0",
+          "columnMappings": [
+            { "column": "period", "expression": "$h.date" },
+            { "column": "company", "expression": "$h.company" },
+            { "column": "warehouse", "expression": "$h.warehouse" },
+            { "column": "raw_item", "expression": "$r.raw_item" },
+            { "column": "amount", "expression": "$r.amount" }
+          ],
+          "note": "Стоимость поступления сырья."
+        },
+        {
+          "id": "POST-raw_receipt-supplier_debt_movement",
+          "target": "records/supplier_debt_movement",
+          "direction": "Plus",
+          "source": "raw_items",
+          "condition": "$r.amount > 0",
+          "columnMappings": [
+            { "column": "period", "expression": "$h.date" },
+            { "column": "company", "expression": "$h.company" },
+            { "column": "supplier", "expression": "$h.supplier" },
+            { "column": "amount", "expression": "$r.amount" }
+          ],
+          "note": "Рост долга поставщику построчно из raw_items."
+        }
+      ],
+      "businessRules": [
+        "Стандартные колонки operation (number, is_deleted, date, is_files, create_records) Инженер добавляет по виду.",
+        "supplier должен иметь роль supplier или both; если фильтр декларативно невозможен, контроль остаётся на пользователе и приёмке.",
+        "В строках допустима только номенклатура с типом raw.",
+        "quantity, price, amount должны быть больше 0.",
+        "При снятом флаге create_records документ не формирует приход сырья, движение стоимости и долг поставщику; старые записи удаляются штатным механизмом проведения.",
+        "Повторное сохранение не дублирует записи: это обеспечивает механизм проведения BaSYS (recordsCreation.md, «Общая схема работы»)."
+      ],
+      "sourceDecisionIds": [
+        "DEC-002"
+      ]
+    },
+    {
+      "id": "OP-raw_inventory",
+      "action": "CREATE",
+      "kind": "operation",
+      "name": "raw_inventory",
+      "title": "Инвентаризация сырья",
+      "purpose": "Корректирует учётный остаток сырья до фактического количества.",
+      "lifecycle": "create",
+      "properties": [
+        {
+          "field": "Memo",
+          "value": "Документ корректировки сырьевого склада до фактического количества.",
+          "required": true
+        },
+        {
+          "field": "OrderByExpression",
+          "value": "number desc, date desc",
+          "required": false
+        },
+        {
+          "field": "DisplayExpression",
+          "value": "Инвентаризация сырья №{{number}} от {{date}}",
+          "required": false
+        },
+        {
+          "field": "ListFormUid / ItemFormUid",
+          "value": "автоформа",
+          "required": false
+        }
+      ],
+      "headerColumns": [
+        {
+          "name": "company",
+          "title": "Организация",
+          "dataType": "catalog/company",
+          "required": true,
+          "unique": false,
+          "memo": "Организация учёта."
+        },
+        {
+          "name": "warehouse",
+          "title": "Склад сырья",
+          "dataType": "catalog/warehouse",
+          "required": true,
+          "unique": false,
+          "memo": "Склад, по которому проводится инвентаризация."
+        },
+        {
+          "name": "comment",
+          "title": "Комментарий",
+          "dataType": "string(300)",
+          "required": false,
+          "unique": false,
+          "memo": "Примечание по инвентаризации."
+        }
+      ],
+      "detailTables": [
+        {
+          "name": "raw_items",
+          "title": "Фактические остатки",
+          "serviceColumnsNote": "Служебные колонки id, object_uid, row_number Инженер добавляет первыми.",
+          "columns": [
+            {
+              "name": "raw_item",
+              "title": "Сырьё",
+              "dataType": "catalog/nomenclature",
+              "required": true,
+              "memo": "Сырьё с типом raw."
+            },
+            {
+              "name": "current_qty",
+              "title": "Учётное количество",
+              "dataType": "decimal(3)",
+              "required": false,
+              "defaultValue": "0",
+              "memo": "Остаток по raw_movement на дату до корректировки."
+            },
+            {
+              "name": "fact_qty",
+              "title": "Фактическое количество",
+              "dataType": "decimal(3)",
+              "required": true,
+              "memo": "Фактический остаток по инвентаризации."
+            },
+            {
+              "name": "diff_qty",
+              "title": "Разница количества",
+              "dataType": "decimal(3)",
+              "required": false,
+              "formula": "$r.fact_qty - $r.current_qty",
+              "memo": "Корректировка количества для записи в raw_movement."
+            },
+            {
+              "name": "comment",
+              "title": "Комментарий",
+              "dataType": "string(200)",
+              "required": false,
+              "memo": "Примечание по строке."
+            }
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "id": "CMD-fill_current_stock",
+          "name": "fill_current_stock",
+          "title": "Заполнить учётные остатки",
+          "binding": "header",
+          "kind": "programmable command",
+          "handler": "command .bjs",
+          "input": "company, warehouse, date; опционально уже введённый список raw_item в строках.",
+          "reads": [
+            "records/raw_movement через QueryBuilder, агрегируя Sum(quantity) по raw_item на дату документа."
+          ],
+          "changes": [
+            "current_qty в строках raw_items."
+          ],
+          "logicSteps": [
+            "Если строки уже есть — обновить учётные остатки по указанному сырью.",
+            "Если строк нет — заполнить строки по всем сырьевым позициям с ненулевым остатком."
+          ],
+          "validations": [
+            "Повторный запуск не затирает вручную введённые fact_qty без подтверждения; минимум обновляет только current_qty."
+          ],
+          "onRerun": "Если документ уже проводился, расчёт текущего остатка исключает записи текущего документа по паре meta_object + object_uid.",
+          "errors": []
+        }
+      ],
+      "recordsSettings": [
+        {
+          "id": "POST-raw_inventory-raw_movement-plus",
+          "target": "records/raw_movement",
+          "direction": "Plus",
+          "source": "raw_items",
+          "condition": "$r.diff_qty > 0",
+          "columnMappings": [
+            { "column": "period", "expression": "$h.date" },
+            { "column": "company", "expression": "$h.company" },
+            { "column": "warehouse", "expression": "$h.warehouse" },
+            { "column": "raw_item", "expression": "$r.raw_item" },
+            { "column": "quantity", "expression": "$r.diff_qty" }
+          ],
+          "note": "Положительная разница приходует количество."
+        },
+        {
+          "id": "POST-raw_inventory-raw_movement-minus",
+          "target": "records/raw_movement",
+          "direction": "Minus",
+          "source": "raw_items",
+          "condition": "$r.diff_qty < 0",
+          "columnMappings": [
+            { "column": "period", "expression": "$h.date" },
+            { "column": "company", "expression": "$h.company" },
+            { "column": "warehouse", "expression": "$h.warehouse" },
+            { "column": "raw_item", "expression": "$r.raw_item" },
+            { "column": "quantity", "expression": "-$r.diff_qty" }
+          ],
+          "note": "Отрицательная разница списывает количество. Условия Plus/Minus взаимоисключающие по знаку diff_qty: одна строка даёт не более одного движения."
+        }
+      ],
+      "businessRules": [
+        "Инвентаризация не создаёт долг поставщику и не влияет на готовую продукцию.",
+        "Инвентаризация 1b не корректирует стоимость сырья и не пишет в raw_cost_movement; стоимостная корректировка переносится в будущий контур закрытия месяца/переоценки.",
+        "fact_qty не должен быть отрицательным.",
+        "Если fact_qty = current_qty, запись в raw_movement не нужна.",
+        "Условия Plus/Minus взаимоисключающие по знаку diff_qty; строка не может создать двойное движение."
+      ],
+      "sourceDecisionIds": [
+        "DEC-003"
+      ]
+    },
+    {
+      "id": "OP-production_output",
+      "action": "CREATE",
+      "kind": "operation",
+      "name": "production_output",
+      "title": "Выпуск продукции",
+      "purpose": "Фиксирует выпуск готовой продукции, списание сырья по рецептурам и факт выпуска.",
+      "lifecycle": "create",
+      "properties": [
+        {
+          "field": "Memo",
+          "value": "Документ фактического выпуска продукции, прихода готовой продукции и списания сырья по рецептурам.",
+          "required": true
+        },
+        {
+          "field": "OrderByExpression",
+          "value": "number desc, date desc",
+          "required": false
+        },
+        {
+          "field": "DisplayExpression",
+          "value": "Выпуск продукции №{{number}} от {{date}}",
+          "required": false
+        },
+        {
+          "field": "ListFormUid / ItemFormUid",
+          "value": "автоформа",
+          "required": false
+        }
+      ],
+      "headerColumns": [
+        {
+          "name": "company",
+          "title": "Организация",
+          "dataType": "catalog/company",
+          "required": true,
+          "unique": false,
+          "memo": "Организация, выпускающая продукцию."
+        },
+        {
+          "name": "production_task",
+          "title": "Производственное задание",
+          "dataType": "operation/production_task",
+          "required": false,
+          "unique": false,
+          "memo": "Задание, на основании которого оформляется выпуск."
+        },
+        {
+          "name": "fg_warehouse",
+          "title": "Склад ГП",
+          "dataType": "catalog/warehouse",
+          "required": true,
+          "unique": false,
+          "memo": "Склад, на который приходуется готовая продукция."
+        },
+        {
+          "name": "raw_warehouse",
+          "title": "Склад сырья",
+          "dataType": "catalog/warehouse",
+          "required": true,
+          "unique": false,
+          "memo": "Склад, с которого списывается сырьё."
+        },
+        {
+          "name": "comment",
+          "title": "Комментарий",
+          "dataType": "string(300)",
+          "required": false,
+          "unique": false,
+          "memo": "Примечание по выпуску."
+        }
+      ],
+      "detailTables": [
+        {
+          "name": "outputs",
+          "title": "Выпущенная продукция",
+          "serviceColumnsNote": "Служебные колонки id, object_uid, row_number Инженер добавляет первыми.",
+          "columns": [
+            {
+              "name": "product",
+              "title": "Продукция",
+              "dataType": "catalog/nomenclature",
+              "required": true,
+              "memo": "Выпущенная номенклатура с типом product."
+            },
+            {
+              "name": "quantity",
+              "title": "Количество",
+              "dataType": "decimal(3)",
+              "required": true,
+              "memo": "Фактически выпущенное количество."
+            },
+            {
+              "name": "comment",
+              "title": "Комментарий",
+              "dataType": "string(200)",
+              "required": false,
+              "memo": "Примечание по строке выпуска."
+            }
+          ]
+        },
+        {
+          "name": "raw_writeoff",
+          "title": "Списанное сырьё",
+          "serviceColumnsNote": "Служебные колонки id, object_uid, row_number Инженер добавляет первыми.",
+          "columns": [
+            {
+              "name": "raw_item",
+              "title": "Сырьё",
+              "dataType": "catalog/nomenclature",
+              "required": true,
+              "memo": "Сырьё с типом raw, рассчитанное по рецептурам выпуска."
+            },
+            {
+              "name": "quantity",
+              "title": "Количество",
+              "dataType": "decimal(3)",
+              "required": true,
+              "memo": "Количество сырья к списанию."
+            },
+            {
+              "name": "stock_qty_before",
+              "title": "Остаток до списания",
+              "dataType": "decimal(3)",
+              "required": false,
+              "memo": "Учётный остаток сырья перед текущим выпуском."
+            },
+            {
+              "name": "source_note",
+              "title": "Основание",
+              "dataType": "string(200)",
+              "required": false,
+              "memo": "Краткое пояснение расчёта потребности."
+            }
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "id": "CMD-fill_from_task",
+          "name": "fill_from_task",
+          "title": "Заполнить выпуск по заданию",
+          "binding": "header",
+          "kind": "programmable command",
+          "handler": "command .bjs",
+          "input": "production_task.",
+          "reads": [
+            "operation/production_task.plan_products по object_uid задания через QueryBuilder-запрос к таблице вида operation.production_task.plan_products (queryBuilder.md, «Запрос к табличной части»)."
+          ],
+          "changes": [
+            "табличная часть outputs."
+          ],
+          "logicSteps": [
+            "Заполнить outputs продукцией из задания; quantity по умолчанию равна planned_qty; пользователь может скорректировать факт вручную."
+          ],
+          "validations": [
+            "Повторный запуск очищает и заново заполняет outputs только после подтверждения, если есть ручные правки."
+          ],
+          "onRerun": "Очищает и заново заполняет outputs после подтверждения при наличии ручных правок.",
+          "errors": [
+            "Если production_task не заполнен — показать «Укажите производственное задание» и не изменять outputs."
+          ]
+        },
+        {
+          "id": "CMD-calc_raw_writeoff",
+          "name": "calc_raw_writeoff",
+          "title": "Рассчитать списание сырья",
+          "binding": "header",
+          "kind": "programmable command",
+          "handler": "command .bjs",
+          "input": "company, date, raw_warehouse, строки outputs.",
+          "reads": [
+            "catalog/recipe",
+            "register/recipe_component",
+            "catalog/nomenclature",
+            "records/raw_movement"
+          ],
+          "changes": [
+            "табличная часть raw_writeoff."
+          ],
+          "logicSteps": [
+            "Рекурсивно раскрыть фактический выпуск по правилам requirement_calc: продукция -> полуфабрикаты -> сырьё; полуфабрикаты остаются расчётными узлами и в регистры не пишутся.",
+            "Для каждого raw_item рассчитать остаток до списания: stock_qty_before = Sum(quantity) по company, raw_warehouse, raw_item на дату выпуска.",
+            "Полностью заменить raw_writeoff; для ссылочного поля передавать raw_item + raw_item_display."
+          ],
+          "validations": [
+            "Если stock_qty_before <= 0 или stock_qty_before < quantity — остановиться с понятной ошибкой и не заполнять некорректное списание."
+          ],
+          "onRerun": "Если production_output уже сохранён и проводился, расчёт остатка исключает записи текущего документа по паре meta_object + object_uid.",
+          "errors": [
+            "нет активной рецептуры",
+            "больше одной активной рецептуры",
+            "цикл рецептур",
+            "recipe.output_qty <= 0",
+            "строка outputs.quantity <= 0",
+            "компонент типа product",
+            "нулевой или отрицательный остаток сырья",
+            "недостаточный остаток сырья для количественного списания"
+          ]
+        }
+      ],
+      "recordsSettings": [
+        {
+          "id": "POST-production_output-finished_goods_movement",
+          "target": "records/finished_goods_movement",
+          "direction": "Plus",
+          "source": "outputs",
+          "condition": "$r.quantity > 0",
+          "columnMappings": [
+            { "column": "period", "expression": "$h.date" },
+            { "column": "company", "expression": "$h.company" },
+            { "column": "warehouse", "expression": "$h.fg_warehouse" },
+            { "column": "product", "expression": "$r.product" },
+            { "column": "quantity", "expression": "$r.quantity" }
+          ],
+          "note": "Приход готовой продукции."
+        },
+        {
+          "id": "POST-production_output-raw_movement",
+          "target": "records/raw_movement",
+          "direction": "Minus",
+          "source": "raw_writeoff",
+          "condition": "$r.quantity > 0",
+          "columnMappings": [
+            { "column": "period", "expression": "$h.date" },
+            { "column": "company", "expression": "$h.company" },
+            { "column": "warehouse", "expression": "$h.raw_warehouse" },
+            { "column": "raw_item", "expression": "$r.raw_item" },
+            { "column": "quantity", "expression": "$r.quantity" }
+          ],
+          "note": "Списание количества сырья; стоимость списания в 1b не формируется."
+        },
+        {
+          "id": "POST-production_output-production_plan",
+          "target": "records/production_plan",
+          "direction": "Plus",
+          "source": "outputs",
+          "condition": "$r.quantity > 0",
+          "columnMappings": [
+            { "column": "period", "expression": "$h.date" },
+            { "column": "company", "expression": "$h.company" },
+            { "column": "warehouse", "expression": "$h.fg_warehouse" },
+            { "column": "product", "expression": "$r.product" },
+            { "column": "planned_qty", "expression": "0" },
+            { "column": "output_qty", "expression": "$r.quantity" }
+          ],
+          "note": "Факт выпуска отдельной записью; планируемое количество 0."
+        }
+      ],
+      "businessRules": [
+        "Факт выпуска в production_plan пишется тем же регистром, что и план 1a: отдельной записью с planned_qty = 0, output_qty = фактический выпуск (план и факт — два отдельных ресурса регистра, а не приход/расход одного ресурса).",
+        "Контракт с существующим records/production_plan (1a §4.12): колонки company, warehouse (Склад выпуска), product, planned_qty, output_qty. Маппинг проведения: warehouse <- $h.fg_warehouse, product <- $r.product, planned_qty <- 0, output_qty <- $r.quantity. 1b не изменяет состав колонок; при расхождении с §4.12 — возврат Analyst до реализации.",
+        "calc_raw_writeoff должен быть выполнен перед проведением; если raw_writeoff пустой при непустом outputs — это ошибка пользователя/процесса.",
+        "Количественное списание сырья проводится только из raw_writeoff, а не из RecordsSource с DB-запросом (документация RecordsSource не подтверждает произвольные запросы к БД).",
+        "Недостаток сырья блокирует расчёт списания в 1b; выпуск без списания сырья не является корректным сценарием приёмки.",
+        "Полуфабрикаты не приходуются и не списываются как складской остаток.",
+        "Стоимость списанного сырья в 1b не рассчитывается и в raw_writeoff не хранится; расход стоимости сырья создаст будущий документ закрытия месяца в raw_cost_movement.",
+        "Себестоимость готовой продукции в 1b не ведётся: finished_goods_movement хранит только количество."
+      ],
+      "sourceDecisionIds": [
+        "DEC-004",
+        "DEC-005",
+        "DEC-006"
+      ]
+    },
+    {
+      "id": "REPORT-raw_stock_report",
+      "action": "CREATE",
+      "kind": "data_view",
+      "name": "raw_stock_report",
+      "title": "Остатки сырья",
+      "purpose": "Показывает количественные остатки сырья на дату.",
+      "lifecycle": "create",
+      "report": {
+        "properties": [
+          {
+            "field": "Memo",
+            "value": "Табличный отчёт по количественным остаткам сырья на выбранную дату.",
+            "required": true
+          }
+        ],
+        "dataSources": [
+          {
+            "name": "rows",
+            "reads": "records/raw_movement; display-значения warehouse, raw_item",
+            "logic": "Сгруппировать записи до date_to включительно по организации, складу и сырью; вывести Sum(quantity), исключить нулевые остатки по возможности. Стоимость и средняя цена не выводятся.",
+            "result": "DataTable количественных остатков сырья."
+          }
+        ],
+        "filters": [
+          {
+            "name": "date_to",
+            "title": "На дату",
+            "dataType": "datetime",
+            "required": true,
+            "memo": "Дата расчёта остатка."
+          },
+          {
+            "name": "company",
+            "title": "Организация",
+            "dataType": "catalog/company",
+            "required": false,
+            "memo": "Отбор по организации."
+          },
+          {
+            "name": "warehouse",
+            "title": "Склад сырья",
+            "dataType": "catalog/warehouse",
+            "required": false,
+            "memo": "Отбор по складу."
+          },
+          {
+            "name": "raw_item",
+            "title": "Сырьё",
+            "dataType": "catalog/nomenclature",
+            "required": false,
+            "memo": "Отбор по сырью."
+          }
+        ],
+        "indicators": [
+          "Таблица raw_stock_table, ширина Full (12), колонки: склад, сырьё, количество."
+        ]
+      },
+      "sourceDecisionIds": [
+        "DEC-007"
+      ]
+    },
+    {
+      "id": "REPORT-production_plan_report",
+      "action": "CREATE",
+      "kind": "data_view",
+      "name": "production_plan_report",
+      "title": "План/факт выпуска",
+      "purpose": "Сравнивает плановый и фактический выпуск за период без группировки по точной дате.",
+      "lifecycle": "create",
+      "report": {
+        "properties": [
+          {
+            "field": "Memo",
+            "value": "Табличный отчёт сравнения планового и фактического выпуска продукции за период.",
+            "required": true
+          }
+        ],
+        "dataSources": [
+          {
+            "name": "rows",
+            "reads": "records/production_plan",
+            "logic": "Отфильтровать записи по period за выбранный период, но НЕ группировать по точной дате. Сгруппировать по организации, складу и продукции; вывести Sum(planned_qty), Sum(output_qty), отклонение planned_qty - output_qty. Это сводит план из production_task.plan_date и факт из production_output.date в одну строку за период.",
+            "result": "DataTable плана/факта."
+          }
+        ],
+        "filters": [
+          {
+            "name": "date_from",
+            "title": "Дата с",
+            "dataType": "datetime",
+            "required": false,
+            "memo": "Начало периода."
+          },
+          {
+            "name": "date_to",
+            "title": "Дата по",
+            "dataType": "datetime",
+            "required": false,
+            "memo": "Конец периода."
+          },
+          {
+            "name": "company",
+            "title": "Организация",
+            "dataType": "catalog/company",
+            "required": false,
+            "memo": "Отбор по организации."
+          },
+          {
+            "name": "warehouse",
+            "title": "Склад выпуска",
+            "dataType": "catalog/warehouse",
+            "required": false,
+            "memo": "Отбор по складу выпуска."
+          },
+          {
+            "name": "product",
+            "title": "Продукция",
+            "dataType": "catalog/nomenclature",
+            "required": false,
+            "memo": "Отбор по продукции."
+          }
+        ],
+        "indicators": [
+          "Таблица plan_fact_table, ширина Full (12), колонки: организация, склад, продукция, запланировано, выпущено, отклонение. Дата не является ключом группировки; период задаётся фильтрами date_from/date_to."
+        ]
+      },
+      "sourceDecisionIds": [
+        "DEC-007"
+      ]
+    },
+    {
+      "id": "REPORT-fg_stock_report",
+      "action": "CREATE",
+      "kind": "data_view",
+      "name": "fg_stock_report",
+      "title": "Остатки готовой продукции",
+      "purpose": "Показывает оперативные остатки готовой продукции на дату.",
+      "lifecycle": "create",
+      "report": {
+        "properties": [
+          {
+            "field": "Memo",
+            "value": "Табличный отчёт по оперативным остаткам готовой продукции на выбранную дату.",
+            "required": true
+          }
+        ],
+        "dataSources": [
+          {
+            "name": "rows",
+            "reads": "records/finished_goods_movement",
+            "logic": "Сгруппировать записи до date_to включительно по организации, складу и продукции; вывести Sum(quantity), исключить нулевые остатки по возможности.",
+            "result": "DataTable остатков готовой продукции."
+          }
+        ],
+        "filters": [
+          {
+            "name": "date_to",
+            "title": "На дату",
+            "dataType": "datetime",
+            "required": true,
+            "memo": "Дата расчёта остатка."
+          },
+          {
+            "name": "company",
+            "title": "Организация",
+            "dataType": "catalog/company",
+            "required": false,
+            "memo": "Отбор по организации."
+          },
+          {
+            "name": "warehouse",
+            "title": "Склад ГП",
+            "dataType": "catalog/warehouse",
+            "required": false,
+            "memo": "Отбор по складу готовой продукции."
+          },
+          {
+            "name": "product",
+            "title": "Продукция",
+            "dataType": "catalog/nomenclature",
+            "required": false,
+            "memo": "Отбор по продукции."
+          }
+        ],
+        "indicators": [
+          "Таблица fg_stock_table, ширина Full (12), колонки: склад, продукция, количество."
+        ]
+      },
+      "sourceDecisionIds": [
+        "DEC-007"
+      ]
+    }
+  ],
+  "menu": {
+    "note": "Если в menu/main уже есть группы с autoFill = true для видов operation, records, data_view, отдельные ручные пункты не добавлять. URL для автоформ: /app#/data-objects/{kind}/{name}; URL панели данных — по стандартному паттерну data_view, Инженер сверяет с существующими объектами menu/ и документацией.",
+    "items": [
+      {
+        "group": "Хлебозавод / Склад и выпуск",
+        "title": "Поступление сырья",
+        "url": "/app#/data-objects/operation/raw_receipt",
+        "condition": "если нет autoFill"
+      },
+      {
+        "group": "Хлебозавод / Склад и выпуск",
+        "title": "Инвентаризация сырья",
+        "url": "/app#/data-objects/operation/raw_inventory",
+        "condition": "если нет autoFill"
+      },
+      {
+        "group": "Хлебозавод / Склад и выпуск",
+        "title": "Выпуск продукции",
+        "url": "/app#/data-objects/operation/production_output",
+        "condition": "если нет autoFill"
+      },
+      {
+        "group": "Хлебозавод / Регистры",
+        "title": "Регистры движений 1b",
+        "condition": "только если records-объекты не скрыты общей политикой меню: raw_movement, raw_cost_movement, finished_goods_movement, supplier_debt_movement"
+      },
+      {
+        "group": "Хлебозавод / Отчёты",
+        "title": "Отчёты 1b",
+        "condition": "добавить raw_stock_report, production_plan_report, fg_stock_report к отчётам 1a"
+      }
+    ]
+  },
+  "implementationOrder": [
+    "Убедиться, что объекты 1a импортированы и доступны: company, warehouse, counterparty, nomenclature, recipe, recipe_component, production_task, production_plan.",
+    "Создать records/raw_movement, records/raw_cost_movement, records/finished_goods_movement, records/supplier_debt_movement.",
+    "Создать operation/raw_receipt и настроить проведение в raw_movement, raw_cost_movement и supplier_debt_movement.",
+    "Создать operation/raw_inventory, команду fill_current_stock и проведение корректировки в raw_movement.",
+    "Создать operation/production_output, команды fill_from_task, calc_raw_writeoff, проведение в finished_goods_movement, raw_movement, production_plan.",
+    "Создать data_view/raw_stock_report, data_view/production_plan_report, data_view/fg_stock_report.",
+    "Проверить меню и при необходимости добавить навигацию.",
+    "Из-за перекрёстных ссылок между видами включить в отчёт инструкцию импорта (ADR-003); при необходимости — companion-файл *-import-notes.md."
+  ],
+  "dataTypesNotes": {
+    "addToDataTypes": [
+      "operation/raw_receipt",
+      "operation/raw_inventory",
+      "operation/production_output"
+    ],
+    "doNotAdd": [
+      "records/raw_movement",
+      "records/raw_cost_movement",
+      "records/finished_goods_movement",
+      "records/supplier_debt_movement",
+      "data_view/raw_stock_report",
+      "data_view/production_plan_report",
+      "data_view/fg_stock_report"
+    ],
+    "note": "Для новых operations локально добавить записи в metadata/system/dataTypes.json на время редактирования. records/* и data_view/* в dataTypes.json не добавляются (не reference-типы)."
+  },
+  "acceptanceChecklist": {
+    "fileSelfCheck": [
+      "Все объекты из metaObjects созданы согласно действию CREATE.",
+      "Все JSON валидируются по соответствующим JSON-схемам из metadata/system/schemas/.",
+      "Все новые Name — латиница snake_case, <=30 символов для объектов, не SQL reserved words.",
+      "MetaObjectKindUid, primitive DataTypeUid, стандартные колонки и схемы взяты из metadata/system/, не из reference/.",
+      "Для новых operations (raw_receipt, raw_inventory, production_output) локально добавлены записи в metadata/system/dataTypes.json.",
+      "Для records/raw_movement, raw_cost_movement, finished_goods_movement, supplier_debt_movement записи в dataTypes.json НЕ добавлены (records не reference-тип).",
+      "Memo заполнено у каждого нового объекта, колонки, табличной части, команды, источника данных.",
+      "Табличные части операций начинаются со служебных колонок id, object_uid, row_number в правильном порядке.",
+      "У всех новых .bjs-файлов команд и data_view-источников имена совпадают со значениями Expression в JSON.",
+      "Формы списка/редактирования не создавались без отдельного требования; ListFormUid/ItemFormUid оставлены пустыми для автоформ."
+    ],
+    "declarativeJson": [
+      "raw_receipt.recordsSettings пишет строки raw_items в records/raw_movement направлением Plus с quantity без стоимости.",
+      "raw_receipt.recordsSettings пишет стоимость строк raw_items в records/raw_cost_movement направлением Plus с amount.",
+      "raw_receipt.recordsSettings пишет рост долга поставщику в records/supplier_debt_movement по суммам строк поступления.",
+      "raw_inventory содержит команду fill_current_stock и проведение разниц в records/raw_movement.",
+      "В raw_inventory условия Plus/Minus взаимоисключающие по знаку diff_qty; инвентаризация не пишет стоимость и не создаёт записи в raw_cost_movement.",
+      "production_output содержит команды fill_from_task и calc_raw_writeoff.",
+      "fill_from_task при пустом production_task показывает понятную ошибку и не изменяет outputs; при заполненном задании читает operation.production_task.plan_products по object_uid.",
+      "production_output.recordsSettings пишет outputs в records/finished_goods_movement направлением Plus.",
+      "production_output.recordsSettings пишет raw_writeoff в records/raw_movement направлением Minus.",
+      "production_output.recordsSettings пишет факт выпуска в records/production_plan с planned_qty = 0, output_qty = $r.quantity.",
+      "calc_raw_writeoff рассчитывает только количественное списание по рецептурам, проверяет достаточность остатка по raw_movement и не рассчитывает среднюю цену/сумму списания.",
+      "При загрузке строк в табличные части через $t.<table>.load(source) для ссылочных полей передаются пары field + field_display.",
+      "raw_stock_report читает records/raw_movement, группирует количество, имеет фильтры date_to, company, warehouse, raw_item и не выводит стоимость/среднюю цену.",
+      "production_plan_report читает records/production_plan, фильтрует по period, группирует по организации, складу и продукции без точной даты и показывает план, факт и отклонение.",
+      "fg_stock_report читает records/finished_goods_movement и имеет фильтры date_to, company, warehouse, product."
+    ],
+    "functionalStand": [
+      "Можно создать поступление сырья с двумя строками сырья и сохранить его с включённым create_records.",
+      "После сохранения поступления в raw_movement появляются приходные записи по сырью с количеством.",
+      "После сохранения поступления в raw_cost_movement появляются приходные записи по сырью со стоимостью поступления.",
+      "После сохранения поступления в supplier_debt_movement появляется рост долга поставщику на сумму поступления.",
+      "Отчёт «Остатки сырья» показывает поступившее сырьё на выбранную дату.",
+      "Можно создать инвентаризацию сырья и выполнить fill_current_stock; учётные остатки заполняются из raw_movement.",
+      "После ввода фактического остатка и сохранения инвентаризации в raw_movement появляется корректировка только на разницу.",
+      "Можно создать выпуск продукции, заполнить outputs из производственного задания или вручную.",
+      "Если в выпуске не указано производственное задание, команда fill_from_task показывает понятную ошибку и не изменяет строки выпуска.",
+      "Команда calc_raw_writeoff заполняет raw_writeoff по рецептурам только количеством сырья.",
+      "При нулевом или отрицательном остатке сырья команда calc_raw_writeoff возвращает понятную ошибку.",
+      "При недостаточном остатке сырья команда списания возвращает понятную ошибку и не формирует некорректное списание.",
+      "После сохранения выпуска в finished_goods_movement появляется приход готовой продукции.",
+      "После сохранения выпуска в raw_movement появляется расход сырья по строкам raw_writeoff.",
+      "После сохранения выпуска в production_plan появляется факт выпуска (output_qty) без изменения плановых записей 1a.",
+      "Отчёт «План/факт выпуска» показывает план из production_task и факт из production_output в одной строке по организации, складу и продукции за выбранный период, даже если плановая дата и дата выпуска различаются внутри периода.",
+      "Отчёт «Остатки готовой продукции» показывает выпущенную продукцию на выбранную дату."
+    ]
+  },
+  "openQuestions": [
+    {
+      "id": "OQ-001",
+      "title": "Scope будущего документа закрытия месяца",
+      "detail": "В 1b создаётся raw_cost_movement, но расход стоимости сырья не формируется. Следующее ТЗ по закрытию месяца должно определить документ, период, метод средней стоимости, округление, обработку нулевых/отрицательных остатков и записи Minus в raw_cost_movement.",
+      "blocking": false,
+      "specRef": "project/docs/specs/sp-001-bakery-stage1b.json",
+      "relatedRiskIds": [
+        "RISK-002"
+      ]
+    },
+    {
+      "id": "OQ-002",
+      "title": "Вариант хранения факта выпуска в production_plan",
+      "detail": "В этом ТЗ выбран вариант: production_output пишет отдельные записи в существующий records/production_plan с planned_qty = 0, output_qty = факт. Если PM захочет отдельный регистр факта выпуска вместо общего production_plan, ТЗ возвращается Analyst до реализации.",
+      "blocking": false,
+      "specRef": "project/docs/specs/sp-001-bakery-stage1b.json",
+      "relatedDecisionIds": [
+        "DEC-006"
+      ]
+    },
+    {
+      "id": "OQ-003",
+      "title": "Отображение сальдо supplier_debt_movement в 1b",
+      "detail": "Регистр supplier_debt_movement создаётся в 1b, но отдельный supplier_debt_report остаётся в 1c. Если PM хочет видеть кредиторку сразу после поступления сырья, минимальный отчёт добавляется в 1b отдельным решением.",
+      "blocking": false,
+      "specRef": "project/docs/specs/sp-001-bakery-stage1b.json",
+      "relatedObjectIds": [
+        "RECORDS-supplier_debt_movement"
+      ]
+    }
+  ],
+  "risks": [
+    {
+      "id": "RISK-001",
+      "title": "Фильтрация типов номенклатуры и ролей контрагентов может быть не полностью декларативной",
+      "impact": "Пользователь может выбрать сырьё/поставщика не того типа, если автоформа не ограничит выбор.",
+      "mitigation": "В spec/plan зафиксировать fallback: приёмочный контроль или командная проверка, если декларативный фильтр не подтверждён.",
+      "sourceDecisionIds": [
+        "DEC-002",
+        "DEC-004"
+      ]
+    },
+    {
+      "id": "RISK-002",
+      "title": "Закрытие месяца ещё не проектировалось",
+      "impact": "В 1b будет отражена стоимость поступления сырья, но расход стоимости сырья останется не сформированным до отдельного документа закрытия месяца.",
+      "mitigation": "Зафиксировать в следующем ТЗ документ закрытия месяца: период, метод средней стоимости, округление, обработку нулевых/отрицательных остатков и записи Minus в raw_cost_movement.",
+      "sourceDecisionIds": [
+        "DEC-001",
+        "DEC-004"
+      ]
+    },
+    {
+      "id": "RISK-003",
+      "title": "Повторный расчёт остатков должен исключать текущий документ",
+      "impact": "При перепроведении raw_inventory или production_output расчёт количественного остатка может учитывать собственные движения.",
+      "mitigation": "Команды чтения raw_movement исключают записи текущего документа по meta_object + object_uid.",
+      "sourceDecisionIds": [
+        "DEC-003",
+        "DEC-004"
+      ]
+    }
+  ],
+  "changelog": [
+    {
+      "date": "2026-06-02",
+      "status": "review",
+      "change": "Детализирована первичная версия части 1b в составе единого sp-001-bakery-stage1.md."
+    },
+    {
+      "date": "2026-06-03",
+      "status": "review",
+      "change": "Исправлены замечания PM-chat review по 1b и выделен самостоятельный файл этапа 1b."
+    },
+    {
+      "date": "2026-06-10",
+      "status": "review",
+      "change": "По решению PM разделён количественный raw_movement и стоимостный raw_cost_movement; регистры 1b приведены к движенческому именованию; стоимостное списание перенесено в закрытие месяца."
+    },
+    {
+      "date": "2026-06-10",
+      "status": "review",
+      "change": "Правки по PM-chat review 1b: контракт production_plan (1a §4.12), построчный долг поставщику, разбиение проведения инвентаризации на Plus/Minus, синхронизация openQuestions."
+    },
+    {
+      "date": "2026-06-10",
+      "status": "review",
+      "change": "Конвертация ТЗ 1b из markdown в формат spec-json-v0.1 как первый носитель нового формата (содержание эквивалентно sp-001-bakery-stage1b.md)."
+    }
+  ]
+}

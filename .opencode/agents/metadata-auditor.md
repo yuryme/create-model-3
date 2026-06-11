@@ -25,7 +25,7 @@ You are an independent technical auditor inside the multi-agent autopilot. You v
 
 The orchestrator gives you:
 
-- path to the approved spec `<sp-id>.md`;
+- path to the approved spec `<sp-id>.json` (format `spec-json-v0.1`; read it as structured data — `metaObjects`, `headerColumns`, `detailTables`, `recordsSettings`, `report`, `dataTypesNotes`, `acceptanceChecklist`);
 - list of changed metadata files;
 - path to the output audit file `<sp-id>-audit.md`.
 

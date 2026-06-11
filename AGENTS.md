@@ -50,6 +50,16 @@ PM assistant coordinates the workflow but does not replace `analyst` for design 
 
 The human PM approves business decisions, scope, and the functional result on a BaSYS stand. The PM is not expected to read or approve metadata JSON line-by-line; technical metadata checks are the responsibility of agents and tools.
 
+## Specification Format (spec-json)
+
+The ТЗ (specification) is written in the `spec-json-v0.1` format: a JSON file `project/docs/specs/<sp-id>.json` validated against `project/docs/specs/_spec-json.schema.json` (example `_spec-template.json`). Architecture rationale stays in `*-design.md` / `*.design.json`; the ТЗ is the buildable contract for the engineer. Spec status lives in `meta.status`. Validate with `python project/docs/specs/validate_spec.py <path>` (Python + `jsonschema`); validation is an obligatory review gate. The markdown ТЗ template `_template.md` is deprecated (ADR 2026-06-10); do not write new ТЗ in markdown. Designs, plans, reviews, reports, import-notes and audits stay in markdown.
+
+## Specification Companion Artifacts
+
+When an Analyst artifact in `project/docs/specs/` has companion structured or visual files, they are part of the same review package and must be updated in the same editing pass as the source document. This includes files such as `*.design.json`, `*.architecture-view.json` and `*.architecture-view.html`.
+
+Do not leave companion visualization/design files stale after changing the methodology or specification. If a companion cannot be updated in the same pass, explicitly mark it stale in the user response and in `project/docs/session-state.md`; otherwise PM-chat review treats the package as inconsistent.
+
 ## Session Memory
 
 `project/docs/session-state.md` is the operational memory for the current OpenCode run. It is short-lived state, not a project history archive.

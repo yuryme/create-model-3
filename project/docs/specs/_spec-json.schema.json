@@ -1,0 +1,1009 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://basys.local/schemas/spec-json-v0.1.json",
+  "title": "BaSYS spec-json v0.1",
+  "description": "Structured implementation-level specification (ТЗ) for BaSYS metadata. Replaces the markdown ТЗ (_template.md). Architecture rationale lives in *-design.md / *.design.json; this artifact is the buildable contract for the engineer.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "meta",
+    "context",
+    "scope",
+    "metaObjects",
+    "acceptanceChecklist",
+    "changelog"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional path to this schema file, relative to the spec JSON."
+    },
+    "schemaVersion": {
+      "const": "spec-json-v0.1"
+    },
+    "meta": {
+      "$ref": "#/$defs/meta"
+    },
+    "context": {
+      "$ref": "#/$defs/context"
+    },
+    "scope": {
+      "$ref": "#/$defs/scope"
+    },
+    "metaObjects": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/metaObject"
+      }
+    },
+    "menu": {
+      "$ref": "#/$defs/menu"
+    },
+    "implementationOrder": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Ordered human-readable steps describing implementation/import dependencies."
+    },
+    "dataTypesNotes": {
+      "$ref": "#/$defs/dataTypesNotes"
+    },
+    "acceptanceChecklist": {
+      "$ref": "#/$defs/acceptanceChecklist"
+    },
+    "openQuestions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/openQuestion"
+      }
+    },
+    "risks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/risk"
+      }
+    },
+    "changelog": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/changelogEntry"
+      }
+    }
+  },
+  "$defs": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "spId",
+        "title",
+        "status",
+        "version"
+      ],
+      "properties": {
+        "spId": {
+          "type": "string",
+          "description": "Specification id, e.g. 001 or sp-001-bakery-stage1b."
+        },
+        "title": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "review",
+            "approved",
+            "implemented"
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "author": {
+          "type": "string"
+        },
+        "created": {
+          "type": "string"
+        },
+        "updated": {
+          "type": "string"
+        },
+        "stage": {
+          "type": "string",
+          "description": "Optional sub-stage label, e.g. 1b."
+        },
+        "domain": {
+          "type": "string"
+        },
+        "dependsOn": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sourceInputs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Paths to design/problem-statement artifacts this spec derives from."
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "summary"
+      ],
+      "properties": {
+        "summary": {
+          "type": "string",
+          "description": "Why and for whom this change is made; 3-8 sentences of business context."
+        },
+        "evidence": {
+          "type": "array",
+          "description": "Confirmed BaSYS platform capabilities used by this spec (Evidence Rule).",
+          "items": {
+            "$ref": "#/$defs/evidence"
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "capability",
+        "type",
+        "path"
+      ],
+      "properties": {
+        "capability": {
+          "type": "string",
+          "description": "Short statement of the confirmed platform capability."
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "basys-docs",
+            "reference",
+            "project-design"
+          ]
+        },
+        "path": {
+          "type": "string"
+        },
+        "section": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "inScope",
+        "outOfScope"
+      ],
+      "properties": {
+        "inScope": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "outOfScope": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "metaObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action",
+        "kind",
+        "name",
+        "title"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Optional stable id used for cross-references, e.g. RECORDS-raw_movement."
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "CREATE",
+            "MODIFY",
+            "DELETE"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "description": "BaSYS metaobject kind. Common: catalog, enum, operation, records, register, data_view, excel_report, workflow, menu. Free string to allow new confirmed kinds."
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]{1,30}$",
+          "description": "snake_case latin Name, <=30 chars (ADR-001)."
+        },
+        "title": {
+          "type": "string"
+        },
+        "purpose": {
+          "type": "string"
+        },
+        "lifecycle": {
+          "type": "string",
+          "enum": [
+            "create",
+            "modify",
+            "delete",
+            "reuse-existing"
+          ],
+          "description": "Optional lifecycle hint, esp. reuse-existing for objects from earlier stages."
+        },
+        "properties": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/objectProperty"
+          },
+          "description": "Metaobject-level properties: Memo, OrderByExpression, DisplayExpression, form uids, IsActive, EditMethod, etc."
+        },
+        "headerColumns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/column"
+          }
+        },
+        "detailTables": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/detailTable"
+          }
+        },
+        "indexes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Index descriptions, e.g. 'period', 'company + raw_item + warehouse'."
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Human-readable reference notes between this object and others."
+        },
+        "recordsSettings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/recordsSetting"
+          },
+          "description": "Posting rules into records registers (operations and other CanCreateRecords kinds)."
+        },
+        "recordsSources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/recordsSource"
+          }
+        },
+        "calculations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/calculation"
+          }
+        },
+        "commands": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/command"
+          }
+        },
+        "workflows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/workflowStep"
+          }
+        },
+        "report": {
+          "$ref": "#/$defs/report"
+        },
+        "businessRules": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "modify": {
+          "$ref": "#/$defs/modifyDiff"
+        },
+        "delete": {
+          "$ref": "#/$defs/deleteInfo"
+        },
+        "sourceDecisionIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "objectProperty": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "field",
+        "value"
+      ],
+      "properties": {
+        "field": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "column": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "title",
+        "dataType"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]{1,30}$"
+        },
+        "title": {
+          "type": "string"
+        },
+        "dataType": {
+          "type": "string",
+          "description": "Type name or reference, e.g. 'string(300)', 'decimal(3)', 'date', 'catalog/company', 'enum/nomenclature_type'."
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "conditional": {
+          "type": "string",
+          "description": "Note when requiredness is situational ('по ситуации')."
+        },
+        "unique": {
+          "type": "boolean"
+        },
+        "defaultValue": {
+          "type": "string"
+        },
+        "formula": {
+          "type": "string"
+        },
+        "columnKind": {
+          "type": "string",
+          "enum": [
+            "Stored",
+            "Virtual"
+          ]
+        },
+        "renderNote": {
+          "type": "string"
+        },
+        "memo": {
+          "type": "string"
+        }
+      }
+    },
+    "detailTable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "title",
+        "columns"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]{1,30}$"
+        },
+        "title": {
+          "type": "string"
+        },
+        "serviceColumnsNote": {
+          "type": "string",
+          "description": "Note about mandatory service columns id, object_uid, row_number added first."
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/column"
+          }
+        }
+      }
+    },
+    "recordsSetting": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target",
+        "direction",
+        "source",
+        "columnMappings"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string",
+          "description": "Records register, e.g. records/raw_movement."
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "Plus",
+            "Minus"
+          ]
+        },
+        "source": {
+          "type": "string",
+          "description": "Source of rows: header, a detail table name, or a records source name."
+        },
+        "condition": {
+          "type": "string",
+          "description": "Posting condition, e.g. '$r.quantity > 0'. Empty if always."
+        },
+        "columnMappings": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/columnMapping"
+          }
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "columnMapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "column",
+        "expression"
+      ],
+      "properties": {
+        "column": {
+          "type": "string"
+        },
+        "expression": {
+          "type": "string"
+        }
+      }
+    },
+    "recordsSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "purpose"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "purpose": {
+          "type": "string"
+        },
+        "input": {
+          "type": "string"
+        },
+        "logic": {
+          "type": "string"
+        },
+        "output": {
+          "type": "string"
+        },
+        "memo": {
+          "type": "string"
+        }
+      }
+    },
+    "calculation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rule",
+        "logic"
+      ],
+      "properties": {
+        "rule": {
+          "type": "string"
+        },
+        "when": {
+          "type": "string"
+        },
+        "dataSource": {
+          "type": "string"
+        },
+        "logic": {
+          "type": "string"
+        },
+        "result": {
+          "type": "string"
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "title",
+        "binding",
+        "kind"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "binding": {
+          "type": "string",
+          "description": "Where the command is shown: header, list, item, or a detail table name."
+        },
+        "kind": {
+          "type": "string",
+          "description": "Command kind, e.g. 'programmable command', 'standard'."
+        },
+        "handler": {
+          "type": "string",
+          "description": "Workflow or .bjs handler reference."
+        },
+        "input": {
+          "type": "string"
+        },
+        "reads": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "changes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "logicSteps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "validations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "onRerun": {
+          "type": "string"
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "workflowStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "trigger": {
+          "type": "string"
+        },
+        "input": {
+          "type": "string"
+        },
+        "reads": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "changes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "result": {
+          "type": "string"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "idempotency": {
+          "type": "string"
+        }
+      }
+    },
+    "report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dataSources"
+      ],
+      "properties": {
+        "properties": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/objectProperty"
+          }
+        },
+        "dataSources": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/reportDataSource"
+          }
+        },
+        "filters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/reportFilter"
+          }
+        },
+        "indicators": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "reportDataSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "reads",
+        "logic"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "reads": {
+          "type": "string"
+        },
+        "logic": {
+          "type": "string"
+        },
+        "result": {
+          "type": "string"
+        }
+      }
+    },
+    "reportFilter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "title",
+        "dataType"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "dataType": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "memo": {
+          "type": "string"
+        }
+      }
+    },
+    "modifyDiff": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "addsHeaderColumns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/column"
+          }
+        },
+        "addsRecordsSettings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/recordsSetting"
+          }
+        },
+        "removes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "changes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "deleteInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reason"
+      ],
+      "properties": {
+        "reason": {
+          "type": "string"
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "menu": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "note": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/menuItem"
+          }
+        }
+      }
+    },
+    "menuItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "group",
+        "title"
+      ],
+      "properties": {
+        "group": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "condition": {
+          "type": "string"
+        }
+      }
+    },
+    "dataTypesNotes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "addToDataTypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Reference-kind objects to register in metadata/system/dataTypes.json."
+        },
+        "doNotAdd": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Non-reference kinds that must NOT be added to dataTypes.json."
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "acceptanceChecklist": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fileSelfCheck",
+        "declarativeJson",
+        "functionalStand"
+      ],
+      "properties": {
+        "fileSelfCheck": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Bucket A: engineer file self-check, no BaSYS run."
+        },
+        "declarativeJson": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Bucket B: declarative JSON-field checks by engineer."
+        },
+        "functionalStand": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Bucket C: functional checks on the BaSYS stand by PM."
+        }
+      }
+    },
+    "openQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "detail"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "blocking": {
+          "type": "boolean"
+        },
+        "specRef": {
+          "type": "string"
+        },
+        "relatedDecisionIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "relatedObjectIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "relatedRiskIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "risk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "impact": {
+          "type": "string"
+        },
+        "mitigation": {
+          "type": "string"
+        },
+        "sourceDecisionIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "changelogEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "date",
+        "status",
+        "change"
+      ],
+      "properties": {
+        "date": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "review",
+            "approved",
+            "implemented"
+          ]
+        },
+        "change": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

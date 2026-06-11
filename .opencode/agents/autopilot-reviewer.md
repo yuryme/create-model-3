@@ -12,11 +12,7 @@ permission:
   external_directory: deny
   bash: deny
   task: deny
-  edit:
-    "*": deny
-    "project/docs/specs/*-design-review.md": allow
-    "project/docs/specs/*-spec-review.md": allow
-    "project/docs/specs/*-plan-review.md": allow
+  edit: allow
 ---
 
 # Autopilot Reviewer
@@ -73,14 +69,18 @@ Non-critical:
 
 ## Criteria For `spec` Review
 
+The spec (ТЗ) is a `spec-json-v0.1` JSON file (`<sp-id>.json`), not markdown. Review it as structured data against `project/docs/specs/_spec-json.schema.json`. The orchestrator runs the JSON Schema validator separately; you focus on content correctness, but still flag obvious schema violations.
+
 Critical if any of the following is true:
 
+- The spec is not valid against `_spec-json.schema.json`: missing required sections (`meta`, `context`, `scope`, `metaObjects`, `acceptanceChecklist`, `changelog`), wrong enum values (`action`, `direction`, `meta.status`), or `metaObjects` empty.
 - The spec contradicts an explicit decision in `project/docs/decisions.md` or the approved design.
-- The spec proposes a metaobject Name that is a SQL reserved word or longer than 30 characters or not Latin `snake_case`.
+- A `metaObjects[].name`, column `name`, or detail-table `name` is a SQL reserved word, longer than 30 characters, or not Latin `snake_case`.
 - The spec references a kind or type that does not exist in `metadata/system/`.
-- The spec describes operations whose records cannot be produced by the proposed registers.
-- The spec omits a register, catalog, or column that is required for the listed acceptance scenarios.
+- The spec describes operations whose records cannot be produced by the proposed registers (`recordsSettings` target/source/columnMappings inconsistent with the register columns).
+- The spec omits a register, catalog, or column required for the `acceptanceChecklist.functionalStand` scenarios.
 - The spec edits, or implies editing, forbidden locations: `reference/`, `basys-docs/`, `basys-cursor-rules/`, generated BaSYS skills.
+- A non-trivial platform capability is used without `context.evidence` (Evidence Rule).
 
 Non-critical:
 

@@ -15,7 +15,7 @@ Exception: `$schema` paths inside metadata JSON files are relative to the JSON f
 
 ## Development Responsibilities
 
-- Accept only approved specifications from `project/docs/specs/` with `status: approved`.
+- Accept only approved specifications (ТЗ) from `project/docs/specs/` with `meta.status: approved`. The ТЗ is a `spec-json-v0.1` JSON file (`<sp-id>.json`, schema `_spec-json.schema.json`); read it as structured data (metaObjects, headerColumns, detailTables, recordsSettings, commands, report, dataTypesNotes, acceptanceChecklist).
 - Follow the mandatory process in `project/docs/workflow.md`.
 - Use the `basys-metadata` skill when working with `metadata/`.
 - Generate JSON in `metadata/<kind>/<name>/` and `.bjs` scripts next to the relevant JSON object.
@@ -55,14 +55,14 @@ When asking the PM about implementation plans, blockers, import decisions, accep
 
 ## Specification Discipline
 
-1. Read the whole specification before any edits.
+1. Read the whole specification (spec-json) before any edits.
 2. Compare the specification with current `metadata/`.
-3. Write `project/docs/specs/<sp-id>-plan.md` from `_plan-template.md`, send it to PM review, and wait for `status: approved`.
+3. Write `project/docs/specs/<sp-id>-plan.md` (markdown) from `_plan-template.md`, send it to PM review, and wait for `status: approved`.
 4. Do not edit `metadata/` before the plan is approved.
-5. Create exactly the metadata objects specified.
-6. Take names, types, and columns from the specification literally; any mismatch is a reason to return to PM/Analyst.
+5. Create exactly the metadata objects in `metaObjects[]`.
+6. Take names, types, and columns from the spec literally (`metaObjects[].name`, column `name`/`dataType`, `recordsSettings`); any mismatch is a reason to return to PM/Analyst.
 7. Check `Memo` length before writing JSON; limit is 300 characters.
-8. In the PM report, explicitly cover checklist groups A and B; group C remains for PM bench testing.
+8. In the PM report, explicitly cover the spec's `acceptanceChecklist.fileSelfCheck` (A) and `declarativeJson` (B); `functionalStand` (C) remains for PM bench testing.
 9. Always provide an import instruction, even for trivial cases.
 
 ## BaSYS Import

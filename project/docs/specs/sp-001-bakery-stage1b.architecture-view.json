@@ -4,18 +4,19 @@
     "id": "sp-001-bakery-stage1b-architecture-view",
     "title": "Хлебозавод — этап 1b, карта архитектуры для PM",
     "status": "draft",
-    "version": 1,
+    "version": 2,
     "sourceDesign": "project/docs/specs/sp-001-bakery-stage1b.design.json"
   },
   "summary": {
     "goal": "Показать, какие метаобъекты будут созданы или использованы на этапе 1b и как между ними проходят основные связи.",
-    "businessResult": "Поступление и инвентаризация ведут сырьевой склад; выпуск списывает сырье, приходует готовую продукцию и пишет факт выпуска; отчеты читают регистры.",
-    "createdObjectsCount": 9,
+    "businessResult": "Поступление пишет движения сырья, стоимости сырья и долга поставщику; инвентаризация корректирует только движение количества; выпуск списывает количество сырья, приходует готовую продукцию и пишет факт выпуска; отчеты считают остатки по движениям.",
+    "createdObjectsCount": 10,
     "reusedObjectsCount": 4,
     "createdObjects": [
-      "raw_stock",
-      "finished_goods_stock",
-      "supplier_settlements",
+      "raw_movement",
+      "raw_cost_movement",
+      "finished_goods_movement",
+      "supplier_debt_movement",
       "raw_receipt",
       "raw_inventory",
       "production_output",
@@ -44,11 +45,12 @@
     {
       "id": "GROUP-storage",
       "title": "Где хранится результат",
-      "description": "Регистры, в которых накапливаются остатки, долг поставщику и план-факт.",
+      "description": "Регистры, в которых накапливаются количественные остатки, стоимость поступления, долг поставщику и план-факт.",
       "nodeIds": [
-        "RECORDS-raw_stock",
-        "RECORDS-finished_goods_stock",
-        "RECORDS-supplier_settlements",
+        "RECORDS-raw_movement",
+        "RECORDS-raw_cost_movement",
+        "RECORDS-finished_goods_movement",
+        "RECORDS-supplier_debt_movement",
         "RECORDS-production_plan"
       ]
     },
@@ -71,6 +73,17 @@
         "REPORT-production_plan_report",
         "REPORT-fg_stock_report"
       ]
+    },
+    {
+      "id": "GROUP-calculations",
+      "title": "Расчёты",
+      "description": "Команды и расчёты, которые пользователь запускает до проведения документов.",
+      "nodeIds": [
+        "CMD-fill_current_stock",
+        "CMD-fill_from_task",
+        "CMD-calc_raw_writeoff",
+        "CALC-month-closing-cost"
+      ]
     }
   ],
   "nodes": [
@@ -89,7 +102,7 @@
       "name": "raw_inventory",
       "title": "Инвентаризация сырья",
       "lifecycle": "create",
-      "pmDescription": "Кладовщик корректирует учетный остаток сырья до фактического.",
+      "pmDescription": "Кладовщик корректирует учетное количество сырья до фактического.",
       "visualType": "document"
     },
     {
@@ -98,7 +111,7 @@
       "name": "production_output",
       "title": "Выпуск продукции",
       "lifecycle": "create",
-      "pmDescription": "Начальник производства оформляет фактический выпуск и списание сырья.",
+      "pmDescription": "Начальник производства оформляет фактический выпуск и количественное списание сырья.",
       "visualType": "document"
     },
     {
@@ -129,30 +142,39 @@
       "visualType": "existing-reference"
     },
     {
-      "id": "RECORDS-raw_stock",
+      "id": "RECORDS-raw_movement",
       "kind": "records",
-      "name": "raw_stock",
-      "title": "Остатки сырья",
+      "name": "raw_movement",
+      "title": "Движение сырья",
       "lifecycle": "create",
-      "pmDescription": "Хранит движения количества и стоимости сырья по складам.",
+      "pmDescription": "Хранит количественные движения сырья по складам.",
       "visualType": "storage"
     },
     {
-      "id": "RECORDS-finished_goods_stock",
+      "id": "RECORDS-raw_cost_movement",
       "kind": "records",
-      "name": "finished_goods_stock",
-      "title": "Остатки готовой продукции",
+      "name": "raw_cost_movement",
+      "title": "Движение стоимости сырья",
+      "lifecycle": "create",
+      "pmDescription": "Хранит стоимость поступления сырья отдельно от количественного склада; расход стоимости будет добавлен закрытием месяца.",
+      "visualType": "storage"
+    },
+    {
+      "id": "RECORDS-finished_goods_movement",
+      "kind": "records",
+      "name": "finished_goods_movement",
+      "title": "Движение готовой продукции",
       "lifecycle": "create",
       "pmDescription": "Хранит количество готовой продукции после выпуска.",
       "visualType": "storage"
     },
     {
-      "id": "RECORDS-supplier_settlements",
+      "id": "RECORDS-supplier_debt_movement",
       "kind": "records",
-      "name": "supplier_settlements",
-      "title": "Расчеты с поставщиками",
+      "name": "supplier_debt_movement",
+      "title": "Движение долга поставщикам",
       "lifecycle": "create",
-      "pmDescription": "Хранит рост долга перед поставщиками при поступлении сырья.",
+      "pmDescription": "Хранит движения долга перед поставщиками при поступлении сырья и будущей оплате.",
       "visualType": "storage"
     },
     {
@@ -170,7 +192,7 @@
       "name": "raw_stock_report",
       "title": "Остатки сырья",
       "lifecycle": "create",
-      "pmDescription": "Показывает остатки сырья по складам и позициям.",
+      "pmDescription": "Показывает количественные остатки сырья по складам и позициям.",
       "visualType": "report"
     },
     {
@@ -190,28 +212,72 @@
       "lifecycle": "create",
       "pmDescription": "Показывает остатки готовой продукции после выпуска.",
       "visualType": "report"
+    },
+    {
+      "id": "CMD-fill_current_stock",
+      "kind": "command",
+      "name": "fill_current_stock",
+      "title": "Заполнить учётные остатки",
+      "lifecycle": "create",
+      "pmDescription": "Рассчитывает текущий количественный остаток сырья для инвентаризации по raw_movement.",
+      "visualType": "calculation"
+    },
+    {
+      "id": "CMD-fill_from_task",
+      "kind": "command",
+      "name": "fill_from_task",
+      "title": "Заполнить выпуск по заданию",
+      "lifecycle": "create",
+      "pmDescription": "Заполняет строки выпуска из производственного задания 1a.",
+      "visualType": "calculation"
+    },
+    {
+      "id": "CMD-calc_raw_writeoff",
+      "kind": "command",
+      "name": "calc_raw_writeoff",
+      "title": "Рассчитать списание сырья",
+      "lifecycle": "create",
+      "pmDescription": "Рассчитывает только количество сырья к списанию по рецептурам и проверяет остаток.",
+      "visualType": "calculation"
+    },
+    {
+      "id": "CALC-month-closing-cost",
+      "kind": "future-calculation",
+      "name": "month_closing_raw_cost",
+      "title": "Закрытие месяца: стоимость сырья",
+      "lifecycle": "future-out-of-scope",
+      "pmDescription": "Будущий расчёт расхода стоимости сырья по средней стоимости; не входит в 1b.",
+      "visualType": "future"
     }
   ],
   "edges": [
     {
       "id": "EDGE-raw-receipt-writes-raw-stock",
       "from": "OP-raw_receipt",
-      "to": "RECORDS-raw_stock",
+      "to": "RECORDS-raw_movement",
       "type": "writes",
       "title": "приход сырья",
-      "pmDescription": "Поступление увеличивает остаток сырья."
+      "pmDescription": "Поступление увеличивает количественный остаток сырья."
     },
     {
-      "id": "EDGE-raw-receipt-writes-supplier-settlements",
+      "id": "EDGE-raw-receipt-writes-raw-cost-movement",
       "from": "OP-raw_receipt",
-      "to": "RECORDS-supplier_settlements",
+      "to": "RECORDS-raw_cost_movement",
+      "type": "writes",
+      "title": "стоимость поступления",
+      "pmDescription": "Поступление отражает известную стоимость сырья в отдельном регистре."
+    },
+    {
+      "id": "EDGE-raw-receipt-writes-supplier-debt-movement",
+      "from": "OP-raw_receipt",
+      "to": "RECORDS-supplier_debt_movement",
       "type": "writes",
       "title": "рост долга поставщику",
       "pmDescription": "Поступление увеличивает задолженность перед поставщиком."
     },
     {
       "id": "EDGE-raw-inventory-reads-raw-stock",
-      "from": "RECORDS-raw_stock",
+      "from": "RECORDS-raw_movement",
       "to": "OP-raw_inventory",
       "type": "reads",
       "title": "учетный остаток",
@@ -220,10 +286,10 @@
     {
       "id": "EDGE-raw-inventory-writes-raw-stock",
       "from": "OP-raw_inventory",
-      "to": "RECORDS-raw_stock",
+      "to": "RECORDS-raw_movement",
       "type": "writes",
-      "title": "корректировка остатка",
-      "pmDescription": "Инвентаризация корректирует сырьевой остаток до факта."
+      "title": "корректировка количества",
+      "pmDescription": "Инвентаризация корректирует количественный сырьевой остаток до факта."
     },
     {
       "id": "EDGE-production-task-to-output",
@@ -251,27 +317,27 @@
     },
     {
       "id": "EDGE-raw-stock-to-output",
-      "from": "RECORDS-raw_stock",
+      "from": "RECORDS-raw_movement",
       "to": "OP-production_output",
       "type": "reads",
-      "title": "остаток и средняя цена сырья",
-      "pmDescription": "Выпуск смотрит остаток сырья и среднюю стоимость перед списанием."
+      "title": "количественный остаток сырья",
+      "pmDescription": "Выпуск смотрит только количественный остаток сырья перед списанием."
     },
     {
-      "id": "EDGE-output-writes-fg-stock",
+      "id": "EDGE-output-writes-fg-movement",
       "from": "OP-production_output",
-      "to": "RECORDS-finished_goods_stock",
+      "to": "RECORDS-finished_goods_movement",
       "type": "writes",
       "title": "приход готовой продукции",
       "pmDescription": "Выпуск увеличивает остаток готовой продукции."
     },
     {
-      "id": "EDGE-output-writes-raw-stock",
+      "id": "EDGE-output-writes-raw-movement",
       "from": "OP-production_output",
-      "to": "RECORDS-raw_stock",
+      "to": "RECORDS-raw_movement",
       "type": "writes",
       "title": "списание сырья",
-      "pmDescription": "Выпуск уменьшает остаток сырья."
+      "pmDescription": "Выпуск уменьшает количественный остаток сырья; стоимость списания не рассчитывается в 1b."
     },
     {
       "id": "EDGE-output-writes-production-plan",
@@ -282,12 +348,12 @@
       "pmDescription": "Выпуск добавляет факт в план-факт выпуска."
     },
     {
-      "id": "EDGE-raw-stock-to-report",
-      "from": "RECORDS-raw_stock",
+      "id": "EDGE-raw-movement-to-report",
+      "from": "RECORDS-raw_movement",
       "to": "REPORT-raw_stock_report",
       "type": "reads",
       "title": "отчет по сырью",
-      "pmDescription": "Отчет показывает остатки сырья."
+      "pmDescription": "Отчет показывает количественные остатки сырья."
     },
     {
       "id": "EDGE-production-plan-to-report",
@@ -299,7 +365,7 @@
     },
     {
       "id": "EDGE-fg-stock-to-report",
-      "from": "RECORDS-finished_goods_stock",
+      "from": "RECORDS-finished_goods_movement",
       "to": "REPORT-fg_stock_report",
       "type": "reads",
       "title": "отчет по готовой продукции",
@@ -328,6 +394,38 @@
       "type": "user-sequence",
       "title": "задание выбирается в выпуске",
       "pmDescription": "Производственное задание уже создано на этапе 1a; в выпуске пользователь выбирает его и заполняет строки выпуска по заданию."
+    },
+    {
+      "id": "EDGE-inventory-uses-fill-current-stock",
+      "from": "CMD-fill_current_stock",
+      "to": "OP-raw_inventory",
+      "type": "calculates",
+      "title": "текущий остаток",
+      "pmDescription": "Команда рассчитывает текущий количественный остаток для строк инвентаризации."
+    },
+    {
+      "id": "EDGE-task-uses-fill-from-task",
+      "from": "CMD-fill_from_task",
+      "to": "OP-production_output",
+      "type": "calculates",
+      "title": "выпуск из задания",
+      "pmDescription": "Команда заполняет строки выпуска по производственному заданию."
+    },
+    {
+      "id": "EDGE-output-uses-calc-raw-writeoff",
+      "from": "CMD-calc_raw_writeoff",
+      "to": "OP-production_output",
+      "type": "calculates",
+      "title": "количество сырья",
+      "pmDescription": "Команда рассчитывает количество сырья к списанию по рецептурам."
+    },
+    {
+      "id": "EDGE-raw-cost-to-month-closing",
+      "from": "RECORDS-raw_cost_movement",
+      "to": "CALC-month-closing-cost",
+      "type": "future-calculation",
+      "title": "стоимость списания позже",
+      "pmDescription": "Расход стоимости сырья будет рассчитан будущим закрытием месяца, не в 1b."
     }
   ],
   "views": [
@@ -339,13 +437,34 @@
         "GROUP-documents",
         "GROUP-storage",
         "GROUP-existing-inputs",
+        "GROUP-calculations",
         "GROUP-reports"
       ],
       "includedEdgeTypes": [
         "writes",
         "reads",
+        "calculates",
+        "future-calculation",
         "provides-input",
         "provides-rules"
+      ]
+    },
+    {
+      "id": "VIEW-calculations",
+      "title": "Расчёты",
+      "description": "Отдельный вид для команд и расчётов 1b: что считается автоматически и что отложено до закрытия месяца.",
+      "includedGroups": [
+        "GROUP-calculations",
+        "GROUP-documents",
+        "GROUP-storage",
+        "GROUP-existing-inputs"
+      ],
+      "includedEdgeTypes": [
+        "calculates",
+        "future-calculation",
+        "provides-input",
+        "provides-rules",
+        "reads"
       ]
     },
     {
@@ -371,9 +490,10 @@
         "OP-raw_receipt",
         "OP-raw_inventory",
         "OP-production_output",
-        "RECORDS-raw_stock",
-        "RECORDS-finished_goods_stock",
-        "RECORDS-supplier_settlements",
+        "RECORDS-raw_movement",
+        "RECORDS-raw_cost_movement",
+        "RECORDS-finished_goods_movement",
+        "RECORDS-supplier_debt_movement",
         "RECORDS-production_plan"
       ],
       "includedEdgeTypes": [
@@ -385,8 +505,8 @@
       "title": "Какие отчеты откуда берут данные",
       "description": "Упрощенный вид для проверки отчетности этапа 1b.",
       "includedNodeIds": [
-        "RECORDS-raw_stock",
-        "RECORDS-finished_goods_stock",
+        "RECORDS-raw_movement",
+        "RECORDS-finished_goods_movement",
         "RECORDS-production_plan",
         "REPORT-raw_stock_report",
         "REPORT-production_plan_report",
@@ -407,7 +527,9 @@
       "reads": "Объект читает данные",
       "provides-input": "Существующий объект дает исходные данные",
       "provides-rules": "Существующий объект задает правила расчета",
-      "user-sequence": "Последовательность действий пользователя"
+      "user-sequence": "Последовательность действий пользователя",
+      "calculates": "Команда рассчитывает или заполняет данные",
+      "future-calculation": "Расчёт запланирован на будущий этап"
     }
   }
 }

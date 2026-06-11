@@ -4,7 +4,7 @@
 > **Не дублировать:** обсуждения и очередь вопросов -> `OPEN_QUESTIONS.md`; формальные архитектурные решения -> `project/docs/decisions.md`.
 > **Поддерживает AI-ассистент** — обновляет в конце смысловой главы работы.
 
-**Последнее обновление:** 2026-06-02 — план `sp-002-seed-data-1a-plan.md` переведён в `approved` (с двумя обязательными правками реализации: JSON в camelCase как `requirement_calc.json`, счётчик `.bjs` = 14). Следующее — engineer реализует workflow `seed_refs_1a`/`seed_docs_1a`. Ранее: ТЗ и dataset sp-002 `approved`; методика sp-002 `approved`; metadata 1a реализованы и импортированы без ошибок (commit `metadata/` `bd7bbe9`), ТЗ/план 1a — `approved` до функциональной приёмки. Введено правило доказательности (Evidence Rule в AGENTS.md, ADR-2026-06-02).
+**Последнее обновление:** 2026-06-10 — введён формат ТЗ `spec-json-v0.1` (ADR 2026-06-10): схема `_spec-json.schema.json` (draft 2020-12), шаблон `_spec-template.json`, валидатор `validate_spec.py`; ТЗ 1b сконвертирован в `sp-001-bakery-stage1b.json` (первый носитель, валиден). Markdown-ТЗ `_template.md` deprecated. Обновлены агенты (autopilot-analyst/reviewer/engineer, metadata-auditor, orchestrator + узкое bash-разрешение на валидатор, ручные analyst/engineer) и процессные доки. **Требуется перезапуск OpenCode** для применения изменений `.opencode/agents/*`. Ранее: 1b design-пакет одобрен PM с правками N1/N2/M1/M2. Ещё ранее: план `sp-002-seed-data-1a-plan.md` `approved`; metadata 1a реализованы и импортированы без ошибок (commit `bd7bbe9`); Evidence Rule (ADR-2026-06-02).
 
 ---
 
