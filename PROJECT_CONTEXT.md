@@ -4,7 +4,7 @@
 > **Не дублировать:** обсуждения и очередь вопросов -> `OPEN_QUESTIONS.md`; формальные архитектурные решения -> `project/docs/decisions.md`.
 > **Поддерживает AI-ассистент** — обновляет в конце смысловой главы работы.
 
-**Последнее обновление:** 2026-06-10 — введён формат ТЗ `spec-json-v0.1` (ADR 2026-06-10): схема `_spec-json.schema.json` (draft 2020-12), шаблон `_spec-template.json`, валидатор `validate_spec.py`; ТЗ 1b сконвертирован в `sp-001-bakery-stage1b.json` (первый носитель, валиден). Markdown-ТЗ `_template.md` deprecated. Обновлены агенты (autopilot-analyst/reviewer/engineer, metadata-auditor, orchestrator + узкое bash-разрешение на валидатор, ручные analyst/engineer) и процессные доки. **Требуется перезапуск OpenCode** для применения изменений `.opencode/agents/*`. Ранее: 1b design-пакет одобрен PM с правками N1/N2/M1/M2. Ещё ранее: план `sp-002-seed-data-1a-plan.md` `approved`; metadata 1a реализованы и импортированы без ошибок (commit `bd7bbe9`); Evidence Rule (ADR-2026-06-02).
+**Последнее обновление:** 2026-06-11 — этапы 1a и 1b завершены (подтверждено PM): 1a функционально принят на стенде; seed-workflow sp-002 (`seed_refs_1a`/`seed_docs_1a`) реализованы и выполнены; 1b реализован по approved ТЗ `sp-001-bakery-stage1b.json` и approved плану `sp-001-bakery-stage1b-plan.md`, metadata закоммичены (`5062183`), импортированы на стенд и функционально приняты PM. Артефакты 1b: implementation-report, import-notes. Текущий фокус — **этап 1c** (детализация и дизайн). Ранее: формат ТЗ `spec-json-v0.1` (ADR 2026-06-10), Evidence Rule (ADR-2026-06-02).
 
 ---
 
@@ -49,10 +49,9 @@ OpenCode запускается из корня `create-model-3/`. Все пут
 
 ## Что Следующее
 
-1. sp-002 — engineer реализует два workflow `seed_refs_1a`/`seed_docs_1a` в `metadata/` по approved-плану (с правками camelCase + счётчик `.bjs`); затем engineer report → PM-chat acceptance.
-2. Функциональная приёмка 1a на стенде (чек-лист C); после неё — `implemented` для ТЗ и плана 1a.
-3. После приёмки 1a — детализировать части 1b и 1c в `sp-001-bakery-stage1.md`.
-4. При необходимости версионировать `metadata/` на GitHub — настроить remote и запушить.
+1. Этап 1c: уточнить scope и входы с PM, затем analyst-дизайн (методика + design-пакет) и ТЗ в формате spec-json.
+2. Перевести статусы ТЗ/планов 1a и 1b в `implemented` (после фиксации приёмки в документах), решить судьбу legacy `sp-001-bakery-stage1b.md`.
+3. При необходимости версионировать `metadata/` на GitHub — настроить remote и запушить.
 
 ## Реестр Сессий
 
@@ -71,4 +70,5 @@ OpenCode запускается из корня `create-model-3/`. Все пут
 | 2026-05-31 21:02 | `ses_180275ed2ffe4Ht6LCnKFD2K8R` | sp-001 дизайн первой очереди | Методика этапа 1 |
 | 2026-05-31 21:49 | `ses_17ffccfd9ffeH5U1zSkD7TrtOE` | Ревью bakery stage 1 design | Ревью методики этапа 1 |
 | 2026-05-31 23:33 | `ses_17f9d2344ffegmITht8EOA11GU` | API 400 ошибка Claude | Разбор ошибки thinking-блоков |
-| 2026-06-01 (текущая) | (id уточнить в `/sessions`) | Меню, перенос metadata, sync docs, решение по ТЗ | Меню всех видов; перенос `metadata/` в корень + nested git; sync basys-docs/CursorRules/OpenCode docs; решение «одно ТЗ с частями 1a/1b/1c», design → approved |
+| 2026-06-01 | (id уточнить в `/sessions`) | Меню, перенос metadata, sync docs, решение по ТЗ | Меню всех видов; перенос `metadata/` в корень + nested git; sync basys-docs/CursorRules/OpenCode docs; решение «одно ТЗ с частями 1a/1b/1c», design → approved |
+| 2026-06-11 (текущая) | (id уточнить в `/sessions`) | Начало третьего этапа 1c | Актуализация памяти (1a/1b завершены), старт работ по этапу 1c |

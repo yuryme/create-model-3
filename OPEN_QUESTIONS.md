@@ -2,16 +2,15 @@
 
 ## Обсуждается сейчас
 
-- sp-002 — план `sp-002-seed-data-1a-plan.md` переведён в `approved`; engineer реализует два workflow `seed_refs_1a`/`seed_docs_1a` в `metadata/`.
-- Судьба legacy `sp-001-bakery-stage1b.md` после конвертации в `sp-001-bakery-stage1b.json`: оставить до приёмки 1b и затем заархивировать, или удалить сейчас.
+- Этап 1c: определить scope, цели и входные данные; затем analyst-дизайн и ТЗ spec-json.
 
 ## В очереди
 
-- Функциональная приёмка 1a на стенде (чек-лист C): заявка → проведение в `customer_demand` → задание → `fill_from_orders`/`calc_requirement` → отчёты. После приёмки — `implemented` для ТЗ и плана.
-- sp-002: PM подтверждает на стенде отсутствие конфликта seed-ключей `code`/`title` (§5.3) до запуска workflow.
-- sp-002 реализация: при создании workflow JSON писать в camelCase по образцу `metadata/workflow/requirement_calc/workflow.requirement_calc.json` и примеров доков, НЕ в PascalCase из `reference/` (риск отказа импорта); поправить счётчик `.bjs` в плане §5 на 14.
-- Детализировать части 1b и 1c в `sp-001-bakery-stage1.md` после приёмки 1a.
-- Проверить UX рецептур (шапка `catalog/recipe` + строки `register/recipe_component`) на приёмке; при неудобстве — форма-конструктор во вторую очередь.
+- Судьба legacy `sp-001-bakery-stage1b.md`: 1b принят, можно архивировать или удалить — нужно решение PM.
+- Перевести статусы ТЗ/планов 1a и 1b в `implemented` в файлах specs (приёмка пройдена, статусы в файлах не обновлены).
+- `supplier_debt_report` отложен из 1b (OQ-003) — кандидат в scope 1c.
+- Документ закрытия месяца (списание стоимости сырья, средневзвешенная оценка) отложен из 1b (OQ-001, ADR 2026-06-10) — кандидат в scope будущих этапов.
+- Проверить UX рецептур (шапка `catalog/recipe` + строки `register/recipe_component`); при неудобстве — форма-конструктор во вторую очередь.
 
 ## Отложено
 
@@ -19,6 +18,8 @@ _(пока пусто)_
 
 ## Решено
 
+- Этап 1b завершён (подтверждено PM 2026-06-11): metadata реализованы по `sp-001-bakery-stage1b.json` + `sp-001-bakery-stage1b-plan.md`, закоммичены (`5062183` в `metadata/`), импортированы на стенд и функционально приняты. Артефакты: `sp-001-bakery-stage1b-implementation-report.md`, `sp-001-bakery-stage1b-import-notes.md`.
+- Этап 1a функционально принят на стенде; sp-002 seed-workflow (`seed_refs_1a`/`seed_docs_1a`) реализованы и выполнены (подтверждено PM 2026-06-11).
 - Формат ТЗ переведён на `spec-json-v0.1` (PM 2026-06-10): ТЗ — JSON `<sp-id>.json` по `_spec-json.schema.json` (draft 2020-12), валидация `validate_spec.py` (Python+jsonschema) обязательна. Решения PM: формат везде (ручной и autopilot); полная JSON-schema + валидация; 1b сконвертирован как первый носитель (`sp-001-bakery-stage1b.json`). Markdown-ТЗ `_template.md` deprecated. Агенты и процессные доки обновлены (ADR 2026-06-10). Требуется перезапуск OpenCode для применения изменений `.opencode/agents/*`.
 - sp-001 1b design-пакет — PM одобрил направление и правки (N1/N2/M1/M2) 2026-06-10: openQuestions синхронизированы, контракт `production_plan` (1a §4.12) зафиксирован, проведение инвентаризации разбито на Plus/Minus, долг поставщику построчно. ТЗ 1b теперь ведётся как `sp-001-bakery-stage1b.json`.
 - sp-002 — план реализации `sp-002-seed-data-1a-plan.md` `approved` (2026-06-02): scope = только два новых workflow, без правок существующей metadata и `system/dataTypes.json`, dataset используется буквально, composite `SearchBy` вынесен как bench-риск. При approve зафиксированы две обязательные правки для реализации: JSON в camelCase (как `requirement_calc.json`, не PascalCase reference) и счётчик `.bjs` = 14.
