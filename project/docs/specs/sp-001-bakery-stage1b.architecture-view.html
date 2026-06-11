@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Хлебозавод — этап 1b, карта архитектуры для PM</title>
+  <title>Хлебозавод — карта архитектуры для PM</title>
   <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.34.0/dist/cytoscape.min.js"></script>
   <style>
     :root {
@@ -66,6 +66,36 @@
       margin: 0;
       color: var(--muted);
       font-size: 13px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .tab-button {
+      padding: 11px 18px;
+      border-radius: 14px;
+      border: 1px solid rgba(100, 116, 139, 0.25);
+      background: rgba(255, 255, 255, 0.72);
+      color: var(--ink);
+      font-weight: 750;
+      font-size: 14px;
+      transition: 120ms ease;
+    }
+
+    .tab-button:hover {
+      transform: translateY(-1px);
+      border-color: rgba(180, 83, 9, 0.45);
+    }
+
+    .tab-button.active {
+      color: #fff;
+      background: linear-gradient(135deg, #b45309, #0f766e);
+      border-color: transparent;
+      box-shadow: 0 12px 26px rgba(180, 83, 9, 0.22);
     }
 
     .summary {
@@ -383,22 +413,18 @@
     <header>
       <div class="topline">
         <div>
-          <h1>Хлебозавод — этап 1b, карта архитектуры для PM</h1>
-          <p class="source">Источник: project/docs/specs/sp-001-bakery-stage1b.architecture-view.json</p>
+          <h1 id="pageTitle"></h1>
+          <p class="source" id="sourceLine"></p>
         </div>
+        <div class="tabs" id="tabs"></div>
       </div>
-      <div class="summary">
-        <div class="metric"><strong>9</strong><span>создаём</span></div>
-        <div class="metric"><strong>4</strong><span>используем</span></div>
-        <div class="metric"><strong>13</strong><span>объектов на карте</span></div>
-        <div class="metric"><strong>17</strong><span>связей</span></div>
-      </div>
+      <div class="summary" id="summary"></div>
     </header>
     <main class="layout">
       <aside class="panel left">
         <section class="panel-section">
           <p class="label">Цель</p>
-          <p class="goal">Показать, какие метаобъекты будут созданы или использованы на этапе 1b и как между ними проходят основные связи.</p>
+          <p class="goal" id="goal"></p>
         </section>
         <section class="panel-section">
           <p class="label">PM-виды</p>
@@ -419,12 +445,7 @@
         </section>
         <section class="panel-section">
           <p class="label">Легенда</p>
-          <div class="legend">
-            <div class="legend-item"><span class="swatch" style="background:#b45309"></span><span>документы пользователя</span></div>
-            <div class="legend-item"><span class="swatch" style="background:#0f766e"></span><span>регистры хранения результата</span></div>
-            <div class="legend-item"><span class="swatch" style="background:#2563eb"></span><span>отчеты для контроля</span></div>
-            <div class="legend-item"><span class="swatch" style="background:#7c3aed"></span><span>существующие объекты</span></div>
-          </div>
+          <div class="legend" id="legend"></div>
         </section>
       </aside>
 
@@ -445,7 +466,11 @@
   </div>
 
   <script>
-    const VIEW_DATA = {
+    const DATASETS = {
+      design: {
+        label: 'Дизайн',
+        source: 'project/docs/specs/sp-001-bakery-stage1b.architecture-view.json',
+        data: {
   "schemaVersion": "architecture-view-json-v0.1",
   "meta": {
     "id": "sp-001-bakery-stage1b-architecture-view",
@@ -979,7 +1004,1137 @@
       "future-calculation": "Расчёт запланирован на будущий этап"
     }
   }
-};
+}
+      },
+      metadata: {
+        label: 'Metadata (факт)',
+        source: 'metadata/ → project/docs/specs/sp-001-bakery-stage1b.metadata-view.json',
+        data: {
+  "schemaVersion": "architecture-view-json-v0.1",
+  "meta": {
+    "id": "sp-001-bakery-stage1b-metadata-view",
+    "title": "Хлебозавод — as-built карта по metadata/ (факт)",
+    "status": "generated",
+    "version": 1,
+    "sourceMetadata": "metadata/",
+    "sourceManifestExportedAtUtc": "2026-06-10T18:35:11.2116886Z",
+    "generator": "project/tools/build_arch_view.py"
+  },
+  "summary": {
+    "goal": "Показать фактические метаобъекты стенда (этапы 1a+1b) и связи между ними, восстановленные из metadata/.",
+    "businessResult": "Карта as-built: операции проводятся по регистрам записей согласно recordsSettings, отчёты читают регистры через скрипты data source, workflow рассчитывают потребность и заполняют тестовые данные, документы и регистры ссылаются на справочники по FK.",
+    "createdObjectsCount": 27,
+    "reusedObjectsCount": 0,
+    "createdObjects": [
+      "customer_order",
+      "production_output",
+      "production_task",
+      "raw_inventory",
+      "raw_receipt",
+      "customer_demand",
+      "finished_goods_movement",
+      "production_plan",
+      "raw_cost_movement",
+      "raw_movement",
+      "supplier_debt_movement",
+      "company",
+      "counterparty",
+      "nomenclature",
+      "recipe",
+      "unit",
+      "warehouse",
+      "counterparty_role",
+      "nomenclature_type",
+      "price_list",
+      "recipe_component",
+      "fg_stock_report",
+      "production_plan_report",
+      "raw_stock_report",
+      "requirement_calc",
+      "seed_docs_1a",
+      "seed_refs_1a"
+    ],
+    "reusedObjects": [],
+    "countsByKind": {
+      "operation": 5,
+      "records": 6,
+      "catalog": 6,
+      "enum": 2,
+      "register": 2,
+      "data_view": 3,
+      "workflow": 3
+    }
+  },
+  "groups": [
+    {
+      "id": "GROUP-fact-documents",
+      "title": "Документы (операции)",
+      "description": "Фактические операции стенда: документы, которые проводит пользователь.",
+      "nodeIds": [
+        "OP-customer_order",
+        "OP-production_output",
+        "OP-production_task",
+        "OP-raw_inventory",
+        "OP-raw_receipt"
+      ]
+    },
+    {
+      "id": "GROUP-fact-storage",
+      "title": "Регистры записей (движения)",
+      "description": "Records-регистры, в которые операции пишут движения при проведении.",
+      "nodeIds": [
+        "RECORDS-customer_demand",
+        "RECORDS-finished_goods_movement",
+        "RECORDS-production_plan",
+        "RECORDS-raw_cost_movement",
+        "RECORDS-raw_movement",
+        "RECORDS-supplier_debt_movement"
+      ]
+    },
+    {
+      "id": "GROUP-fact-inputs",
+      "title": "Справочники и входные данные",
+      "description": "Catalog, enum и register: НСИ и настройки, на которые ссылаются документы и регистры.",
+      "nodeIds": [
+        "CAT-company",
+        "CAT-counterparty",
+        "CAT-nomenclature",
+        "CAT-recipe",
+        "CAT-unit",
+        "CAT-warehouse",
+        "ENUM-counterparty_role",
+        "ENUM-nomenclature_type",
+        "REG-price_list",
+        "REG-recipe_component"
+      ]
+    },
+    {
+      "id": "GROUP-fact-reports",
+      "title": "Отчёты (data view)",
+      "description": "Отчёты, которые читают данные из регистров записей.",
+      "nodeIds": [
+        "REPORT-fg_stock_report",
+        "REPORT-production_plan_report",
+        "REPORT-raw_stock_report"
+      ]
+    },
+    {
+      "id": "GROUP-fact-workflows",
+      "title": "Расчёты и заполнение (workflow)",
+      "description": "Workflow-процессы: расчёт потребности и первоначальное заполнение данных.",
+      "nodeIds": [
+        "WF-requirement_calc",
+        "WF-seed_docs_1a",
+        "WF-seed_refs_1a"
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "id": "OP-customer_order",
+      "kind": "operation",
+      "name": "customer_order",
+      "title": "Заявка клиента",
+      "lifecycle": "as-built",
+      "pmDescription": "Документ потребности клиента на продукцию к плановой дате поставки.",
+      "visualType": "document"
+    },
+    {
+      "id": "OP-production_output",
+      "kind": "operation",
+      "name": "production_output",
+      "title": "Выпуск продукции",
+      "lifecycle": "as-built",
+      "pmDescription": "Документ фактического выпуска продукции, прихода готовой продукции и списания сырья по рецептурам.",
+      "visualType": "document"
+    },
+    {
+      "id": "OP-production_task",
+      "kind": "operation",
+      "name": "production_task",
+      "title": "Производственное задание",
+      "lifecycle": "as-built",
+      "pmDescription": "Сводный план выпуска продукции на дату и сохранённый результат расчёта потребности.",
+      "visualType": "document"
+    },
+    {
+      "id": "OP-raw_inventory",
+      "kind": "operation",
+      "name": "raw_inventory",
+      "title": "Инвентаризация сырья",
+      "lifecycle": "as-built",
+      "pmDescription": "Документ корректировки сырьевого склада до фактического количества.",
+      "visualType": "document"
+    },
+    {
+      "id": "OP-raw_receipt",
+      "kind": "operation",
+      "name": "raw_receipt",
+      "title": "Поступление сырья",
+      "lifecycle": "as-built",
+      "pmDescription": "Документ прихода сырья от поставщика на склад и возникновения долга поставщику.",
+      "visualType": "document"
+    },
+    {
+      "id": "RECORDS-customer_demand",
+      "kind": "records",
+      "name": "customer_demand",
+      "title": "Спрос по заявкам",
+      "lifecycle": "as-built",
+      "pmDescription": "Регистр записей, в котором заявки клиентов формируют спрос по продукции на плановую дату.",
+      "visualType": "storage"
+    },
+    {
+      "id": "RECORDS-finished_goods_movement",
+      "kind": "records",
+      "name": "finished_goods_movement",
+      "title": "Движение готовой продукции",
+      "lifecycle": "as-built",
+      "pmDescription": "Регистр записей оперативного остатка готовой продукции между выпуском и отгрузкой.",
+      "visualType": "storage"
+    },
+    {
+      "id": "RECORDS-production_plan",
+      "kind": "records",
+      "name": "production_plan",
+      "title": "План/факт выпуска",
+      "lifecycle": "as-built",
+      "pmDescription": "Регистр записей планового и фактического выпуска продукции. В 1a заполняется только план.",
+      "visualType": "storage"
+    },
+    {
+      "id": "RECORDS-raw_cost_movement",
+      "kind": "records",
+      "name": "raw_cost_movement",
+      "title": "Движение стоимости сырья",
+      "lifecycle": "as-built",
+      "pmDescription": "Регистр записей стоимостных движений сырья, отделённый от количественного складского регистра.",
+      "visualType": "storage"
+    },
+    {
+      "id": "RECORDS-raw_movement",
+      "kind": "records",
+      "name": "raw_movement",
+      "title": "Движение сырья",
+      "lifecycle": "as-built",
+      "pmDescription": "Регистр записей количественных движений сырья на складах хлебозавода.",
+      "visualType": "storage"
+    },
+    {
+      "id": "RECORDS-supplier_debt_movement",
+      "kind": "records",
+      "name": "supplier_debt_movement",
+      "title": "Движение долга поставщикам",
+      "lifecycle": "as-built",
+      "pmDescription": "Регистр записей движений кредиторской задолженности перед поставщиками по управленческому учёту хлебозавода.",
+      "visualType": "storage"
+    },
+    {
+      "id": "CAT-company",
+      "kind": "catalog",
+      "name": "company",
+      "title": "Организация",
+      "lifecycle": "as-built",
+      "pmDescription": "Собственная организация или ИП, от имени которых ведётся управленческий учёт.",
+      "visualType": "reference"
+    },
+    {
+      "id": "CAT-counterparty",
+      "kind": "catalog",
+      "name": "counterparty",
+      "title": "Контрагент",
+      "lifecycle": "as-built",
+      "pmDescription": "Единый справочник клиентов и поставщиков хлебозавода.",
+      "visualType": "reference"
+    },
+    {
+      "id": "CAT-nomenclature",
+      "kind": "catalog",
+      "name": "nomenclature",
+      "title": "Номенклатура",
+      "lifecycle": "as-built",
+      "pmDescription": "Единый справочник продукции, полуфабрикатов и сырья хлебозавода.",
+      "visualType": "reference"
+    },
+    {
+      "id": "CAT-recipe",
+      "kind": "catalog",
+      "name": "recipe",
+      "title": "Рецептура",
+      "lifecycle": "as-built",
+      "pmDescription": "Норматив состава продукции или полуфабриката для разузлования потребности.",
+      "visualType": "reference"
+    },
+    {
+      "id": "CAT-unit",
+      "kind": "catalog",
+      "name": "unit",
+      "title": "Единица измерения",
+      "lifecycle": "as-built",
+      "pmDescription": "Меры количества для номенклатуры, рецептур и документов.",
+      "visualType": "reference"
+    },
+    {
+      "id": "CAT-warehouse",
+      "kind": "catalog",
+      "name": "warehouse",
+      "title": "Склад",
+      "lifecycle": "as-built",
+      "pmDescription": "Место хранения сырья или готовой продукции.",
+      "visualType": "reference"
+    },
+    {
+      "id": "ENUM-counterparty_role",
+      "kind": "enum",
+      "name": "counterparty_role",
+      "title": "Роль контрагента",
+      "lifecycle": "as-built",
+      "pmDescription": "Классификатор роли контрагента в учёте хлебозавода.",
+      "visualType": "reference"
+    },
+    {
+      "id": "ENUM-nomenclature_type",
+      "kind": "enum",
+      "name": "nomenclature_type",
+      "title": "Тип номенклатуры",
+      "lifecycle": "as-built",
+      "pmDescription": "Классификатор позиции номенклатуры: продукция, полуфабрикат или сырьё.",
+      "visualType": "reference"
+    },
+    {
+      "id": "REG-price_list",
+      "kind": "register",
+      "name": "price_list",
+      "title": "Прайс-лист",
+      "lifecycle": "as-built",
+      "pmDescription": "Ручной регистр цен продукции; используется в 1c для отгрузки.",
+      "visualType": "reference"
+    },
+    {
+      "id": "REG-recipe_component",
+      "kind": "register",
+      "name": "recipe_component",
+      "title": "Компоненты рецептуры",
+      "lifecycle": "as-built",
+      "pmDescription": "Регистр строк состава рецептур: компонент и количество на заданный выход.",
+      "visualType": "reference"
+    },
+    {
+      "id": "REPORT-fg_stock_report",
+      "kind": "data_view",
+      "name": "fg_stock_report",
+      "title": "Остатки готовой продукции",
+      "lifecycle": "as-built",
+      "pmDescription": "Табличный отчёт по оперативным остаткам готовой продукции на выбранную дату.",
+      "visualType": "report"
+    },
+    {
+      "id": "REPORT-production_plan_report",
+      "kind": "data_view",
+      "name": "production_plan_report",
+      "title": "План/факт выпуска",
+      "lifecycle": "as-built",
+      "pmDescription": "Табличный отчёт сравнения планового и фактического выпуска продукции за период.",
+      "visualType": "report"
+    },
+    {
+      "id": "REPORT-raw_stock_report",
+      "kind": "data_view",
+      "name": "raw_stock_report",
+      "title": "Остатки сырья",
+      "lifecycle": "as-built",
+      "pmDescription": "Табличный отчёт по количественным остаткам сырья на выбранную дату.",
+      "visualType": "report"
+    },
+    {
+      "id": "WF-requirement_calc",
+      "kind": "workflow",
+      "name": "requirement_calc",
+      "title": "Расчёт потребности",
+      "lifecycle": "as-built",
+      "pmDescription": "Workflow разузлования планового выпуска на полуфабрикаты и сырьё.",
+      "visualType": "calculation"
+    },
+    {
+      "id": "WF-seed_docs_1a",
+      "kind": "workflow",
+      "name": "seed_docs_1a",
+      "title": "Загрузка тестовых документов 1a",
+      "lifecycle": "as-built",
+      "pmDescription": "Создаёт тестовые заявки клиентов и производственные задания 1a с проведением.",
+      "visualType": "calculation"
+    },
+    {
+      "id": "WF-seed_refs_1a",
+      "kind": "workflow",
+      "name": "seed_refs_1a",
+      "title": "Загрузка тестовых справочных данных 1a",
+      "lifecycle": "as-built",
+      "pmDescription": "Создаёт тестовые значения enum, catalog и register для проверки хлебозавода 1a.",
+      "visualType": "calculation"
+    }
+  ],
+  "edges": [
+    {
+      "id": "EDGE-writes-OP-customer_order-RECORDS-customer_demand",
+      "from": "OP-customer_order",
+      "to": "RECORDS-customer_demand",
+      "type": "writes",
+      "title": "приход (+)",
+      "pmDescription": "Проведение: «Заявка клиента» пишет движения в «Спрос по заявкам» (приход (+); источник строк: ТЧ «Продукция»)."
+    },
+    {
+      "id": "EDGE-writes-OP-production_output-RECORDS-finished_goods_movement",
+      "from": "OP-production_output",
+      "to": "RECORDS-finished_goods_movement",
+      "type": "writes",
+      "title": "приход (+)",
+      "pmDescription": "Проведение: «Выпуск продукции» пишет движения в «Движение готовой продукции» (приход (+); источник строк: ТЧ «Выпущенная продукция»)."
+    },
+    {
+      "id": "EDGE-writes-OP-production_output-RECORDS-production_plan",
+      "from": "OP-production_output",
+      "to": "RECORDS-production_plan",
+      "type": "writes",
+      "title": "приход (+)",
+      "pmDescription": "Проведение: «Выпуск продукции» пишет движения в «План/факт выпуска» (приход (+); источник строк: ТЧ «Выпущенная продукция»)."
+    },
+    {
+      "id": "EDGE-writes-OP-production_output-RECORDS-raw_movement",
+      "from": "OP-production_output",
+      "to": "RECORDS-raw_movement",
+      "type": "writes",
+      "title": "расход (−)",
+      "pmDescription": "Проведение: «Выпуск продукции» пишет движения в «Движение сырья» (расход (−); источник строк: ТЧ «Списанное сырьё»)."
+    },
+    {
+      "id": "EDGE-writes-OP-production_task-RECORDS-production_plan",
+      "from": "OP-production_task",
+      "to": "RECORDS-production_plan",
+      "type": "writes",
+      "title": "приход (+)",
+      "pmDescription": "Проведение: «Производственное задание» пишет движения в «План/факт выпуска» (приход (+); источник строк: ТЧ «План выпуска»)."
+    },
+    {
+      "id": "EDGE-writes-OP-raw_inventory-RECORDS-raw_movement",
+      "from": "OP-raw_inventory",
+      "to": "RECORDS-raw_movement",
+      "type": "writes",
+      "title": "приход (+) и расход (−)",
+      "pmDescription": "Проведение: «Инвентаризация сырья» пишет движения в «Движение сырья» (приход (+) и расход (−); источник строк: ТЧ «Фактические остатки»)."
+    },
+    {
+      "id": "EDGE-writes-OP-raw_receipt-RECORDS-raw_cost_movement",
+      "from": "OP-raw_receipt",
+      "to": "RECORDS-raw_cost_movement",
+      "type": "writes",
+      "title": "приход (+)",
+      "pmDescription": "Проведение: «Поступление сырья» пишет движения в «Движение стоимости сырья» (приход (+); источник строк: ТЧ «Сырьё»)."
+    },
+    {
+      "id": "EDGE-writes-OP-raw_receipt-RECORDS-raw_movement",
+      "from": "OP-raw_receipt",
+      "to": "RECORDS-raw_movement",
+      "type": "writes",
+      "title": "приход (+)",
+      "pmDescription": "Проведение: «Поступление сырья» пишет движения в «Движение сырья» (приход (+); источник строк: ТЧ «Сырьё»)."
+    },
+    {
+      "id": "EDGE-writes-OP-raw_receipt-RECORDS-supplier_debt_movement",
+      "from": "OP-raw_receipt",
+      "to": "RECORDS-supplier_debt_movement",
+      "type": "writes",
+      "title": "приход (+)",
+      "pmDescription": "Проведение: «Поступление сырья» пишет движения в «Движение долга поставщикам» (приход (+); источник строк: ТЧ «Сырьё»)."
+    },
+    {
+      "id": "EDGE-reads-CAT-nomenclature-OP-production_output",
+      "from": "CAT-nomenclature",
+      "to": "OP-production_output",
+      "type": "reads",
+      "title": "чтение командой",
+      "pmDescription": "Команда «Рассчитать списание сырья» читает данные из «Номенклатура»."
+    },
+    {
+      "id": "EDGE-reads-CAT-nomenclature-WF-requirement_calc",
+      "from": "CAT-nomenclature",
+      "to": "WF-requirement_calc",
+      "type": "reads",
+      "title": "чтение в workflow",
+      "pmDescription": "Шаг «Загрузка рецептур» workflow «Расчёт потребности» читает данные из «Номенклатура»."
+    },
+    {
+      "id": "EDGE-reads-CAT-recipe-OP-production_output",
+      "from": "CAT-recipe",
+      "to": "OP-production_output",
+      "type": "reads",
+      "title": "чтение командой",
+      "pmDescription": "Команда «Рассчитать списание сырья» читает данные из «Рецептура»."
+    },
+    {
+      "id": "EDGE-reads-CAT-recipe-WF-requirement_calc",
+      "from": "CAT-recipe",
+      "to": "WF-requirement_calc",
+      "type": "reads",
+      "title": "чтение в workflow",
+      "pmDescription": "Шаг «Загрузка рецептур» workflow «Расчёт потребности» читает данные из «Рецептура»."
+    },
+    {
+      "id": "EDGE-reads-OP-production_task-OP-production_output",
+      "from": "OP-production_task",
+      "to": "OP-production_output",
+      "type": "reads",
+      "title": "чтение командой",
+      "pmDescription": "Команда «Заполнить выпуск по заданию» читает данные из «Производственное задание»."
+    },
+    {
+      "id": "EDGE-reads-OP-production_task-WF-requirement_calc",
+      "from": "OP-production_task",
+      "to": "WF-requirement_calc",
+      "type": "reads",
+      "title": "чтение в workflow",
+      "pmDescription": "Шаг «Загрузка задания» workflow «Расчёт потребности» читает данные из «Производственное задание»."
+    },
+    {
+      "id": "EDGE-reads-RECORDS-customer_demand-OP-production_task",
+      "from": "RECORDS-customer_demand",
+      "to": "OP-production_task",
+      "type": "reads",
+      "title": "чтение командой",
+      "pmDescription": "Команда «Заполнить по заявкам» читает данные из «Спрос по заявкам»."
+    },
+    {
+      "id": "EDGE-reads-RECORDS-finished_goods_movement-REPORT-fg_stock_report",
+      "from": "RECORDS-finished_goods_movement",
+      "to": "REPORT-fg_stock_report",
+      "type": "reads",
+      "title": "данные отчёта",
+      "pmDescription": "Отчёт «Остатки готовой продукции» читает данные из «Движение готовой продукции»."
+    },
+    {
+      "id": "EDGE-reads-RECORDS-production_plan-REPORT-production_plan_report",
+      "from": "RECORDS-production_plan",
+      "to": "REPORT-production_plan_report",
+      "type": "reads",
+      "title": "данные отчёта",
+      "pmDescription": "Отчёт «План/факт выпуска» читает данные из «План/факт выпуска»."
+    },
+    {
+      "id": "EDGE-reads-RECORDS-raw_movement-OP-production_output",
+      "from": "RECORDS-raw_movement",
+      "to": "OP-production_output",
+      "type": "reads",
+      "title": "чтение командой",
+      "pmDescription": "Команда «Рассчитать списание сырья» читает данные из «Движение сырья»."
+    },
+    {
+      "id": "EDGE-reads-RECORDS-raw_movement-OP-raw_inventory",
+      "from": "RECORDS-raw_movement",
+      "to": "OP-raw_inventory",
+      "type": "reads",
+      "title": "чтение командой",
+      "pmDescription": "Команда «Заполнить учётные остатки» читает данные из «Движение сырья»."
+    },
+    {
+      "id": "EDGE-reads-RECORDS-raw_movement-REPORT-raw_stock_report",
+      "from": "RECORDS-raw_movement",
+      "to": "REPORT-raw_stock_report",
+      "type": "reads",
+      "title": "данные отчёта",
+      "pmDescription": "Отчёт «Остатки сырья» читает данные из «Движение сырья»."
+    },
+    {
+      "id": "EDGE-reads-REG-recipe_component-OP-production_output",
+      "from": "REG-recipe_component",
+      "to": "OP-production_output",
+      "type": "reads",
+      "title": "чтение командой",
+      "pmDescription": "Команда «Рассчитать списание сырья» читает данные из «Компоненты рецептуры»."
+    },
+    {
+      "id": "EDGE-reads-REG-recipe_component-WF-requirement_calc",
+      "from": "REG-recipe_component",
+      "to": "WF-requirement_calc",
+      "type": "reads",
+      "title": "чтение в workflow",
+      "pmDescription": "Шаг «Загрузка рецептур» workflow «Расчёт потребности» читает данные из «Компоненты рецептуры»."
+    },
+    {
+      "id": "EDGE-calculates-WF-requirement_calc-OP-production_task",
+      "from": "WF-requirement_calc",
+      "to": "OP-production_task",
+      "type": "calculates",
+      "title": "расчёт workflow",
+      "pmDescription": "Команда «Рассчитать потребность» операции «Производственное задание» запускает workflow «Расчёт потребности»."
+    },
+    {
+      "id": "EDGE-fills-WF-seed_docs_1a-OP-customer_order",
+      "from": "WF-seed_docs_1a",
+      "to": "OP-customer_order",
+      "type": "fills",
+      "title": "заполняет данными",
+      "pmDescription": "Workflow «Загрузка тестовых документов 1a» создаёт/обновляет объекты «Заявка клиента» (шаг «Загрузка заявок»)."
+    },
+    {
+      "id": "EDGE-fills-WF-seed_docs_1a-OP-production_task",
+      "from": "WF-seed_docs_1a",
+      "to": "OP-production_task",
+      "type": "fills",
+      "title": "заполняет данными",
+      "pmDescription": "Workflow «Загрузка тестовых документов 1a» создаёт/обновляет объекты «Производственное задание» (шаг «Загрузка заданий»)."
+    },
+    {
+      "id": "EDGE-fills-WF-seed_refs_1a-CAT-company",
+      "from": "WF-seed_refs_1a",
+      "to": "CAT-company",
+      "type": "fills",
+      "title": "заполняет данными",
+      "pmDescription": "Workflow «Загрузка тестовых справочных данных 1a» создаёт/обновляет объекты «Организация» (шаг «Загрузка организаций»)."
+    },
+    {
+      "id": "EDGE-fills-WF-seed_refs_1a-CAT-counterparty",
+      "from": "WF-seed_refs_1a",
+      "to": "CAT-counterparty",
+      "type": "fills",
+      "title": "заполняет данными",
+      "pmDescription": "Workflow «Загрузка тестовых справочных данных 1a» создаёт/обновляет объекты «Контрагент» (шаг «Загрузка контрагентов»)."
+    },
+    {
+      "id": "EDGE-fills-WF-seed_refs_1a-CAT-nomenclature",
+      "from": "WF-seed_refs_1a",
+      "to": "CAT-nomenclature",
+      "type": "fills",
+      "title": "заполняет данными",
+      "pmDescription": "Workflow «Загрузка тестовых справочных данных 1a» создаёт/обновляет объекты «Номенклатура» (шаг «Загрузка номенклатуры»)."
+    },
+    {
+      "id": "EDGE-fills-WF-seed_refs_1a-CAT-recipe",
+      "from": "WF-seed_refs_1a",
+      "to": "CAT-recipe",
+      "type": "fills",
+      "title": "заполняет данными",
+      "pmDescription": "Workflow «Загрузка тестовых справочных данных 1a» создаёт/обновляет объекты «Рецептура» (шаг «Загрузка рецептур»)."
+    },
+    {
+      "id": "EDGE-fills-WF-seed_refs_1a-CAT-unit",
+      "from": "WF-seed_refs_1a",
+      "to": "CAT-unit",
+      "type": "fills",
+      "title": "заполняет данными",
+      "pmDescription": "Workflow «Загрузка тестовых справочных данных 1a» создаёт/обновляет объекты «Единица измерения» (шаг «Загрузка единиц»)."
+    },
+    {
+      "id": "EDGE-fills-WF-seed_refs_1a-CAT-warehouse",
+      "from": "WF-seed_refs_1a",
+      "to": "CAT-warehouse",
+      "type": "fills",
+      "title": "заполняет данными",
+      "pmDescription": "Workflow «Загрузка тестовых справочных данных 1a» создаёт/обновляет объекты «Склад» (шаг «Загрузка складов»)."
+    },
+    {
+      "id": "EDGE-fills-WF-seed_refs_1a-ENUM-counterparty_role",
+      "from": "WF-seed_refs_1a",
+      "to": "ENUM-counterparty_role",
+      "type": "fills",
+      "title": "заполняет данными",
+      "pmDescription": "Workflow «Загрузка тестовых справочных данных 1a» создаёт/обновляет объекты «Роль контрагента» (шаг «Загрузка ролей контрагентов»)."
+    },
+    {
+      "id": "EDGE-fills-WF-seed_refs_1a-ENUM-nomenclature_type",
+      "from": "WF-seed_refs_1a",
+      "to": "ENUM-nomenclature_type",
+      "type": "fills",
+      "title": "заполняет данными",
+      "pmDescription": "Workflow «Загрузка тестовых справочных данных 1a» создаёт/обновляет объекты «Тип номенклатуры» (шаг «Загрузка типов номенклатуры»)."
+    },
+    {
+      "id": "EDGE-fills-WF-seed_refs_1a-REG-price_list",
+      "from": "WF-seed_refs_1a",
+      "to": "REG-price_list",
+      "type": "fills",
+      "title": "заполняет данными",
+      "pmDescription": "Workflow «Загрузка тестовых справочных данных 1a» создаёт/обновляет объекты «Прайс-лист» (шаг «Загрузка прайс-листа»)."
+    },
+    {
+      "id": "EDGE-fills-WF-seed_refs_1a-REG-recipe_component",
+      "from": "WF-seed_refs_1a",
+      "to": "REG-recipe_component",
+      "type": "fills",
+      "title": "заполняет данными",
+      "pmDescription": "Workflow «Загрузка тестовых справочных данных 1a» создаёт/обновляет объекты «Компоненты рецептуры» (шаг «Загрузка компонентов»)."
+    },
+    {
+      "id": "EDGE-references-CAT-counterparty-ENUM-counterparty_role",
+      "from": "CAT-counterparty",
+      "to": "ENUM-counterparty_role",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Контрагент» ссылается на «Роль контрагента» (колонки: role)."
+    },
+    {
+      "id": "EDGE-references-CAT-nomenclature-CAT-unit",
+      "from": "CAT-nomenclature",
+      "to": "CAT-unit",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Номенклатура» ссылается на «Единица измерения» (колонки: unit)."
+    },
+    {
+      "id": "EDGE-references-CAT-nomenclature-ENUM-nomenclature_type",
+      "from": "CAT-nomenclature",
+      "to": "ENUM-nomenclature_type",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Номенклатура» ссылается на «Тип номенклатуры» (колонки: type)."
+    },
+    {
+      "id": "EDGE-references-CAT-recipe-CAT-nomenclature",
+      "from": "CAT-recipe",
+      "to": "CAT-nomenclature",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Рецептура» ссылается на «Номенклатура» (колонки: output_item)."
+    },
+    {
+      "id": "EDGE-references-OP-customer_order-CAT-company",
+      "from": "OP-customer_order",
+      "to": "CAT-company",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Заявка клиента» ссылается на «Организация» (колонки: company)."
+    },
+    {
+      "id": "EDGE-references-OP-customer_order-CAT-counterparty",
+      "from": "OP-customer_order",
+      "to": "CAT-counterparty",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Заявка клиента» ссылается на «Контрагент» (колонки: customer)."
+    },
+    {
+      "id": "EDGE-references-OP-customer_order-CAT-nomenclature",
+      "from": "OP-customer_order",
+      "to": "CAT-nomenclature",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Заявка клиента» ссылается на «Номенклатура» (колонки: product)."
+    },
+    {
+      "id": "EDGE-references-OP-production_output-CAT-company",
+      "from": "OP-production_output",
+      "to": "CAT-company",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Выпуск продукции» ссылается на «Организация» (колонки: company)."
+    },
+    {
+      "id": "EDGE-references-OP-production_output-CAT-nomenclature",
+      "from": "OP-production_output",
+      "to": "CAT-nomenclature",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Выпуск продукции» ссылается на «Номенклатура» (колонки: product, raw_item)."
+    },
+    {
+      "id": "EDGE-references-OP-production_output-CAT-warehouse",
+      "from": "OP-production_output",
+      "to": "CAT-warehouse",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Выпуск продукции» ссылается на «Склад» (колонки: fg_warehouse, raw_warehouse)."
+    },
+    {
+      "id": "EDGE-references-OP-production_output-OP-production_task",
+      "from": "OP-production_output",
+      "to": "OP-production_task",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Выпуск продукции» ссылается на «Производственное задание» (колонки: production_task)."
+    },
+    {
+      "id": "EDGE-references-OP-production_task-CAT-company",
+      "from": "OP-production_task",
+      "to": "CAT-company",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Производственное задание» ссылается на «Организация» (колонки: company)."
+    },
+    {
+      "id": "EDGE-references-OP-production_task-CAT-nomenclature",
+      "from": "OP-production_task",
+      "to": "CAT-nomenclature",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Производственное задание» ссылается на «Номенклатура» (колонки: product, item)."
+    },
+    {
+      "id": "EDGE-references-OP-production_task-CAT-unit",
+      "from": "OP-production_task",
+      "to": "CAT-unit",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Производственное задание» ссылается на «Единица измерения» (колонки: unit)."
+    },
+    {
+      "id": "EDGE-references-OP-production_task-CAT-warehouse",
+      "from": "OP-production_task",
+      "to": "CAT-warehouse",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Производственное задание» ссылается на «Склад» (колонки: warehouse)."
+    },
+    {
+      "id": "EDGE-references-OP-raw_inventory-CAT-company",
+      "from": "OP-raw_inventory",
+      "to": "CAT-company",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Инвентаризация сырья» ссылается на «Организация» (колонки: company)."
+    },
+    {
+      "id": "EDGE-references-OP-raw_inventory-CAT-nomenclature",
+      "from": "OP-raw_inventory",
+      "to": "CAT-nomenclature",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Инвентаризация сырья» ссылается на «Номенклатура» (колонки: raw_item)."
+    },
+    {
+      "id": "EDGE-references-OP-raw_inventory-CAT-warehouse",
+      "from": "OP-raw_inventory",
+      "to": "CAT-warehouse",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Инвентаризация сырья» ссылается на «Склад» (колонки: warehouse)."
+    },
+    {
+      "id": "EDGE-references-OP-raw_receipt-CAT-company",
+      "from": "OP-raw_receipt",
+      "to": "CAT-company",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Поступление сырья» ссылается на «Организация» (колонки: company)."
+    },
+    {
+      "id": "EDGE-references-OP-raw_receipt-CAT-counterparty",
+      "from": "OP-raw_receipt",
+      "to": "CAT-counterparty",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Поступление сырья» ссылается на «Контрагент» (колонки: supplier)."
+    },
+    {
+      "id": "EDGE-references-OP-raw_receipt-CAT-nomenclature",
+      "from": "OP-raw_receipt",
+      "to": "CAT-nomenclature",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Поступление сырья» ссылается на «Номенклатура» (колонки: raw_item)."
+    },
+    {
+      "id": "EDGE-references-OP-raw_receipt-CAT-warehouse",
+      "from": "OP-raw_receipt",
+      "to": "CAT-warehouse",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Поступление сырья» ссылается на «Склад» (колонки: warehouse)."
+    },
+    {
+      "id": "EDGE-references-RECORDS-customer_demand-CAT-company",
+      "from": "RECORDS-customer_demand",
+      "to": "CAT-company",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Спрос по заявкам» ссылается на «Организация» (колонки: company)."
+    },
+    {
+      "id": "EDGE-references-RECORDS-customer_demand-CAT-counterparty",
+      "from": "RECORDS-customer_demand",
+      "to": "CAT-counterparty",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Спрос по заявкам» ссылается на «Контрагент» (колонки: customer)."
+    },
+    {
+      "id": "EDGE-references-RECORDS-customer_demand-CAT-nomenclature",
+      "from": "RECORDS-customer_demand",
+      "to": "CAT-nomenclature",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Спрос по заявкам» ссылается на «Номенклатура» (колонки: product)."
+    },
+    {
+      "id": "EDGE-references-RECORDS-finished_goods_movement-CAT-company",
+      "from": "RECORDS-finished_goods_movement",
+      "to": "CAT-company",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Движение готовой продукции» ссылается на «Организация» (колонки: company)."
+    },
+    {
+      "id": "EDGE-references-RECORDS-finished_goods_movement-CAT-nomenclature",
+      "from": "RECORDS-finished_goods_movement",
+      "to": "CAT-nomenclature",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Движение готовой продукции» ссылается на «Номенклатура» (колонки: product)."
+    },
+    {
+      "id": "EDGE-references-RECORDS-finished_goods_movement-CAT-warehouse",
+      "from": "RECORDS-finished_goods_movement",
+      "to": "CAT-warehouse",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Движение готовой продукции» ссылается на «Склад» (колонки: warehouse)."
+    },
+    {
+      "id": "EDGE-references-RECORDS-production_plan-CAT-company",
+      "from": "RECORDS-production_plan",
+      "to": "CAT-company",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«План/факт выпуска» ссылается на «Организация» (колонки: company)."
+    },
+    {
+      "id": "EDGE-references-RECORDS-production_plan-CAT-nomenclature",
+      "from": "RECORDS-production_plan",
+      "to": "CAT-nomenclature",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«План/факт выпуска» ссылается на «Номенклатура» (колонки: product)."
+    },
+    {
+      "id": "EDGE-references-RECORDS-production_plan-CAT-warehouse",
+      "from": "RECORDS-production_plan",
+      "to": "CAT-warehouse",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«План/факт выпуска» ссылается на «Склад» (колонки: warehouse)."
+    },
+    {
+      "id": "EDGE-references-RECORDS-raw_cost_movement-CAT-company",
+      "from": "RECORDS-raw_cost_movement",
+      "to": "CAT-company",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Движение стоимости сырья» ссылается на «Организация» (колонки: company)."
+    },
+    {
+      "id": "EDGE-references-RECORDS-raw_cost_movement-CAT-nomenclature",
+      "from": "RECORDS-raw_cost_movement",
+      "to": "CAT-nomenclature",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Движение стоимости сырья» ссылается на «Номенклатура» (колонки: raw_item)."
+    },
+    {
+      "id": "EDGE-references-RECORDS-raw_cost_movement-CAT-warehouse",
+      "from": "RECORDS-raw_cost_movement",
+      "to": "CAT-warehouse",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Движение стоимости сырья» ссылается на «Склад» (колонки: warehouse)."
+    },
+    {
+      "id": "EDGE-references-RECORDS-raw_movement-CAT-company",
+      "from": "RECORDS-raw_movement",
+      "to": "CAT-company",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Движение сырья» ссылается на «Организация» (колонки: company)."
+    },
+    {
+      "id": "EDGE-references-RECORDS-raw_movement-CAT-nomenclature",
+      "from": "RECORDS-raw_movement",
+      "to": "CAT-nomenclature",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Движение сырья» ссылается на «Номенклатура» (колонки: raw_item)."
+    },
+    {
+      "id": "EDGE-references-RECORDS-raw_movement-CAT-warehouse",
+      "from": "RECORDS-raw_movement",
+      "to": "CAT-warehouse",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Движение сырья» ссылается на «Склад» (колонки: warehouse)."
+    },
+    {
+      "id": "EDGE-references-RECORDS-supplier_debt_movement-CAT-company",
+      "from": "RECORDS-supplier_debt_movement",
+      "to": "CAT-company",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Движение долга поставщикам» ссылается на «Организация» (колонки: company)."
+    },
+    {
+      "id": "EDGE-references-RECORDS-supplier_debt_movement-CAT-counterparty",
+      "from": "RECORDS-supplier_debt_movement",
+      "to": "CAT-counterparty",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Движение долга поставщикам» ссылается на «Контрагент» (колонки: supplier)."
+    },
+    {
+      "id": "EDGE-references-REG-price_list-CAT-nomenclature",
+      "from": "REG-price_list",
+      "to": "CAT-nomenclature",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Прайс-лист» ссылается на «Номенклатура» (колонки: product)."
+    },
+    {
+      "id": "EDGE-references-REG-recipe_component-CAT-nomenclature",
+      "from": "REG-recipe_component",
+      "to": "CAT-nomenclature",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Компоненты рецептуры» ссылается на «Номенклатура» (колонки: component)."
+    },
+    {
+      "id": "EDGE-references-REG-recipe_component-CAT-recipe",
+      "from": "REG-recipe_component",
+      "to": "CAT-recipe",
+      "type": "references",
+      "title": "ссылка (FK)",
+      "pmDescription": "«Компоненты рецептуры» ссылается на «Рецептура» (колонки: recipe)."
+    }
+  ],
+  "views": [
+    {
+      "id": "VIEW-fact-main",
+      "title": "Общая карта (факт)",
+      "description": "Все фактические метаобъекты и основные связи: проведение, чтение, расчёты и заполнение (FK-ссылки вынесены в отдельный вид).",
+      "includedGroups": [
+        "GROUP-fact-documents",
+        "GROUP-fact-storage",
+        "GROUP-fact-inputs",
+        "GROUP-fact-reports",
+        "GROUP-fact-workflows"
+      ],
+      "includedEdgeTypes": [
+        "writes",
+        "reads",
+        "calculates",
+        "fills"
+      ]
+    },
+    {
+      "id": "VIEW-fact-posting",
+      "title": "Проведение документов",
+      "description": "Какие операции какие регистры записей пишут (recordsSettings, направления приход/расход).",
+      "includedNodeIds": [
+        "OP-customer_order",
+        "OP-production_output",
+        "OP-production_task",
+        "OP-raw_inventory",
+        "OP-raw_receipt",
+        "RECORDS-customer_demand",
+        "RECORDS-finished_goods_movement",
+        "RECORDS-production_plan",
+        "RECORDS-raw_cost_movement",
+        "RECORDS-raw_movement",
+        "RECORDS-supplier_debt_movement"
+      ],
+      "includedEdgeTypes": [
+        "writes"
+      ]
+    },
+    {
+      "id": "VIEW-fact-reports",
+      "title": "Отчёты и их данные",
+      "description": "Откуда фактические отчёты берут данные (по from(...) в скриптах data source).",
+      "includedNodeIds": [
+        "REPORT-fg_stock_report",
+        "REPORT-production_plan_report",
+        "REPORT-raw_stock_report",
+        "RECORDS-finished_goods_movement",
+        "RECORDS-production_plan",
+        "RECORDS-raw_movement"
+      ],
+      "includedEdgeTypes": [
+        "reads"
+      ]
+    },
+    {
+      "id": "VIEW-fact-workflows",
+      "title": "Workflow и заполнение",
+      "description": "Что читают workflow-процессы, какие объекты они заполняют и какие команды их запускают.",
+      "includedNodeIds": [
+        "WF-requirement_calc",
+        "WF-seed_docs_1a",
+        "WF-seed_refs_1a",
+        "CAT-nomenclature",
+        "CAT-recipe",
+        "OP-production_task",
+        "RECORDS-customer_demand",
+        "REG-recipe_component",
+        "OP-customer_order",
+        "CAT-company",
+        "CAT-counterparty",
+        "CAT-unit",
+        "CAT-warehouse",
+        "ENUM-counterparty_role",
+        "ENUM-nomenclature_type",
+        "REG-price_list"
+      ],
+      "includedEdgeTypes": [
+        "fills",
+        "calculates",
+        "reads"
+      ]
+    },
+    {
+      "id": "VIEW-fact-references",
+      "title": "Ссылки на справочники (FK)",
+      "description": "Ссылочные колонки по dataTypes: какие объекты на какие справочники, перечисления и документы ссылаются.",
+      "includedGroups": [
+        "GROUP-fact-documents",
+        "GROUP-fact-storage",
+        "GROUP-fact-inputs",
+        "GROUP-fact-reports",
+        "GROUP-fact-workflows"
+      ],
+      "includedEdgeTypes": [
+        "references"
+      ]
+    }
+  ],
+  "legend": {
+    "lifecycle": {
+      "as-built": "Фактически существует в metadata/ (выгрузка стенда)"
+    },
+    "edgeTypes": {
+      "writes": "Операция пишет движения в регистр записей (recordsSettings)",
+      "reads": "Объект читает данные (from(...) в .bjs скрипте)",
+      "calculates": "Workflow запускается командой операции (runWorkflow)",
+      "fills": "Workflow создаёт/обновляет объекты (data_object_loader)",
+      "references": "Ссылочная колонка (FK по dataTypes)"
+    }
+  }
+}
+      }
+    };
+
+    const LEGEND = {
+      design: [
+        { color: '#b45309', label: 'документы пользователя' },
+        { color: '#0f766e', label: 'регистры хранения результата' },
+        { color: '#2563eb', label: 'отчеты для контроля' },
+        { color: '#7c3aed', label: 'существующие объекты' }
+      ],
+      metadata: [
+        { color: '#b45309', label: 'операции (документы)' },
+        { color: '#0f766e', label: 'регистры записей (движения)' },
+        { color: '#2563eb', label: 'отчёты (data view)' },
+        { color: '#7c3aed', label: 'справочники, перечисления, регистры настроек' },
+        { color: '#9333ea', label: 'workflow-процессы' }
+      ]
+    };
+
+    const PIPELINE_NOTES = {
+      design: 'Последовательность: сначала пользователь оформляет поступление сырья, при необходимости корректирует остатки инвентаризацией, затем выбирает производственное задание и оформляет выпуск.'
+    };
 
     const nodeColors = {
       document: '#b45309',
@@ -988,8 +2143,18 @@
       'existing-storage': '#7c3aed',
       report: '#2563eb',
       'existing-reference': '#7c3aed',
+      reference: '#7c3aed',
       calculation: '#9333ea',
       future: '#64748b'
+    };
+
+    const edgeColors = {
+      writes: '#b45309',
+      reads: '#2563eb',
+      'user-sequence': '#16a34a',
+      fills: '#15803d',
+      calculates: '#9333ea',
+      references: '#94a3b8'
     };
 
     const viewButtons = document.getElementById('views');
@@ -997,6 +2162,8 @@
     const objectList = document.getElementById('objects');
     const search = document.getElementById('search');
     const pipelineNote = document.getElementById('pipelineNote');
+    let activeKey = 'design';
+    let VIEW_DATA = DATASETS[activeKey].data;
     let currentView = VIEW_DATA.views && VIEW_DATA.views.length > 0 ? VIEW_DATA.views[0] : null;
     let labelsVisible = true;
     let cy;
@@ -1048,11 +2215,11 @@
     }
 
     function laneForNode(node, groupId) {
+      if (node.visualType === 'report' || node.kind === 'data_view') return 'reports';
+      if (node.visualType === 'calculation' || node.visualType === 'future' || node.kind === 'workflow') return 'existing';
+      if (node.visualType === 'storage' || node.visualType === 'existing-storage' || node.kind === 'records') return 'storage';
+      if (node.kind === 'catalog' || node.kind === 'enum' || node.kind === 'register') return 'existing';
       if (groupId && groupId.includes('existing')) return 'existing';
-      if (node.visualType === 'report') return 'reports';
-      if (node.visualType === 'calculation' || node.visualType === 'future') return 'existing';
-      if (node.visualType === 'storage' || node.visualType === 'existing-storage') return 'storage';
-      if (node.visualType === 'existing-reference') return 'existing';
       return 'documents';
     }
 
@@ -1071,12 +2238,18 @@
 
       const positions = new Map();
       const placeVertical = (items, x, y, gap) => items.forEach((node, index) => positions.set(node.id, { x, y: y + index * gap }));
-      const placeHorizontal = (items, x, y, gap) => items.forEach((node, index) => positions.set(node.id, { x: x + index * gap, y }));
+      const placeWrapped = (items, x, y, gapX, gapY, perRow) => items.forEach((node, index) => positions.set(node.id, {
+        x: x + (index % perRow) * gapX,
+        y: y + Math.floor(index / perRow) * gapY
+      }));
 
-      placeHorizontal(lanes.existing, 230, 120, 260);
-      placeVertical(lanes.documents, 190, 310, 150);
-      placeVertical(lanes.storage, 560, 290, 142);
-      placeVertical(lanes.reports, 930, 330, 150);
+      const topRows = Math.max(1, Math.ceil(lanes.existing.length / 5));
+      const baseY = 110 + (topRows - 1) * 110 + 200;
+
+      placeWrapped(lanes.existing, 230, 110, 260, 110, 5);
+      placeVertical(lanes.documents, 190, baseY, 150);
+      placeVertical(lanes.storage, 560, baseY - 20, 142);
+      placeVertical(lanes.reports, 930, baseY + 20, 150);
 
       let fallback = 0;
       for (const node of nodes) {
@@ -1120,12 +2293,65 @@
             source: edge.from,
             target: edge.to,
             label: edge.title || edge.type,
-            color: edge.type === 'writes' ? '#b45309' : edge.type === 'reads' ? '#2563eb' : edge.type === 'user-sequence' ? '#16a34a' : '#64748b'
+            color: edgeColors[edge.type] || '#64748b'
           }),
           classes: edge.type || 'edge'
         });
       }
       return { elements, nodes, edges };
+    }
+
+    function renderTabs() {
+      const tabs = document.getElementById('tabs');
+      tabs.innerHTML = '';
+      for (const key of Object.keys(DATASETS)) {
+        const button = document.createElement('button');
+        button.className = 'tab-button' + (key === activeKey ? ' active' : '');
+        button.textContent = DATASETS[key].label;
+        button.addEventListener('click', () => selectDataset(key));
+        tabs.appendChild(button);
+      }
+    }
+
+    function renderSummary() {
+      const box = document.getElementById('summary');
+      box.innerHTML = '';
+      const s = VIEW_DATA.summary || {};
+      const items = [];
+      if (activeKey === 'design') {
+        if (typeof s.createdObjectsCount === 'number') items.push([s.createdObjectsCount, 'создаём']);
+        if (typeof s.reusedObjectsCount === 'number') items.push([s.reusedObjectsCount, 'используем']);
+      } else if (typeof s.createdObjectsCount === 'number') {
+        items.push([s.createdObjectsCount, 'метаобъектов']);
+      }
+      items.push([(VIEW_DATA.nodes || []).length, 'объектов на карте']);
+      items.push([(VIEW_DATA.edges || []).length, 'связей']);
+      for (const [value, label] of items) {
+        const metric = document.createElement('div');
+        metric.className = 'metric';
+        const strong = document.createElement('strong');
+        strong.textContent = String(value);
+        const span = document.createElement('span');
+        span.textContent = label;
+        metric.append(strong, span);
+        box.appendChild(metric);
+      }
+    }
+
+    function renderLegend() {
+      const box = document.getElementById('legend');
+      box.innerHTML = '';
+      for (const item of LEGEND[activeKey] || []) {
+        const div = document.createElement('div');
+        div.className = 'legend-item';
+        const swatch = document.createElement('span');
+        swatch.className = 'swatch';
+        swatch.style.background = item.color;
+        const label = document.createElement('span');
+        label.textContent = item.label;
+        div.append(swatch, label);
+        box.appendChild(div);
+      }
     }
 
     function renderViews() {
@@ -1169,7 +2395,10 @@
       if (ele.isNode()) {
         const d = ele.data();
         ele.connectedEdges().addClass('selected');
-        cy.elements().not(ele.closedNeighborhood()).addClass('dim-neighborhood');
+        // exclude compound group parents from dimming: in cytoscape a parent's
+        // `opacity` multiplies into all descendants and would wash out the
+        // labels of the selected node and its neighbours.
+        cy.elements().not(ele.closedNeighborhood()).not(':parent').addClass('dim-neighborhood');
         details.innerHTML = '<span class="type"></span><h2></h2><p></p><div class="kv"></div>';
         details.querySelector('.type').textContent = d.kind === 'group' ? 'группа' : d.kind + ' / ' + (d.lifecycle || '');
         details.querySelector('h2').textContent = d.kind === 'group' ? d.label : d.title;
@@ -1180,6 +2409,8 @@
         if (d.lifecycle) kv.append(row('Статус', d.lifecycle));
       } else {
         const d = ele.data();
+        ele.connectedNodes().addClass('selected');
+        cy.elements().not(ele.union(ele.connectedNodes())).not(':parent').addClass('dim-neighborhood');
         const from = VIEW_DATA.nodes.find((node) => node.id === d.from);
         const to = VIEW_DATA.nodes.find((node) => node.id === d.to);
         details.innerHTML = '<span class="type"></span><h2></h2><p></p><div class="kv"></div>';
@@ -1211,7 +2442,7 @@
     function loadView(viewId) {
       currentView = (VIEW_DATA.views || []).find((view) => view.id === viewId) || (VIEW_DATA.views && VIEW_DATA.views.length > 0 ? VIEW_DATA.views[0] : null);
       if (!currentView) {
-        details.innerHTML = '<span class="type">ошибка данных</span><h2>Нет PM-видов</h2><p>В architecture-view.json не найден массив views.</p>';
+        details.innerHTML = '<span class="type">ошибка данных</span><h2>Нет PM-видов</h2><p>В датасете не найден массив views.</p>';
         return;
       }
       const built = buildElements(currentView);
@@ -1219,10 +2450,9 @@
       renderObjectList(built.nodes);
       emptyDetails();
       if (pipelineNote) {
-        pipelineNote.style.display = currentView.layout === 'pipeline' ? 'block' : 'none';
-        pipelineNote.textContent = currentView.layout === 'pipeline'
-          ? 'Последовательность: сначала пользователь оформляет поступление сырья, при необходимости корректирует остатки инвентаризацией, затем выбирает производственное задание и оформляет выпуск.'
-          : '';
+        const isPipeline = currentView.layout === 'pipeline';
+        pipelineNote.style.display = isPipeline ? 'block' : 'none';
+        pipelineNote.textContent = isPipeline ? (PIPELINE_NOTES[activeKey] || currentView.description || '') : '';
       }
 
       if (cy) cy.destroy();
@@ -1314,12 +2544,16 @@
             }
           },
           { selector: '.reads', style: { 'line-style': 'dashed' } },
+          { selector: '.references', style: { 'line-style': 'dotted', 'width': 1.6, 'arrow-scale': 0.9, 'font-size': 10 } },
           { selector: '.user-sequence', style: { 'line-style': 'solid', 'width': 4, 'arrow-scale': 1.35, 'font-size': 12, 'font-weight': 800 } },
           { selector: '.provides-input, .provides-rules', style: { 'line-color': '#64748b', 'target-arrow-color': '#64748b' } },
-          { selector: 'node.selected', style: { 'border-width': 5, 'border-color': '#facc15', 'z-index': 20 } },
-          { selector: 'edge.selected', style: { 'width': 4.5, 'z-index': 20 } },
-          { selector: '.dim-neighborhood', style: { 'opacity': 0.22 } },
-          { selector: '.search-dim', style: { 'opacity': 0.16 } },
+          { selector: 'node.selected', style: { 'border-width': 5, 'border-color': '#facc15', 'z-index': 20, 'text-opacity': 1, 'color': '#ffffff' } },
+          { selector: 'edge.selected', style: { 'width': 4.5, 'z-index': 20, 'text-opacity': 1 } },
+          // dimming uses per-channel opacities instead of blanket `opacity`,
+          // so labels stay readable (~0.3) instead of fading to nothing
+          { selector: 'node.dim-neighborhood', style: { 'background-opacity': 0.16, 'border-opacity': 0.2, 'text-opacity': 0.3 } },
+          { selector: 'edge.dim-neighborhood', style: { 'opacity': 0.3, 'text-opacity': 1 } },
+          { selector: 'node.search-dim', style: { 'background-opacity': 0.14, 'border-opacity': 0.2, 'text-opacity': 0.3 } },
           { selector: '.hide-labels', style: { 'label': '' } }
         ]
       });
@@ -1334,6 +2568,21 @@
       setTimeout(() => cy.fit(undefined, 64), 60);
       applySearch();
       applyLabelState();
+    }
+
+    function selectDataset(key) {
+      activeKey = key;
+      VIEW_DATA = DATASETS[key].data;
+      currentView = VIEW_DATA.views && VIEW_DATA.views.length > 0 ? VIEW_DATA.views[0] : null;
+      const title = (VIEW_DATA.meta && VIEW_DATA.meta.title) || 'Карта архитектуры';
+      document.getElementById('pageTitle').textContent = title;
+      document.title = title;
+      document.getElementById('sourceLine').textContent = 'Источник: ' + DATASETS[key].source;
+      document.getElementById('goal').textContent = (VIEW_DATA.summary && VIEW_DATA.summary.goal) || '';
+      renderTabs();
+      renderSummary();
+      renderLegend();
+      loadView(currentView && currentView.id);
     }
 
     function applySearch() {
@@ -1375,7 +2624,7 @@
     search.addEventListener('input', applySearch);
 
     try {
-      loadView(currentView && currentView.id);
+      selectDataset(activeKey);
     } catch (error) {
       details.innerHTML = '<span class="type">ошибка запуска</span><h2>Viewer не запустился</h2><p></p>';
       details.querySelector('p').textContent = error && error.message ? error.message : String(error);
