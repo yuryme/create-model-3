@@ -151,3 +151,21 @@
 - Обновлены `workflow.md`, `autopilot-workflow.md`, команды `spec-to-metadata-multi`, `metadata-autopilot`.
 - После изменения `.opencode/agents/*` требуется перезапуск OpenCode, чтобы новые промпты/permission вступили в силу.
 - Старые markdown-ТЗ (например, `sp-001-bakery-stage1a.md`, `sp-002-...`) остаются как есть; миграция в spec-json — по мере необходимости, не обязательна задним числом.
+
+---
+
+## 2026-06-11: Fast-track режим реализации — вся неопределённость закрывается на дизайне
+
+**Контекст.** Multi-agent autopilot Phase 2 (spec → spec-review → plan → plan-review → implementation → audit) оказался тяжёлым: 6+ вызовов subagent с чистыми контекстами, revision-циклы, открытые вопросы доезжали до реализации (1b: OQ-001..003 решал engineer в плане). PM потребовал режим «нажал кнопку — агенты работают»: быстро, без переспрашиваний, с появлением результата в `metadata/`.
+
+**Решение.** Введён режим fast-track (команда `/implement-spec <sp-id>.json`). Вся неопределённость закрывается на интерактивной фазе дизайна в PM-чате: вопросы, решения PM, ревью — до утверждения ТЗ. Entry gates команды: spec-json существует, схемно валиден, `meta.status: approved`, `openQuestions` пуст (любой оставшийся вопрос — отказ). Цикл: orchestrator → engineer в direct implementation mode (без plan-артефакта) → audit → fix только critical (максимум 2 итерации) → отчёт PM. Вопросы PM в ходе прогона запрещены: любой блокер — немедленный стоп с отчётом.
+
+**Обоснование.** Дизайн — единственное место, где живёт неопределённость; после её закрытия промежуточные артефакты (spec-review, plan, plan-review) не добавляют качества, только стоимость и латентность. Независимый audit сохранён: он ловит ошибки импорта/UID/references дешевле, чем битый импорт на стенде.
+
+**Последствия.**
+- Создана команда `.opencode/commands/implement-spec.md`; `autopilot-orchestrator` получил фазу Fast-Track; `autopilot-engineer` — direct implementation mode (4-й режим).
+- Обновлены `autopilot-workflow.md` (критерии, цикл, file handoff) и `workflow.md`.
+- Fast-track не создаёт `-design.md`, `-spec-review.md`, `-plan.md`, `-plan-review.md`; артефакты — metadata, implementation-report, import-notes, audit.
+- Старые режимы (`/task-to-design`, `/spec-to-metadata-multi`, `/metadata-autopilot`, `/quick-metadata`) сохранены без изменений.
+- Первое применение — этап 1c; дизайн 1c выполняется интерактивно в PM-чате.
+- После изменения `.opencode/agents/*` и команд требуется перезапуск OpenCode.

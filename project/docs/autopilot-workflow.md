@@ -1,17 +1,17 @@
 # Autopilot Workflow
 
-Этот документ описывает автономные режимы выполнения задач в проекте: quick metadata, single-agent autopilot и multi-agent autopilot. Основной ручной workflow описан в `project/docs/workflow.md`.
+Этот документ описывает автономные режимы выполнения задач в проекте: quick metadata, single-agent autopilot, multi-agent autopilot и fast-track. Основной ручной workflow описан в `project/docs/workflow.md`.
 
 ## Принципиальная Разница
 
-| Свойство | Quick metadata | Single-agent | Multi-agent |
-|---|---|---|---|
-| Кто выполняет | Текущий чат / один primary agent | Один primary agent | Orchestrator + subagents |
-| Review | Self-check | Self-review внутри того же контекста | Независимый reviewer/auditor в child-сессиях |
-| Контекст | Минимальный | Общий | Изолированный per role, handoff через файлы |
-| Стоимость | Минимальная | Средняя | Высокая |
-| Подходит для | Простые metadata-правки | Средние задачи и известные паттерны | Сложные/рискованные задачи |
-| Точки запуска | `.opencode/commands/quick-metadata.md` | `.opencode/commands/metadata-autopilot.md` | `.opencode/commands/task-to-design.md`, `.opencode/commands/spec-to-metadata-multi.md` |
+| Свойство | Quick metadata | Single-agent | Multi-agent | Fast-track |
+|---|---|---|---|---|
+| Кто выполняет | Текущий чат / один primary agent | Один primary agent | Orchestrator + subagents | Orchestrator + engineer + auditor |
+| Review | Self-check | Self-review внутри того же контекста | Независимый reviewer/auditor в child-сессиях | Все ревью на дизайне; после — только audit |
+| Контекст | Минимальный | Общий | Изолированный per role, handoff через файлы | Изолированный, handoff через spec-json |
+| Стоимость | Минимальная | Средняя | Высокая | Средняя (2–3 вызова subagent) |
+| Подходит для | Простые metadata-правки | Средние задачи и известные паттерны | Сложные/рискованные задачи | Любая сложность при полностью закрытом дизайне |
+| Точки запуска | `.opencode/commands/quick-metadata.md` | `.opencode/commands/metadata-autopilot.md` | `.opencode/commands/task-to-design.md`, `.opencode/commands/spec-to-metadata-multi.md` | `.opencode/commands/implement-spec.md` |
 
 ## Критерии Выбора Режима
 
@@ -48,6 +48,25 @@ Single-agent может создавать краткое ТЗ, краткий �
 - сложные cross-kind references, требующие независимой проверки порядка импорта;
 - риск ломки уже работающих метаданных;
 - цена ошибки высока, и независимый reviewer/auditor реально снижает риск.
+
+### Fast-Track
+
+Использовать, когда вся неопределённость закрыта на интерактивной фазе дизайна (ADR 2026-06-11). Условия входа — ВСЕ обязательны:
+
+- ТЗ существует как spec-json (`<sp-id>.json`), схемно валидно;
+- `meta.status: approved` — PM утвердил ТЗ после дизайна и ревью;
+- `openQuestions` пуст: все вопросы решены и вшиты в тело ТЗ; решения зафиксированы (decisions.md/ADR при необходимости);
+- PM готов принять результат на стенде без промежуточных вопросов.
+
+Свойства режима:
+
+- запуск одной командой `/implement-spec project/docs/specs/<sp-id>.json`;
+- нет spec-review, plan и plan-review: engineer реализует metadata напрямую из ТЗ (direct implementation mode), импортный порядок попадает в import-notes;
+- один независимый audit + не более 2 fix-итераций по critical;
+- ноль вопросов PM: любой блокер или несработавший entry gate = немедленный стоп с отчётом;
+- артефакты: metadata, `<sp-id>-implementation-report.md`, `<sp-id>-import-notes.md`, `<sp-id>-audit.md`.
+
+Фаза дизайна для fast-track выполняется интерактивно в PM-чате (analyst-работа в диалоге: вопросы, решения, ревью — до утверждения ТЗ). Phase 1 автопилота (`/task-to-design`) допустима как альтернатива, но решения по открытым вопросам всё равно закрываются до запуска `/implement-spec`.
 
 ### Ручной Workflow (Без Автопилота)
 
@@ -176,6 +195,8 @@ project/docs/specs/<sp-id>-import-notes.md    инструкция импорт�
 project/docs/specs/<sp-id>-audit.md           технический аудит от auditor
 ```
 
+Fast-track использует то же именование, но не создаёт `-design.md`, `-design-review.md`, `-spec-review.md`, `-plan.md`, `-plan-review.md`: ТЗ рождается на интерактивном дизайне, план не материализуется.
+
 ## Цикл Multi-Agent
 
 ### Phase 1 — Design
@@ -273,6 +294,38 @@ orchestrator Phase 2 report to PM:
   - accepted non-critical notes
   - import sequence
   - remaining risks
+```
+
+## Цикл Fast-Track
+
+```
+Интерактивный дизайн в PM-чате:
+  вопросы -> решения PM -> ревью -> ТЗ <sp-id>.json
+  (meta.status: approved, openQuestions: [])
+  |
+  v
+PM: /implement-spec project/docs/specs/<sp-id>.json
+  |
+  v
+orchestrator entry gates:
+  file exists + schema valid + status approved + openQuestions empty
+  | gate failed -> STOP с отчётом (без вопросов и без правок)
+  v
+orchestrator -> autopilot-engineer (direct implementation mode)
+  | engineer: metadata/ + report + import-notes (без plan-файла)
+  v
+orchestrator: git status / git diff --stat (changed files)
+  |
+  v
+orchestrator -> metadata-auditor (spec + changed files)
+  | auditor: <sp-id>-audit.md
+  v
+  critical defects? -> engineer (fix mode) -> re-audit (max 2 итерации)
+  | criticals остались -> STOP, blocked
+  v
+orchestrator Fast-Track report to PM:
+  файлы, вердикт аудита, исправленные critical, non-critical notes,
+  ссылка на import-notes, остаточные риски
 ```
 
 ## Critical vs Non-Critical Defects
