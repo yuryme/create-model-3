@@ -1,0 +1,139 @@
+{
+  "schemaVersion": "architecture-view-json-v0.1",
+  "meta": {
+    "id": "sp-001-bakery-stage1c-architecture-view",
+    "title": "Хлебозавод — этап 1c, карта архитектуры для PM",
+    "status": "approved",
+    "version": 1,
+    "sourceDesign": "project/docs/specs/archive/sp-001-bakery-stage1/04-stage1c/sp-001-bakery-stage1c.design.json",
+    "sourceMarkdownDesign": "project/docs/specs/archive/sp-001-bakery-stage1/04-stage1c/sp-001-bakery-stage1c-design.md"
+  },
+  "summary": {
+    "goal": "Показать, какие объекты добавляет этап 1c и как они закрывают цикл от выпуска продукции до денег.",
+    "businessResult": "Отгрузка списывает готовую продукцию и создаёт дебиторку; входящая оплата гасит дебиторку и увеличивает деньги; исходящая оплата гасит кредиторку поставщика и уменьшает деньги; отчёты показывают расчёты и денежные движения.",
+    "createdObjectsCount": 9,
+    "reusedObjectsCount": 3,
+    "createdObjects": [
+      "customer_settlements",
+      "money_balance",
+      "shipment",
+      "payment_in",
+      "payment_out",
+      "prepare_shipment",
+      "customer_debt_report",
+      "supplier_debt_report",
+      "money_flow_report"
+    ],
+    "reusedObjects": [
+      "finished_goods_movement",
+      "supplier_debt_movement",
+      "price_list"
+    ]
+  },
+  "groups": [
+    {
+      "id": "GROUP-documents",
+      "title": "Документы пользователя",
+      "description": "Операции, которые пользователь создаёт вручную на этапе 1c.",
+      "nodeIds": ["OP-shipment", "OP-payment_in", "OP-payment_out"]
+    },
+    {
+      "id": "GROUP-storage",
+      "title": "Где хранится результат",
+      "description": "Регистры записей склада ГП, расчётов и денег.",
+      "nodeIds": ["RECORDS-finished_goods_movement", "RECORDS-customer_settlements", "RECORDS-supplier_debt_movement", "RECORDS-money_balance"]
+    },
+    {
+      "id": "GROUP-existing-inputs",
+      "title": "Используется из 1a/1b",
+      "description": "Существующие объекты, необходимые для 1c.",
+      "nodeIds": ["RECORDS-finished_goods_movement", "RECORDS-supplier_debt_movement", "REG-price_list"]
+    },
+    {
+      "id": "GROUP-reports",
+      "title": "Отчёты для контроля",
+      "description": "Минимальные отчёты этапа 1c.",
+      "nodeIds": ["REPORT-customer_debt_report", "REPORT-supplier_debt_report", "REPORT-money_flow_report"]
+    },
+    {
+      "id": "GROUP-calculations",
+      "title": "Расчёты и проверки",
+      "description": "Команда подготовки отгрузки: цены из прайс-листа и остаток ГП.",
+      "nodeIds": ["CMD-prepare_shipment"]
+    }
+  ],
+  "nodes": [
+    { "id": "OP-shipment", "kind": "operation", "name": "shipment", "title": "Отгрузка", "lifecycle": "create", "pmDescription": "Кладовщик или менеджер оформляет отгрузку готовой продукции клиенту.", "visualType": "document" },
+    { "id": "OP-payment_in", "kind": "operation", "name": "payment_in", "title": "Поступление денег", "lifecycle": "create", "pmDescription": "Финансист фиксирует оплату клиента.", "visualType": "document" },
+    { "id": "OP-payment_out", "kind": "operation", "name": "payment_out", "title": "Оплата поставщику", "lifecycle": "create", "pmDescription": "Финансист фиксирует оплату поставщику.", "visualType": "document" },
+    { "id": "REG-price_list", "kind": "register", "name": "price_list", "title": "Прайс-лист", "lifecycle": "reuse-existing", "pmDescription": "Уже созданный на 1a источник актуальных цен продукции.", "visualType": "existing-reference" },
+    { "id": "RECORDS-finished_goods_movement", "kind": "records", "name": "finished_goods_movement", "title": "Движение готовой продукции", "lifecycle": "reuse-existing", "pmDescription": "Уже созданный на 1b регистр остатков готовой продукции; 1c добавляет расход отгрузкой.", "visualType": "existing-storage" },
+    { "id": "RECORDS-customer_settlements", "kind": "records", "name": "customer_settlements", "title": "Расчёты с покупателями", "lifecycle": "create", "pmDescription": "Новый регистр движений дебиторской задолженности клиентов.", "visualType": "storage" },
+    { "id": "RECORDS-supplier_debt_movement", "kind": "records", "name": "supplier_debt_movement", "title": "Движение долга поставщикам", "lifecycle": "reuse-existing", "pmDescription": "Уже созданный на 1b регистр кредиторки; 1c добавляет погашение оплатой поставщику.", "visualType": "existing-storage" },
+    { "id": "RECORDS-money_balance", "kind": "records", "name": "money_balance", "title": "Движение денег", "lifecycle": "create", "pmDescription": "Новый регистр общего денежного движения без кассы/банка и статей ДДС.", "visualType": "storage" },
+    { "id": "CMD-prepare_shipment", "kind": "command", "name": "prepare_shipment", "title": "Подготовить отгрузку", "lifecycle": "create", "pmDescription": "Заполняет цены из прайс-листа и остаток готовой продукции перед проведением отгрузки.", "visualType": "calculation" },
+    { "id": "REPORT-customer_debt_report", "kind": "data_view", "name": "customer_debt_report", "title": "Дебиторка", "lifecycle": "create", "pmDescription": "Показывает сальдо задолженности клиентов.", "visualType": "report" },
+    { "id": "REPORT-supplier_debt_report", "kind": "data_view", "name": "supplier_debt_report", "title": "Кредиторка", "lifecycle": "create", "pmDescription": "Показывает сальдо задолженности поставщикам.", "visualType": "report" },
+    { "id": "REPORT-money_flow_report", "kind": "data_view", "name": "money_flow_report", "title": "Движение денег", "lifecycle": "create", "pmDescription": "Показывает денежные движения и итог за период.", "visualType": "report" }
+  ],
+  "edges": [
+    { "id": "EDGE-shipment-reads-price-list", "from": "REG-price_list", "to": "OP-shipment", "type": "reads", "title": "цены", "pmDescription": "Команда подготовки отгрузки берёт актуальные цены из прайс-листа." },
+    { "id": "EDGE-fg-to-shipment", "from": "RECORDS-finished_goods_movement", "to": "OP-shipment", "type": "reads", "title": "остаток ГП", "pmDescription": "Команда подготовки отгрузки проверяет доступный остаток готовой продукции." },
+    { "id": "EDGE-command-to-shipment", "from": "CMD-prepare_shipment", "to": "OP-shipment", "type": "calculates", "title": "цены и остаток", "pmDescription": "Команда заполняет price, amount и stock_qty_before в строках отгрузки." },
+    { "id": "EDGE-shipment-writes-fg", "from": "OP-shipment", "to": "RECORDS-finished_goods_movement", "type": "writes", "title": "расход ГП", "pmDescription": "Отгрузка уменьшает количественный остаток готовой продукции." },
+    { "id": "EDGE-shipment-writes-customer", "from": "OP-shipment", "to": "RECORDS-customer_settlements", "type": "writes", "title": "рост дебиторки", "pmDescription": "Отгрузка увеличивает долг клиента на сумму строк." },
+    { "id": "EDGE-payment-in-writes-money", "from": "OP-payment_in", "to": "RECORDS-money_balance", "type": "writes", "title": "приход денег", "pmDescription": "Поступление оплаты увеличивает общий денежный остаток." },
+    { "id": "EDGE-payment-in-writes-customer", "from": "OP-payment_in", "to": "RECORDS-customer_settlements", "type": "writes", "title": "погашение дебиторки", "pmDescription": "Поступление оплаты уменьшает долг клиента." },
+    { "id": "EDGE-payment-out-writes-money", "from": "OP-payment_out", "to": "RECORDS-money_balance", "type": "writes", "title": "расход денег", "pmDescription": "Оплата поставщику уменьшает общий денежный остаток." },
+    { "id": "EDGE-payment-out-writes-supplier", "from": "OP-payment_out", "to": "RECORDS-supplier_debt_movement", "type": "writes", "title": "погашение кредиторки", "pmDescription": "Оплата поставщику уменьшает долг поставщику." },
+    { "id": "EDGE-customer-to-report", "from": "RECORDS-customer_settlements", "to": "REPORT-customer_debt_report", "type": "reads", "title": "отчёт дебиторки", "pmDescription": "Отчёт дебиторки читает движения расчётов с клиентами." },
+    { "id": "EDGE-supplier-to-report", "from": "RECORDS-supplier_debt_movement", "to": "REPORT-supplier_debt_report", "type": "reads", "title": "отчёт кредиторки", "pmDescription": "Отчёт кредиторки читает движения долга поставщикам." },
+    { "id": "EDGE-money-to-report", "from": "RECORDS-money_balance", "to": "REPORT-money_flow_report", "type": "reads", "title": "отчёт денег", "pmDescription": "Отчёт движения денег читает денежные движения." },
+    { "id": "EDGE-user-output-to-shipment", "from": "RECORDS-finished_goods_movement", "to": "OP-shipment", "type": "user-sequence", "title": "после выпуска", "pmDescription": "Отгрузка выполняется после выпуска и появления остатка готовой продукции." },
+    { "id": "EDGE-user-shipment-to-payment-in", "from": "OP-shipment", "to": "OP-payment_in", "type": "user-sequence", "title": "затем оплата клиента", "pmDescription": "После отгрузки клиент оплачивает задолженность." },
+    { "id": "EDGE-user-raw-receipt-to-payment-out", "from": "RECORDS-supplier_debt_movement", "to": "OP-payment_out", "type": "user-sequence", "title": "оплата поставщику", "pmDescription": "После поступления сырья и роста кредиторки пользователь оплачивает поставщику." }
+  ],
+  "views": [
+    {
+      "id": "VIEW-main-map",
+      "title": "Общая карта объектов 1c",
+      "description": "Документы слева, регистры в центре, отчёты справа, существующие входы сверху.",
+      "includedGroups": ["GROUP-documents", "GROUP-storage", "GROUP-existing-inputs", "GROUP-calculations", "GROUP-reports"],
+      "includedEdgeTypes": ["writes", "reads", "calculates"]
+    },
+    {
+      "id": "VIEW-posting-only",
+      "title": "Какие документы что записывают",
+      "description": "Упрощённый вид только для проведения операций в регистры.",
+      "includedNodeIds": ["OP-shipment", "OP-payment_in", "OP-payment_out", "RECORDS-finished_goods_movement", "RECORDS-customer_settlements", "RECORDS-supplier_debt_movement", "RECORDS-money_balance"],
+      "includedEdgeTypes": ["writes"]
+    },
+    {
+      "id": "VIEW-user-pipeline",
+      "title": "Порядок работы пользователя",
+      "description": "Pipeline-схема: выпуск даёт остаток ГП, отгрузка создаёт дебиторку, оплаты закрывают расчёты и двигают деньги.",
+      "layout": "pipeline",
+      "includedNodeIds": ["RECORDS-finished_goods_movement", "OP-shipment", "OP-payment_in", "RECORDS-supplier_debt_movement", "OP-payment_out"],
+      "includedEdgeTypes": ["user-sequence"]
+    },
+    {
+      "id": "VIEW-reports-only",
+      "title": "Какие отчёты откуда берут данные",
+      "description": "Упрощённый вид для проверки отчётности этапа 1c.",
+      "includedNodeIds": ["RECORDS-customer_settlements", "RECORDS-supplier_debt_movement", "RECORDS-money_balance", "REPORT-customer_debt_report", "REPORT-supplier_debt_report", "REPORT-money_flow_report"],
+      "includedEdgeTypes": ["reads"]
+    }
+  ],
+  "legend": {
+    "lifecycle": {
+      "create": "Будет создано на этапе 1c",
+      "reuse-existing": "Уже есть из этапов 1a/1b и используется в 1c"
+    },
+    "edgeTypes": {
+      "writes": "Документ записывает данные в регистр",
+      "reads": "Объект читает данные",
+      "calculates": "Команда рассчитывает или заполняет данные",
+      "user-sequence": "Последовательность действий пользователя"
+    }
+  }
+}

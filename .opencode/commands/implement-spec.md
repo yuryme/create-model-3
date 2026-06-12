@@ -35,11 +35,12 @@ Execution (no spec-review, no plan, no plan-review):
 3. Collect changed metadata files via `git status` / `git diff --stat`.
 4. Invoke `metadata-auditor`: spec path + changed-files list + output `<sp-id>-audit.md`. Never pass the implementation report path.
 5. If the audit reports critical defects: invoke `autopilot-engineer` in fix mode, then re-audit. Maximum 2 fix iterations; if criticals remain after the second re-audit — STOP and report as blocked.
-6. Produce the fast-track PM report: created/changed files, audit verdict, criticals fixed, accepted non-critical notes, import sequence reference, remaining risks.
+6. Produce the fast-track PM report: created/changed files, audit verdict, criticals fixed, accepted non-critical notes, import sequence reference, remaining risks, and `Durable memory delta` for PM-chat to apply through the checkpoint in `project/docs/workflow.md`.
 
 Hard constraints:
 
 - Do not write metadata or docs yourself; only via subagents.
 - Do not invoke autopilot-analyst or autopilot-reviewer in this mode.
 - Do not paraphrase or soften audit findings.
+- The final report must not omit memory impact: state exact `PROJECT_CONTEXT.md` / `OPEN_QUESTIONS.md` / `project/docs/session-state.md` updates needed, or `no durable-memory delta` with reason.
 - A gate failure or blocker is reported to the PM as a stop, with the exact reason and the recommended next action (e.g., resolve open questions in design, re-approve spec).

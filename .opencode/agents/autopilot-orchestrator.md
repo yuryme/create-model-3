@@ -70,6 +70,7 @@ Steps:
    - input: business-task path or text;
    - output: `project/docs/specs/<sp-id>-design.md` (status: review);
    - target sp-id: `<sp-id>`.
+   The markdown `*-design.md` is mandatory; if the analyst returns only companion JSON/HTML artifacts, treat Phase 1 as failed and send it back for revision.
 3. Invoke `autopilot-reviewer` with type `design`:
    - artifact: `project/docs/specs/<sp-id>-design.md`;
    - output: `project/docs/specs/<sp-id>-design-review.md`.
@@ -95,7 +96,7 @@ Inputs:
 
 - a path to a design file with `status: approved`.
 
-If the design is not `status: approved`, stop and ask the PM.
+The design path must be a markdown `*-design.md` file. Companion files (`*.design.json`, `*.architecture-view.json`, `*.architecture-view.html`) may be passed as additional inputs, but cannot replace the markdown design. If the design is not `status: approved`, or if the approved markdown design is missing, stop and ask the PM.
 
 Steps:
 
@@ -103,6 +104,7 @@ Steps:
 2. Invoke `autopilot-analyst` in **spec mode**:
    - input: design path (and `*.design.json` if present);
    - output: `project/docs/specs/<sp-id>.json` (spec-json-v0.1, `meta.status: review`).
+   The resulting spec must include the markdown design path in `meta.sourceInputs`; companion paths are additional, not substitutes.
 3. Validate the spec against the schema:
    - run `python project/docs/specs/validate_spec.py project/docs/specs/<sp-id>.json`;
    - if exit code is non-zero (schema-invalid), invoke `autopilot-analyst` in revision mode with the validator output as critical findings, then re-validate. Do not proceed to spec review until the spec validates.
@@ -192,6 +194,7 @@ Output to the PM:
 - Open architectural questions the analyst flagged for PM.
 - Recommendation: ready for PM review, or blocked.
 - Next step instruction: PM reviews design, resolves open questions, marks status `approved`, then runs `/spec-to-metadata-multi project/docs/specs/<sp-id>-design.md`.
+- Durable memory delta: exact bullets that PM-chat must apply to `PROJECT_CONTEXT.md`, `OPEN_QUESTIONS.md`, and `project/docs/session-state.md`, or `no durable-memory delta` with reason.
 
 ## Phase 2 Report
 
@@ -204,6 +207,20 @@ Output to the PM:
 - Import sequence: link to `<sp-id>-import-notes.md`.
 - Remaining risks identified by reviewer or auditor.
 - Recommendation: ready for import, or blocked.
+- Durable memory delta: exact bullets that PM-chat must apply to `PROJECT_CONTEXT.md`, `OPEN_QUESTIONS.md`, and `project/docs/session-state.md`, or `no durable-memory delta` with reason.
+
+## Fast-Track Report
+
+Output to the PM:
+
+- Summary: spec path, audit verdict, fix iterations used.
+- Files created or changed (grouped: metadata, reports/import notes, audit).
+- Critical defects found and fixed during cycle.
+- Non-critical notes accepted as-is, with path to audit file for details.
+- Import sequence: link to `<sp-id>-import-notes.md`.
+- Remaining risks identified by auditor.
+- Recommendation: ready for import, or blocked.
+- Durable memory delta: exact bullets that PM-chat must apply to `PROJECT_CONTEXT.md`, `OPEN_QUESTIONS.md`, and `project/docs/session-state.md`, or `no durable-memory delta` with reason.
 
 ## Failure Modes
 

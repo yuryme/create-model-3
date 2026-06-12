@@ -54,13 +54,19 @@ The human PM approves business decisions, scope, and the functional result on a 
 
 The ТЗ (specification) is written in the `spec-json-v0.1` format: a JSON file `project/docs/specs/<sp-id>.json` validated against `project/docs/specs/_spec-json.schema.json` (example `_spec-template.json`). Architecture rationale stays in `*-design.md` / `*.design.json`; the ТЗ is the buildable contract for the engineer. Spec status lives in `meta.status`. Validate with `python project/docs/specs/validate_spec.py <path>` (Python + `jsonschema`); validation is an obligatory review gate. The markdown ТЗ template `_template.md` is deprecated (ADR 2026-06-10); do not write new ТЗ in markdown. Designs, plans, reviews, reports, import-notes and audits stay in markdown.
 
+## Design Artifact Gate
+
+For every non-trivial new analytical design, `project/docs/specs/<sp-id>-design.md` is the required primary design artifact. Structured or visual files such as `*.design.json`, `*.architecture-view.json` and `*.architecture-view.html` are companion artifacts only; they may clarify or visualize the markdown design, but they never replace it.
+
+PM-chat, analyst and autopilot must not approve, hand off, or implement a design package if the required `*-design.md` is missing. A spec-json ТЗ must list the markdown design in `meta.sourceInputs`; companion JSON/HTML files may be listed additionally. If a task intentionally skips markdown design as a trivial quick metadata change, that exception must be explicit in the PM decision and recorded in `project/docs/session-state.md`.
+
 ## Specification Companion Artifacts
 
 When an Analyst artifact in `project/docs/specs/` has companion structured or visual files, they are part of the same review package and must be updated in the same editing pass as the source document. This includes files such as `*.design.json`, `*.architecture-view.json` and `*.architecture-view.html`.
 
 Do not leave companion visualization/design files stale after changing the methodology or specification. If a companion cannot be updated in the same pass, explicitly mark it stale in the user response and in `project/docs/session-state.md`; otherwise PM-chat review treats the package as inconsistent.
 
-## Session Memory
+## Project Memory
 
 `project/docs/session-state.md` is the operational memory for the current OpenCode run. It is short-lived state, not a project history archive.
 
@@ -71,7 +77,24 @@ Update `project/docs/session-state.md` when at least one applies:
 - active files, blockers or next steps change materially;
 - the session is likely to compact before the work is finished.
 
-At the end of a meaningful work chapter, move durable facts into `PROJECT_CONTEXT.md`, `OPEN_QUESTIONS.md`, ADRs or `project/docs/patterns/`, then reset `session-state.md` for the next run. Do not preserve full experiment transcripts there.
+`PROJECT_CONTEXT.md` and `OPEN_QUESTIONS.md` are durable project memory, not optional summaries. Do not wait until an undefined "end of chapter" when a durable fact changes.
+
+Run a Durable Memory Checkpoint before the final response whenever at least one trigger happened:
+
+- PM approved or rejected scope, design, spec, implementation, import or functional acceptance;
+- an artifact status changed (`draft` / `review` / `approved` / `implemented` / blocked);
+- a metadata implementation, audit, import or stand acceptance run completed;
+- an open question was created, answered, deferred or moved between sections;
+- current focus, next steps, blockers, active files or commit/import status materially changed.
+
+At the checkpoint:
+
+- update `PROJECT_CONTEXT.md` with current project state, completed milestones, current focus and next durable next steps;
+- update `OPEN_QUESTIONS.md` so active, queued, deferred and resolved questions do not contradict the current state;
+- keep transient run details in `project/docs/session-state.md` only;
+- move durable process lessons to ADR, workflow, skills or `project/docs/patterns/` instead of preserving transcripts.
+
+If a task may trigger a checkpoint, include these memory-file edits in the initial action plan and wait for PM approval. If the checkpoint was not pre-approved, stop before the final response, present a concise memory-update plan, obtain explicit PM approval, update memory, then answer. If no durable memory changed, state `Durable memory: no delta` in the final response.
 
 OpenCode compaction is assisted by `.opencode/plugins/session-memory.ts`, which injects `PROJECT_CONTEXT.md`, `OPEN_QUESTIONS.md` and `project/docs/session-state.md` into the compaction context. Restart OpenCode after changing plugin files.
 

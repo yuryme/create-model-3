@@ -37,7 +37,7 @@ Execution:
    - autopilot-reviewer (type: design) writes `project/docs/specs/<sp-id>-design-review.md`;
    - loop on critical defects: revision through autopilot-analyst (revision mode), then reviewer again;
    - stop when reviewer verdict is `approved`. The design status remains `review`; the PM must approve it manually.
-4. Produce the Phase 1 PM report.
+4. Produce the Phase 1 PM report, including `Durable memory delta` for PM-chat to apply through the checkpoint in `project/docs/workflow.md`.
 
 Hard constraints:
 
@@ -46,4 +46,5 @@ Hard constraints:
 - Do not run Phase 2. Phase 2 is `/spec-to-metadata-multi` and requires PM approval of the design first.
 - Do not paraphrase or soften review findings.
 - Treat design/review files as multi-agent handoff artifacts. After the run, recommend extracting durable lessons and cleaning up temporary files that are not needed for future work.
+- The final report must not omit memory impact: state exact `PROJECT_CONTEXT.md` / `OPEN_QUESTIONS.md` / `project/docs/session-state.md` updates needed, or `no durable-memory delta` with reason.
 - Stop and ask the PM only if the cycle cannot complete due to a genuine contradiction in the business task vs project decisions, or if a subagent fails twice in a row on the same artifact.

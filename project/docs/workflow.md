@@ -17,9 +17,11 @@ PM принимает результат через поведение сист�
 
 Процессные артефакты не должны засорять основной контекст проекта. В `project/docs/specs/` остаются только активные или действительно нужные approved-ТЗ/инструкции. Длинные design/review/audit/report файлы экспериментов после завершения либо удаляются, либо архивируются вне активного контекста. Устойчивые выводы переносятся в `project/docs/patterns/`, ADR, workflow или skills.
 
-Если у методики или ТЗ есть companion-файлы структурного дизайна или визуализации (`*.design.json`, `*.architecture-view.json`, `*.architecture-view.html`), они считаются частью того же аналитического артефакта и review-пакета. Аналитик обновляет их в том же проходе, что и исходный артефакт; PM-chat review проверяет согласованность исходного артефакта, `.design.json` и визуализации. Нельзя оставлять companion-файлы устаревшими без явной пометки stale и отдельного решения PM.
+Основной артефакт аналитического дизайна для нетривиальной задачи — markdown-файл `project/docs/specs/<sp-id>-design.md`. Структурные и визуальные файлы (`*.design.json`, `*.architecture-view.json`, `*.architecture-view.html`) являются companion-файлами к markdown-дизайну, а не его заменой. PM-chat review возвращает пакет как неполный, если для нетривиальной задачи есть companion/design JSON или spec-json, но отсутствует обязательный `*-design.md`.
 
-**Формат ТЗ.** ТЗ (спецификация) пишется в формате `spec-json-v0.1`: JSON-файл `<sp-id>.json` по схеме `project/docs/specs/_spec-json.schema.json` (образец — `_spec-template.json`). Архитектурное обоснование остаётся в `*-design.md` / `*.design.json`; ТЗ — строимый контракт для Инженера. Статус ТЗ — в `meta.status`. Markdown-шаблон `_template.md` устарел и для новых ТЗ не используется. Валидация ТЗ против схемы — обязательная точка ревью (`python` + `jsonschema`). Методики (`*-design.md`), планы (`*-plan.md`), ревью, отчёты, import-notes и audit остаются в markdown.
+Если у методики или ТЗ есть companion-файлы структурного дизайна или визуализации (`*.design.json`, `*.architecture-view.json`, `*.architecture-view.html`), они считаются частью того же аналитического артефакта и review-пакета. Аналитик обновляет их в том же проходе, что и исходный markdown-артефакт; PM-chat review проверяет согласованность `*-design.md`, `.design.json` и визуализации. Нельзя оставлять companion-файлы устаревшими без явной пометки stale и отдельного решения PM.
+
+**Формат ТЗ.** ТЗ (спецификация) пишется в формате `spec-json-v0.1`: JSON-файл `<sp-id>.json` по схеме `project/docs/specs/_spec-json.schema.json` (образец — `_spec-template.json`). Архитектурное обоснование остаётся в обязательном `*-design.md` и, при наличии, companion `*.design.json`; ТЗ — строимый контракт для Инженера. Статус ТЗ — в `meta.status`. Markdown-шаблон `_template.md` устарел и для новых ТЗ не используется. Валидация ТЗ против схемы — обязательная точка ревью (`python` + `jsonschema`). Методики (`*-design.md`), планы (`*-plan.md`), ревью, отчёты, import-notes и audit остаются в markdown.
 
 ## Основная схема
 
@@ -31,14 +33,14 @@ PM-chat
   |  уточняет ввод, собирает контекст, готовит поручение
   v
 analyst
-  |  пишет методику <sp-id>-design.md и companion-файлы, если они используются
+  |  пишет обязательную методику <sp-id>-design.md и companion-файлы, если они используются
   v
 PM-chat review методики
   |-- approved -----------------------------|
   |-- rejected / needs changes --> analyst -|
   v
 analyst
-  |  пишет ТЗ <sp-id>.json (формат spec-json-v0.1, schema _spec-json.schema.json), meta.status: review, и синхронизирует companion-файлы
+  |  пишет ТЗ <sp-id>.json (формат spec-json-v0.1, schema _spec-json.schema.json), meta.status: review, включает <sp-id>-design.md в sourceInputs и синхронизирует companion-файлы
   v
 PM-chat review ТЗ
   |-- approved -----------------------------|
@@ -141,6 +143,23 @@ PM-chat:
 - ведёт `PROJECT_CONTEXT.md`, `OPEN_QUESTIONS.md`, ADR и workflow-документы по согласованию;
 - не подменяет analyst при проектировании;
 - не подменяет engineer при реализации metadata.
+
+## Durable Memory Gate
+
+PM-chat отвечает за синхронность durable memory. После любого события `approved`, `implemented`, `imported`, `accepted`, `blocked`, изменения scope или изменения открытых вопросов PM-chat обязан выполнить Durable Memory Checkpoint до финального ответа по событию.
+
+Checkpoint считается выполненным, только если сделано одно из двух:
+
+- `PROJECT_CONTEXT.md`, `OPEN_QUESTIONS.md` и при необходимости `project/docs/session-state.md` обновлены в той же рабочей главе;
+- в финальном ответе явно указано `Durable memory: no delta` с причиной, почему durable facts не изменились.
+
+Если обновление memory-файлов не было включено в предварительно одобренный план, PM-chat не должен молча завершать задачу. Он останавливается на checkpoint, показывает короткий план правок memory-файлов, ждёт approval PM, затем обновляет файлы и только после этого даёт финальный отчёт.
+
+Минимальные правила распределения:
+
+- `PROJECT_CONTEXT.md` — где проект сейчас, какие этапы завершены, текущий фокус, долговременные next steps.
+- `OPEN_QUESTIONS.md` — активные, queued/deferred и resolved вопросы/решения; не хранить там устаревшие кандидаты уже вошедшие в approved scope.
+- `project/docs/session-state.md` — оперативная память текущего run: активные файлы, незакоммиченные изменения, blockers, ближайшие действия.
 
 ## Autopilot Режимы
 

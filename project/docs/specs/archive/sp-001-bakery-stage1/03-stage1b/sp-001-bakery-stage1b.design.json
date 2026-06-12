@@ -7,8 +7,8 @@
     "version": 2,
     "domain": "bakery-operations",
     "sourceInputs": [
-      "project/docs/specs/sp-001-bakery-stage1-design.md",
-      "project/docs/specs/sp-001-bakery-stage1b.md"
+      "project/docs/specs/archive/sp-001-bakery-stage1/00-problem-and-stage-design/sp-001-bakery-stage1-design.md",
+      "project/docs/specs/archive/sp-001-bakery-stage1/deprecated/sp-001-bakery-stage1b.md"
     ]
   },
   "problem": {
@@ -183,7 +183,7 @@
       "evidence": [
         {
           "type": "project-design",
-          "path": "project/docs/specs/sp-001-bakery-stage1-design.md",
+          "path": "project/docs/specs/archive/sp-001-bakery-stage1/00-problem-and-stage-design/sp-001-bakery-stage1-design.md",
           "section": "2.4 Принципиальные компромиссы и нормативные требования"
         }
       ],
@@ -206,7 +206,7 @@
       "evidence": [
         {
           "type": "project-design",
-          "path": "project/docs/specs/sp-001-bakery-stage1-design.md",
+          "path": "project/docs/specs/archive/sp-001-bakery-stage1/00-problem-and-stage-design/sp-001-bakery-stage1-design.md",
           "section": "2.4 Принципиальные компромиссы и нормативные требования"
         }
       ],

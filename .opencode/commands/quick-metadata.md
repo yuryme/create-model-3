@@ -30,10 +30,11 @@ Execution:
 5. Do not create list/edit forms by default. If the task does not explicitly ask for forms, assigned forms, UX, layout, buttons, hidden/grouped fields, or a user-facing workflow, leave `ListFormUid`/`ItemFormUid = null` and use BaSYS autoforms. If forms seem necessary, ask the PM first.
 6. Do not create design/review/audit/report files by default. Create a short spec/import note only if the task or PM explicitly needs it.
 7. Run/perform self-checks appropriate to the change: JSON validity, `$schema` paths, UID/type/kind references, reserved words, forbidden paths, import sequence.
-8. Final response must include changed files, self-checks, import/test steps for the BaSYS stand, and any durable lesson that should be moved to rules/patterns.
+8. Final response must include changed files, self-checks, import/test steps for the BaSYS stand, any durable lesson that should be moved to rules/patterns, and `Durable memory delta`.
 
 Hard constraints:
 
 - Do not edit `reference/`, `basys-docs/`, `basys-cursor-rules/`, or generated BaSYS skills.
 - Do not edit `metadata/system/` except allowed `dataTypes.json` updates for reference-kind metadata.
 - Do not preserve experiment artifacts in active context unless they are needed for future work.
+- The final response must not omit memory impact: state exact `PROJECT_CONTEXT.md` / `OPEN_QUESTIONS.md` / `project/docs/session-state.md` updates needed, or `no durable-memory delta` with reason.

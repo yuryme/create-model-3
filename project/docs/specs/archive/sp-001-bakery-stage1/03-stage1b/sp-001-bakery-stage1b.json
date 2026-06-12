@@ -1,5 +1,5 @@
 {
-  "$schema": "./_spec-json.schema.json",
+  "$schema": "../../../_spec-json.schema.json",
   "schemaVersion": "spec-json-v0.1",
   "meta": {
     "spId": "sp-001-bakery-stage1b",
@@ -17,8 +17,8 @@
       "sp-001-bakery-stage1a.md"
     ],
     "sourceInputs": [
-      "project/docs/specs/sp-001-bakery-stage1-design.md",
-      "project/docs/specs/sp-001-bakery-stage1b.design.json"
+      "project/docs/specs/archive/sp-001-bakery-stage1/00-problem-and-stage-design/sp-001-bakery-stage1-design.md",
+      "project/docs/specs/archive/sp-001-bakery-stage1/03-stage1b/sp-001-bakery-stage1b.design.json"
     ]
   },
   "context": {
@@ -1298,7 +1298,7 @@
       "title": "Scope будущего документа закрытия месяца",
       "detail": "В 1b создаётся raw_cost_movement, но расход стоимости сырья не формируется. Следующее ТЗ по закрытию месяца должно определить документ, период, метод средней стоимости, округление, обработку нулевых/отрицательных остатков и записи Minus в raw_cost_movement.",
       "blocking": false,
-      "specRef": "project/docs/specs/sp-001-bakery-stage1b.json",
+      "specRef": "project/docs/specs/archive/sp-001-bakery-stage1/03-stage1b/sp-001-bakery-stage1b.json",
       "relatedRiskIds": [
         "RISK-002"
       ]
@@ -1308,7 +1308,7 @@
       "title": "Вариант хранения факта выпуска в production_plan",
       "detail": "В этом ТЗ выбран вариант: production_output пишет отдельные записи в существующий records/production_plan с planned_qty = 0, output_qty = факт. Если PM захочет отдельный регистр факта выпуска вместо общего production_plan, ТЗ возвращается Analyst до реализации.",
       "blocking": false,
-      "specRef": "project/docs/specs/sp-001-bakery-stage1b.json",
+      "specRef": "project/docs/specs/archive/sp-001-bakery-stage1/03-stage1b/sp-001-bakery-stage1b.json",
       "relatedDecisionIds": [
         "DEC-006"
       ]
@@ -1318,7 +1318,7 @@
       "title": "Отображение сальдо supplier_debt_movement в 1b",
       "detail": "Регистр supplier_debt_movement создаётся в 1b, но отдельный supplier_debt_report остаётся в 1c. Если PM хочет видеть кредиторку сразу после поступления сырья, минимальный отчёт добавляется в 1b отдельным решением.",
       "blocking": false,
-      "specRef": "project/docs/specs/sp-001-bakery-stage1b.json",
+      "specRef": "project/docs/specs/archive/sp-001-bakery-stage1/03-stage1b/sp-001-bakery-stage1b.json",
       "relatedObjectIds": [
         "RECORDS-supplier_debt_movement"
       ]

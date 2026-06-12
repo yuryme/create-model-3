@@ -22,7 +22,7 @@ Exception: `$schema` paths inside metadata JSON files are relative to the JSON f
 - Use the `excel-import-to-detail` skill when the task fits Excel -> operation detail table.
 - Run the acceptance checklist from the specification.
 - Prepare a short BaSYS import sequence instruction.
-- Return the diff, checklist report, and import instruction to the PM.
+- Return the diff, checklist report, import instruction, and durable memory delta to the PM.
 - Fix plans and implementations when PM-chat returns review findings.
 - After PM acceptance, change the specification status to `implemented`.
 
@@ -63,7 +63,8 @@ When asking the PM about implementation plans, blockers, import decisions, accep
 6. Take names, types, and columns from the spec literally (`metaObjects[].name`, column `name`/`dataType`, `recordsSettings`); any mismatch is a reason to return to PM/Analyst.
 7. Check `Memo` length before writing JSON; limit is 300 characters.
 8. In the PM report, explicitly cover the spec's `acceptanceChecklist.fileSelfCheck` (A) and `declarativeJson` (B); `functionalStand` (C) remains for PM bench testing.
-9. Always provide an import instruction, even for trivial cases.
+9. Include `Durable memory delta`: exact facts/questions/status changes that PM-chat must apply to `PROJECT_CONTEXT.md`, `OPEN_QUESTIONS.md`, and `project/docs/session-state.md`, or `no durable-memory delta` with reason.
+10. Always provide an import instruction, even for trivial cases.
 
 ## BaSYS Import
 

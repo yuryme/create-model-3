@@ -1,0 +1,310 @@
+{
+  "schemaVersion": "design-json-v0.1",
+  "meta": {
+    "id": "sp-001-bakery-stage1c",
+    "title": "Хлебозавод — этап 1c, отгрузка, расчёты и деньги",
+    "status": "approved",
+    "version": 1,
+    "domain": "bakery-operations",
+    "sourceInputs": [
+      "project/docs/specs/archive/sp-001-bakery-stage1/00-problem-and-stage-design/sp-001-bakery-stage1-design.md",
+      "project/docs/specs/archive/sp-001-bakery-stage1/04-stage1c/sp-001-bakery-stage1c-design.md",
+      "project/docs/specs/archive/sp-001-bakery-stage1/03-stage1b/sp-001-bakery-stage1b.json",
+      "metadata/"
+    ]
+  },
+  "problem": {
+    "summary": "После этапов 1a и 1b в системе есть заявки, производственные задания, выпуск продукции, склад сырья, склад готовой продукции и долг поставщикам при поступлении сырья. Этап 1c закрывает операционный цикл: пользователь отгружает готовую продукцию клиентам, фиксирует поступление денег от клиентов, оплачивает поставщикам и видит сальдо расчётов и движение денег.",
+    "businessGoal": "Дать управленческому пользователю минимальный контур продаж после выпуска: списать готовую продукцию при отгрузке, увеличить дебиторку клиента, погасить дебиторку входящей оплатой, погасить кредиторку исходящей оплатой и увидеть общий денежный остаток/движение.",
+    "targetUsers": [
+      "кладовщик",
+      "менеджер по продажам",
+      "бухгалтер/финансист",
+      "руководитель"
+    ],
+    "currentPainPoints": [
+      "После выпуска продукция есть на складе, но нет документа отгрузки клиенту.",
+      "Долг поставщику создаётся поступлением сырья, но пока не погашается оплатой.",
+      "Нет дебиторки клиентов, общего денежного движения и отчёта кредиторки."
+    ],
+    "successCriteria": [
+      "Отгрузка уменьшает finished_goods_movement и увеличивает customer_settlements.",
+      "Поступление денег увеличивает money_balance и уменьшает customer_settlements.",
+      "Оплата поставщику уменьшает money_balance и уменьшает supplier_debt_movement.",
+      "Отчёты показывают дебиторку, кредиторку и движение/остаток денег."
+    ]
+  },
+  "scope": {
+    "inScope": [
+      "Документ shipment для отгрузки готовой продукции клиенту.",
+      "Документ payment_in для поступления денег от клиента.",
+      "Документ payment_out для оплаты поставщику.",
+      "Новый records/customer_settlements для дебиторской задолженности клиентов.",
+      "Использование existing records/supplier_debt_movement из 1b для погашения кредиторки поставщикам.",
+      "Новый records/money_balance для минимального единого денежного счёта.",
+      "Отчёты customer_debt_report, supplier_debt_report, money_flow_report.",
+      "Минимальные команды/проверки отгрузки: заполнить цену из price_list и проверить остаток готовой продукции."
+    ],
+    "outOfScope": [
+      "Закрытие месяца и средневзвешенное списание стоимости сырья.",
+      "Себестоимость готовой продукции и валовая прибыль.",
+      "Договоры, счета на оплату, авансы и разнесение оплат по документам.",
+      "Касса/банк как отдельные счета, статьи ДДС и перемещения денег.",
+      "Доставка, маршруты, экспедиторы и возвраты клиентов.",
+      "Индивидуальные цены, скидки и бонусы клиентов.",
+      "Формы-конструкторы, если автоформ достаточно."
+    ],
+    "assumptions": [
+      "Этапы 1a и 1b импортированы и функционально приняты до реализации 1c.",
+      "finished_goods_movement хранит количественный остаток готовой продукции из 1b.",
+      "supplier_debt_movement уже создан в 1b и имеет колонки company, supplier, amount.",
+      "price_list из 1a содержит актуальные активные цены продукции; цена отгрузки выбирается как последняя active price_list.valid_from <= shipment.date.",
+      "Деньги ведутся одним абстрактным счётом без аналитики касса/банк."
+    ]
+  },
+  "architectureDecisions": [
+    {
+      "id": "DEC-1C-001",
+      "title": "Отгрузка списывает готовую продукцию и создаёт дебиторку",
+      "decision": "operation/shipment проводит строки products в records/finished_goods_movement направлением Minus по quantity и в records/customer_settlements направлением Plus по amount.",
+      "rationale": "Отгрузка одновременно уменьшает склад готовой продукции и создаёт долг клиента за поставленную продукцию.",
+      "alternativesRejected": [
+        "Создавать дебиторку только отчётом без регистра записей.",
+        "Не списывать готовую продукцию при отгрузке."
+      ],
+      "evidence": [
+        {
+          "type": "basys-docs",
+          "path": "basys-docs/ru/metadata/recordsCreation.md",
+          "section": "Общая схема работы; Настройка создания записей"
+        }
+      ],
+      "affects": [
+        "OP-shipment",
+        "RECORDS-finished_goods_movement",
+        "RECORDS-customer_settlements"
+      ],
+      "status": "accepted"
+    },
+    {
+      "id": "DEC-1C-002",
+      "title": "Дебиторка и кредиторка ведутся по контрагенту без договоров и авансов",
+      "decision": "records/customer_settlements хранит движения долга клиентов по company/customer/amount; existing records/supplier_debt_movement продолжает хранить движения долга поставщикам по company/supplier/amount.",
+      "rationale": "Для первой очереди достаточно сальдо по контрагенту; детализация по договорам, счетам и авансам переносится в будущие очереди.",
+      "alternativesRejected": [
+        "Вести расчёты по договорам и счетам уже в 1c.",
+        "Разделять авансы и задолженность отдельными регистрами."
+      ],
+      "evidence": [
+        {
+          "type": "project-design",
+          "path": "project/docs/specs/archive/sp-001-bakery-stage1/00-problem-and-stage-design/sp-001-bakery-stage1-design.md",
+          "section": "2.4 Принципиальные компромиссы и нормативные требования"
+        }
+      ],
+      "affects": [
+        "RECORDS-customer_settlements",
+        "RECORDS-supplier_debt_movement",
+        "OP-payment_in",
+        "OP-payment_out"
+      ],
+      "status": "accepted"
+    },
+    {
+      "id": "DEC-1C-003",
+      "title": "Деньги ведутся одним движенческим регистром",
+      "decision": "Создать records/money_balance с company и amount; payment_in пишет Plus, payment_out пишет Minus.",
+      "rationale": "Первая очередь должна показать общий денежный результат без кассы, банковских счетов и статей ДДС.",
+      "alternativesRejected": [
+        "Создавать справочник денежных счетов в первой очереди.",
+        "Создавать отдельные регистры прихода и расхода денег."
+      ],
+      "evidence": [
+        {
+          "type": "project-design",
+          "path": "project/docs/specs/archive/sp-001-bakery-stage1/00-problem-and-stage-design/sp-001-bakery-stage1-design.md",
+          "section": "2.4 Принципиальные компромиссы и нормативные требования"
+        }
+      ],
+      "affects": [
+        "RECORDS-money_balance",
+        "OP-payment_in",
+        "OP-payment_out",
+        "REPORT-money_flow_report"
+      ],
+      "status": "accepted"
+    },
+    {
+      "id": "DEC-1C-004",
+      "title": "Цена отгрузки берётся из ручного price_list командой подготовки",
+      "decision": "Команда shipment.prepare_shipment читает register/price_list и выбирает последнюю активную цену продукции с valid_from <= shipment.date; пользователь может проверить/скорректировать результат до проведения.",
+      "rationale": "price_list создан в 1a как ручной источник цен продукции. Автоформа не должна требовать от пользователя каждый раз вручную искать цену, но сложные скидки и индивидуальные цены не входят в 1c.",
+      "alternativesRejected": [
+        "Хранить цену только вручную без связи с price_list.",
+        "Проектировать индивидуальные цены по клиентам."
+      ],
+      "evidence": [
+        {
+          "type": "basys-docs",
+          "path": "basys-docs/ru/commands/programmableCommands.md",
+          "section": "Контекст выполнения команды"
+        },
+        {
+          "type": "basys-docs",
+          "path": "basys-docs/ru/calculations/queryBuilder.md",
+          "section": "from; select; where; groupBy; parameter"
+        }
+      ],
+      "affects": [
+        "OP-shipment",
+        "REG-price_list",
+        "CMD-prepare_shipment"
+      ],
+      "status": "accepted"
+    },
+    {
+      "id": "DEC-1C-005",
+      "title": "Отчёты 1c читают регистры записей",
+      "decision": "Создать data_view отчёты customer_debt_report, supplier_debt_report, money_flow_report; отчёты агрегируют движения records по периоду и ключевой аналитике.",
+      "rationale": "Приёмка 1c должна проверять не только наличие документов, но и управленческие итоги: дебиторку, кредиторку и деньги.",
+      "alternativesRejected": [
+        "Смотреть расчёты только через сырые регистры записей.",
+        "Откладывать кредиторку до будущего этапа, несмотря на подтверждённый стандартный scope 1c."
+      ],
+      "evidence": [
+        {
+          "type": "basys-docs",
+          "path": "basys-docs/ru/reporting/dataView.md",
+          "section": "Панели данных; Таблица; Фильтры"
+        },
+        {
+          "type": "basys-docs",
+          "path": "basys-docs/ru/calculations/queryBuilder.md",
+          "section": "groupBy; parameter"
+        }
+      ],
+      "affects": [
+        "REPORT-customer_debt_report",
+        "REPORT-supplier_debt_report",
+        "REPORT-money_flow_report"
+      ],
+      "status": "accepted"
+    }
+  ],
+  "targetArchitecture": {
+    "metadataObjects": [
+      { "id": "RECORDS-customer_settlements", "kind": "records", "name": "customer_settlements", "title": "Расчёты с покупателями", "purpose": "Хранит движения дебиторской задолженности клиентов.", "lifecycle": "create", "sourceDecisionIds": ["DEC-1C-001", "DEC-1C-002"] },
+      { "id": "RECORDS-money_balance", "kind": "records", "name": "money_balance", "title": "Движение денег", "purpose": "Хранит движения общего денежного остатка.", "lifecycle": "create", "sourceDecisionIds": ["DEC-1C-003"] },
+      { "id": "RECORDS-supplier_debt_movement", "kind": "records", "name": "supplier_debt_movement", "title": "Движение долга поставщикам", "purpose": "Existing регистр 1b; в 1c получает погашение оплатой поставщику.", "lifecycle": "reuse-existing", "sourceDecisionIds": ["DEC-1C-002"] },
+      { "id": "RECORDS-finished_goods_movement", "kind": "records", "name": "finished_goods_movement", "title": "Движение готовой продукции", "purpose": "Existing регистр 1b; shipment пишет расход готовой продукции.", "lifecycle": "reuse-existing", "sourceDecisionIds": ["DEC-1C-001"] },
+      { "id": "OP-shipment", "kind": "operation", "name": "shipment", "title": "Отгрузка", "purpose": "Оформляет отгрузку готовой продукции клиенту.", "lifecycle": "create", "sourceDecisionIds": ["DEC-1C-001", "DEC-1C-004"] },
+      { "id": "OP-payment_in", "kind": "operation", "name": "payment_in", "title": "Поступление денег", "purpose": "Фиксирует оплату клиента.", "lifecycle": "create", "sourceDecisionIds": ["DEC-1C-002", "DEC-1C-003"] },
+      { "id": "OP-payment_out", "kind": "operation", "name": "payment_out", "title": "Оплата поставщику", "purpose": "Фиксирует оплату поставщику.", "lifecycle": "create", "sourceDecisionIds": ["DEC-1C-002", "DEC-1C-003"] },
+      { "id": "REG-price_list", "kind": "register", "name": "price_list", "title": "Прайс-лист", "purpose": "Existing регистр 1a; источник цен для shipment.prepare_shipment.", "lifecycle": "reuse-existing", "sourceDecisionIds": ["DEC-1C-004"] },
+      { "id": "REPORT-customer_debt_report", "kind": "data_view", "name": "customer_debt_report", "title": "Дебиторка", "purpose": "Показывает сальдо задолженности клиентов.", "lifecycle": "create", "sourceDecisionIds": ["DEC-1C-005"] },
+      { "id": "REPORT-supplier_debt_report", "kind": "data_view", "name": "supplier_debt_report", "title": "Кредиторка", "purpose": "Показывает сальдо задолженности поставщикам.", "lifecycle": "create", "sourceDecisionIds": ["DEC-1C-005"] },
+      { "id": "REPORT-money_flow_report", "kind": "data_view", "name": "money_flow_report", "title": "Движение денег", "purpose": "Показывает денежные движения и общий итог за период.", "lifecycle": "create", "sourceDecisionIds": ["DEC-1C-005"] }
+    ],
+    "businessFlows": [
+      {
+        "id": "FLOW-shipment",
+        "title": "Отгрузка клиенту",
+        "summary": "Кладовщик/менеджер оформляет отгрузку готовой продукции; система списывает склад ГП и создаёт дебиторку.",
+        "actors": ["кладовщик", "менеджер по продажам"],
+        "steps": ["Создать shipment.", "Указать организацию, клиента, склад ГП и строки продукции.", "Запустить prepare_shipment для цен и остатка.", "Провести документ.", "Проверить расход finished_goods_movement и рост customer_settlements."],
+        "objects": ["OP-shipment", "CMD-prepare_shipment", "RECORDS-finished_goods_movement", "RECORDS-customer_settlements"],
+        "sourceDecisionIds": ["DEC-1C-001", "DEC-1C-004"]
+      },
+      {
+        "id": "FLOW-payment-in",
+        "title": "Поступление денег от клиента",
+        "summary": "Финансист фиксирует оплату клиента; система увеличивает деньги и уменьшает дебиторку.",
+        "actors": ["бухгалтер/финансист"],
+        "steps": ["Создать payment_in.", "Указать клиента, организацию и сумму.", "Провести документ.", "Проверить money_balance и customer_settlements."],
+        "objects": ["OP-payment_in", "RECORDS-money_balance", "RECORDS-customer_settlements"],
+        "sourceDecisionIds": ["DEC-1C-002", "DEC-1C-003"]
+      },
+      {
+        "id": "FLOW-payment-out",
+        "title": "Оплата поставщику",
+        "summary": "Финансист фиксирует оплату поставщику; система уменьшает деньги и кредиторку.",
+        "actors": ["бухгалтер/финансист"],
+        "steps": ["Создать payment_out.", "Указать поставщика, организацию и сумму.", "Провести документ.", "Проверить money_balance и supplier_debt_movement."],
+        "objects": ["OP-payment_out", "RECORDS-money_balance", "RECORDS-supplier_debt_movement"],
+        "sourceDecisionIds": ["DEC-1C-002", "DEC-1C-003"]
+      }
+    ],
+    "postingFlows": [
+      { "id": "POSTING-shipment-to-fg", "title": "shipment -> finished_goods_movement", "sourceObject": "OP-shipment", "targetRecords": ["RECORDS-finished_goods_movement"], "direction": "Minus", "summary": "Строки products уменьшают quantity готовой продукции.", "sourceDecisionIds": ["DEC-1C-001"] },
+      { "id": "POSTING-shipment-to-customer", "title": "shipment -> customer_settlements", "sourceObject": "OP-shipment", "targetRecords": ["RECORDS-customer_settlements"], "direction": "Plus", "summary": "Суммы строк products увеличивают долг клиента.", "sourceDecisionIds": ["DEC-1C-001", "DEC-1C-002"] },
+      { "id": "POSTING-payment-in-to-money", "title": "payment_in -> money_balance", "sourceObject": "OP-payment_in", "targetRecords": ["RECORDS-money_balance"], "direction": "Plus", "summary": "Сумма входящей оплаты увеличивает деньги.", "sourceDecisionIds": ["DEC-1C-003"] },
+      { "id": "POSTING-payment-in-to-customer", "title": "payment_in -> customer_settlements", "sourceObject": "OP-payment_in", "targetRecords": ["RECORDS-customer_settlements"], "direction": "Minus", "summary": "Сумма оплаты уменьшает долг клиента.", "sourceDecisionIds": ["DEC-1C-002"] },
+      { "id": "POSTING-payment-out-to-money", "title": "payment_out -> money_balance", "sourceObject": "OP-payment_out", "targetRecords": ["RECORDS-money_balance"], "direction": "Minus", "summary": "Сумма исходящей оплаты уменьшает деньги.", "sourceDecisionIds": ["DEC-1C-003"] },
+      { "id": "POSTING-payment-out-to-supplier", "title": "payment_out -> supplier_debt_movement", "sourceObject": "OP-payment_out", "targetRecords": ["RECORDS-supplier_debt_movement"], "direction": "Minus", "summary": "Сумма оплаты уменьшает долг поставщику.", "sourceDecisionIds": ["DEC-1C-002"] }
+    ],
+    "commands": [
+      {
+        "id": "CMD-prepare_shipment",
+        "name": "prepare_shipment",
+        "title": "Подготовить отгрузку",
+        "ownerObjectId": "OP-shipment",
+        "purpose": "Заполняет цены из price_list и текущие остатки готовой продукции перед проведением shipment.",
+        "sourceDecisionIds": ["DEC-1C-004"]
+      }
+    ],
+    "reports": [
+      { "reportId": "REPORT-customer_debt_report", "source": "RECORDS-customer_settlements", "groupBy": ["company", "customer"], "metrics": ["sum(amount)"], "sourceDecisionIds": ["DEC-1C-005"] },
+      { "reportId": "REPORT-supplier_debt_report", "source": "RECORDS-supplier_debt_movement", "groupBy": ["company", "supplier"], "metrics": ["sum(amount)"], "sourceDecisionIds": ["DEC-1C-005"] },
+      { "reportId": "REPORT-money_flow_report", "source": "RECORDS-money_balance", "groupBy": ["company", "period", "meta_object"], "metrics": ["sum(amount)"], "sourceDecisionIds": ["DEC-1C-005"] }
+    ]
+  },
+  "implementationPhases": [
+    { "id": "PHASE-1c-1", "title": "Регистры расчётов и денег", "goal": "Создать customer_settlements и money_balance; supplier_debt_movement использовать без изменения колонок.", "includes": ["RECORDS-customer_settlements", "RECORDS-money_balance", "RECORDS-supplier_debt_movement"], "dependsOn": [], "acceptanceScenarioIds": ["ACC-001", "ACC-002", "ACC-003"] },
+    { "id": "PHASE-1c-2", "title": "Отгрузка", "goal": "Создать shipment с подготовкой цен/остатков и проведением в склад ГП и дебиторку.", "includes": ["OP-shipment", "CMD-prepare_shipment", "REG-price_list", "RECORDS-finished_goods_movement", "RECORDS-customer_settlements"], "dependsOn": ["PHASE-1c-1"], "acceptanceScenarioIds": ["ACC-001"] },
+    { "id": "PHASE-1c-3", "title": "Оплаты", "goal": "Создать payment_in и payment_out с движениями денег и расчётов.", "includes": ["OP-payment_in", "OP-payment_out", "RECORDS-money_balance", "RECORDS-customer_settlements", "RECORDS-supplier_debt_movement"], "dependsOn": ["PHASE-1c-1"], "acceptanceScenarioIds": ["ACC-002", "ACC-003"] },
+    { "id": "PHASE-1c-4", "title": "Отчёты 1c", "goal": "Создать отчёты дебиторки, кредиторки и движения денег.", "includes": ["REPORT-customer_debt_report", "REPORT-supplier_debt_report", "REPORT-money_flow_report"], "dependsOn": ["PHASE-1c-1", "PHASE-1c-2", "PHASE-1c-3"], "acceptanceScenarioIds": ["ACC-004"] }
+  ],
+  "acceptanceScenarios": [
+    { "id": "ACC-001", "title": "Отгрузка списывает ГП и создаёт дебиторку", "role": "кладовщик/менеджер", "preconditions": ["Есть выпущенная готовая продукция на складе ГП.", "Есть активная цена продукции в price_list."], "steps": ["Создать shipment.", "Заполнить продукцию и количество.", "Запустить prepare_shipment.", "Провести документ.", "Проверить finished_goods_movement и customer_settlements."], "expectedResult": "Готовая продукция списана, долг клиента увеличен на сумму отгрузки.", "coveredDecisionIds": ["DEC-1C-001", "DEC-1C-004"], "coveredObjectIds": ["OP-shipment", "RECORDS-finished_goods_movement", "RECORDS-customer_settlements"] },
+    { "id": "ACC-002", "title": "Поступление денег уменьшает дебиторку", "role": "бухгалтер/финансист", "preconditions": ["Есть долг клиента после shipment."], "steps": ["Создать payment_in на клиента.", "Провести документ.", "Проверить customer_settlements и money_balance."], "expectedResult": "Дебиторка клиента уменьшена, деньги увеличены.", "coveredDecisionIds": ["DEC-1C-002", "DEC-1C-003"], "coveredObjectIds": ["OP-payment_in", "RECORDS-customer_settlements", "RECORDS-money_balance"] },
+    { "id": "ACC-003", "title": "Оплата поставщику уменьшает кредиторку", "role": "бухгалтер/финансист", "preconditions": ["Есть долг поставщику после raw_receipt 1b."], "steps": ["Создать payment_out на поставщика.", "Провести документ.", "Проверить supplier_debt_movement и money_balance."], "expectedResult": "Кредиторка поставщика уменьшена, деньги уменьшены.", "coveredDecisionIds": ["DEC-1C-002", "DEC-1C-003"], "coveredObjectIds": ["OP-payment_out", "RECORDS-supplier_debt_movement", "RECORDS-money_balance"] },
+    { "id": "ACC-004", "title": "Отчёты показывают расчёты и деньги", "role": "руководитель", "preconditions": ["Есть проведённые shipment, payment_in, payment_out."], "steps": ["Открыть customer_debt_report.", "Открыть supplier_debt_report.", "Открыть money_flow_report."], "expectedResult": "Отчёты показывают дебиторку, кредиторку и денежные движения/итог по данным регистров.", "coveredDecisionIds": ["DEC-1C-005"], "coveredObjectIds": ["REPORT-customer_debt_report", "REPORT-supplier_debt_report", "REPORT-money_flow_report"] }
+  ],
+  "openQuestions": [],
+  "risks": [
+    {
+      "id": "RISK-1C-001",
+      "title": "Фильтрация типов номенклатуры и ролей контрагентов может быть не полностью декларативной",
+      "impact": "Пользователь может выбрать не продукцию в отгрузке или контрагента не той роли.",
+      "mitigation": "Зафиксировать fallback в ТЗ: при невозможности декларативной фильтрации контроль остаётся в команде prepare_shipment и acceptance-сценариях.",
+      "sourceDecisionIds": ["DEC-1C-001", "DEC-1C-002"]
+    },
+    {
+      "id": "RISK-1C-002",
+      "title": "Отгрузка зависит от корректного price_list",
+      "impact": "Без активной цены на дату shipment команда подготовки не сможет заполнить price.",
+      "mitigation": "prepare_shipment возвращает понятную ошибку; пользователь заводит цену в price_list или корректирует данные до проведения.",
+      "sourceDecisionIds": ["DEC-1C-004"]
+    },
+    {
+      "id": "RISK-1C-003",
+      "title": "Контроль остатка ГП выполняется командой подготовки, а не recordsSettings",
+      "impact": "Если пользователь не запустит prepare_shipment, автоформа может не заблокировать отгрузку сверх остатка.",
+      "mitigation": "ТЗ требует stock_qty_before и acceptance-сценарий с запуском prepare_shipment; при необходимости engineer добавляет командную проверку перед сохранением, если подтверждена возможность такого hook. Не проектировать неподтверждённый hook как обязательный."
+    }
+  ],
+  "architectureView": {
+    "summary": "Этап 1c закрывает цикл: shipment списывает готовую продукцию и создаёт дебиторку; payment_in погашает дебиторку и увеличивает деньги; payment_out погашает кредиторку и уменьшает деньги; отчёты читают регистры расчётов и денег.",
+    "sections": [
+      { "id": "VIEW-business-flow", "title": "Бизнес-потоки", "items": ["FLOW-shipment", "FLOW-payment-in", "FLOW-payment-out"] },
+      { "id": "VIEW-data-storage", "title": "Где хранятся данные", "items": ["RECORDS-finished_goods_movement", "RECORDS-customer_settlements", "RECORDS-supplier_debt_movement", "RECORDS-money_balance"] },
+      { "id": "VIEW-posting", "title": "Проведение документов", "items": ["POSTING-shipment-to-fg", "POSTING-shipment-to-customer", "POSTING-payment-in-to-money", "POSTING-payment-in-to-customer", "POSTING-payment-out-to-money", "POSTING-payment-out-to-supplier"] },
+      { "id": "VIEW-reports", "title": "Что видит руководитель", "items": ["REPORT-customer_debt_report", "REPORT-supplier_debt_report", "REPORT-money_flow_report"] }
+    ],
+    "suggestedDiagrams": [
+      { "type": "mermaid-flowchart", "title": "Отгрузка и дебиторка" },
+      { "type": "mermaid-flowchart", "title": "Оплаты, кредиторка и деньги" }
+    ]
+  },
+  "extensionBlocks": []
+}

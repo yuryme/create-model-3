@@ -30,7 +30,7 @@ Role protocol inside one context:
 4. PM Assistant role: review the plan by the same criticality rule.
 5. Engineer role: implement metadata in `metadata/`.
 6. PM Assistant role: self-audit the diff and fix critical defects.
-7. Final response: changed files, critical defects fixed, non-critical notes, import sequence, stand acceptance steps, durable lessons.
+7. Final response: changed files, critical defects fixed, non-critical notes, import sequence, stand acceptance steps, durable lessons, and `Durable memory delta`.
 
 Artifact discipline:
 
@@ -47,3 +47,4 @@ Mandatory constraints:
 - New object/table/column `Name` values must be Latin `snake_case`, <=30 chars, not SQL reserved words.
 - Do not edit `reference/`, `basys-docs/`, `basys-cursor-rules/`, or generated BaSYS skills.
 - Do not commit or push.
+- The final response must not omit memory impact: state exact `PROJECT_CONTEXT.md` / `OPEN_QUESTIONS.md` / `project/docs/session-state.md` updates needed, or `no durable-memory delta` with reason.

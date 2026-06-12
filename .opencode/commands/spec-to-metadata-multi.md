@@ -41,7 +41,7 @@ Execution:
    - autopilot-engineer implements the metadata, writes implementation report and import notes;
    - metadata-auditor audits the metadata against the spec (without reading the implementation report);
    - loop on critical defects until auditor approves.
-4. Produce the final PM report.
+4. Produce the final PM report, including `Durable memory delta` for PM-chat to apply through the checkpoint in `project/docs/workflow.md`.
 
 Hard constraints:
 
@@ -49,4 +49,5 @@ Hard constraints:
 - Do not pass the implementation report path to the auditor.
 - Do not paraphrase or soften review or audit findings.
 - Treat spec/review/plan/audit/report files as run artifacts unless they are explicitly needed for future work. Final report must recommend cleanup or extraction of durable lessons.
+- The final report must not omit memory impact: state exact `PROJECT_CONTEXT.md` / `OPEN_QUESTIONS.md` / `project/docs/session-state.md` updates needed, or `no durable-memory delta` with reason.
 - Stop and ask the PM only if the cycle cannot complete due to a genuine architectural contradiction in the approved design, or if a subagent fails twice in a row on the same artifact.

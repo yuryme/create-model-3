@@ -179,6 +179,15 @@ Subagents общаются только через файлы. Orchestrator пе
 
 Эти файлы являются рабочим handoff-каналом multi-agent run, а не автоматической постоянной документацией проекта. После завершения PM-chat должен предложить cleanup: удалить/архивировать временные review/audit/report файлы или перенести из них только устойчивые правила.
 
+Каждый autopilot report обязан содержать раздел `Durable memory delta`:
+
+- какие факты должны попасть в `PROJECT_CONTEXT.md`;
+- какие вопросы/решения должны попасть в `OPEN_QUESTIONS.md`;
+- какие оперативные детали остаются только в `project/docs/session-state.md`;
+- либо `no durable-memory delta`, если состояние проекта не изменилось.
+
+Orchestrator сам не редактирует durable memory. PM-chat применяет этот delta через Durable Memory Checkpoint из `project/docs/workflow.md`.
+
 Стандартные имена для задачи `<sp-id>`:
 
 ```
@@ -229,6 +238,7 @@ orchestrator Phase 1 report to PM:
   - design path and status
   - open architectural questions for PM
   - reviewer findings summary
+  - Durable memory delta
   - next step: PM review, mark status approved, run /spec-to-metadata-multi
 ```
 
@@ -294,6 +304,7 @@ orchestrator Phase 2 report to PM:
   - accepted non-critical notes
   - import sequence
   - remaining risks
+  - Durable memory delta
 ```
 
 ## Цикл Fast-Track
@@ -325,7 +336,7 @@ orchestrator -> metadata-auditor (spec + changed files)
   v
 orchestrator Fast-Track report to PM:
   файлы, вердикт аудита, исправленные critical, non-critical notes,
-  ссылка на import-notes, остаточные риски
+  ссылка на import-notes, остаточные риски, Durable memory delta
 ```
 
 ## Critical vs Non-Critical Defects

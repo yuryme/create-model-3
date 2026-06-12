@@ -1,0 +1,582 @@
+{
+  "$schema": "../../../_spec-json.schema.json",
+  "schemaVersion": "spec-json-v0.1",
+  "meta": {
+    "spId": "sp-001-bakery-stage1c",
+    "title": "Хлебозавод — этап 1c, отгрузка, расчёты и деньги",
+    "status": "implemented",
+    "version": 1,
+    "author": "analyst",
+    "created": "2026-06-11",
+    "updated": "2026-06-12",
+    "stage": "1c",
+    "domain": "bakery-operations",
+    "dependsOn": [
+      "sp-001-bakery-problem-statement.md",
+      "sp-001-bakery-stage1-design.md",
+      "sp-001-bakery-stage1a.md",
+      "sp-001-bakery-stage1b.json"
+    ],
+    "sourceInputs": [
+      "project/docs/specs/archive/sp-001-bakery-stage1/00-problem-and-stage-design/sp-001-bakery-stage1-design.md",
+      "project/docs/specs/archive/sp-001-bakery-stage1/04-stage1c/sp-001-bakery-stage1c-design.md",
+      "project/docs/specs/archive/sp-001-bakery-stage1/04-stage1c/sp-001-bakery-stage1c.design.json",
+      "project/docs/specs/sp-001-bakery-stage1c.architecture-view.json"
+    ]
+  },
+  "context": {
+    "summary": "Этап 1c закрывает первую очередь хлебозавода после продаж, планирования, поступления сырья и выпуска продукции. Пользователь должен отгрузить готовую продукцию клиенту, создать дебиторскую задолженность, принять оплату клиента, оплатить поставщику и увидеть дебиторку, кредиторку и движение денег. Этап опирается на принятые объекты 1a/1b: price_list, finished_goods_movement и supplier_debt_movement. Деньги ведутся как один абстрактный денежный счёт без кассы/банка и статей ДДС. Договоры, авансы, закрытие месяца, себестоимость и возвраты не входят в 1c.",
+    "evidence": [
+      {
+        "capability": "Проведение операций по регистрам записей: recordsSettings, источник header/detail table, направления Plus/Minus, штатное перепроведение без дублей.",
+        "type": "basys-docs",
+        "path": "basys-docs/ru/metadata/recordsCreation.md",
+        "section": "Общая схема работы; Настройка создания записей; Источники данных для записей"
+      },
+      {
+        "capability": "Программируемые команды для заполнения/проверки данных операции перед проведением.",
+        "type": "basys-docs",
+        "path": "basys-docs/ru/commands/programmableCommands.md",
+        "section": "Контекст выполнения команды"
+      },
+      {
+        "capability": "QueryBuilder-запросы к объектам и регистрам, фильтрация, группировка и параметры.",
+        "type": "basys-docs",
+        "path": "basys-docs/ru/calculations/queryBuilder.md",
+        "section": "from; select; where; groupBy; parameter"
+      },
+      {
+        "capability": "Панели данных data_view с табличными компонентами и фильтрами.",
+        "type": "basys-docs",
+        "path": "basys-docs/ru/reporting/dataView.md",
+        "section": "Панели данных; Таблица; Фильтры"
+      },
+      {
+        "capability": "DataObject с header и detailTables для операций shipment, payment_in, payment_out.",
+        "type": "basys-docs",
+        "path": "basys-docs/ru/metadata/dataObject.md",
+        "section": "header; detailTables"
+      }
+    ]
+  },
+  "scope": {
+    "inScope": [
+      "Отгрузка готовой продукции клиенту: operation/shipment списывает finished_goods_movement и увеличивает customer_settlements.",
+      "Поступление денег от клиента: operation/payment_in увеличивает money_balance и уменьшает customer_settlements.",
+      "Оплата поставщику: operation/payment_out уменьшает money_balance и уменьшает existing supplier_debt_movement.",
+      "Новые records/customer_settlements и records/money_balance.",
+      "Использование existing records/supplier_debt_movement из 1b без изменения состава колонок.",
+      "Команда shipment.prepare_shipment для заполнения цен из price_list и проверки остатка ГП.",
+      "Отчёты 1c: customer_debt_report, supplier_debt_report, money_flow_report."
+    ],
+    "outOfScope": [
+      "Закрытие месяца и средневзвешенное списание стоимости сырья.",
+      "Себестоимость готовой продукции, валовая прибыль, P&L и баланс.",
+      "Договоры, счета, авансы и разнесение оплат по документам.",
+      "Касса/банк как отдельные счета, статьи ДДС и перемещения денег.",
+      "Доставка, маршруты, экспедиторы и возвраты клиентов.",
+      "Индивидуальные цены, скидки, бонусы клиентов.",
+      "Формы-конструкторы и программируемые формы, если автоформ достаточно."
+    ],
+    "assumptions": [
+      "Этапы 1a и 1b импортированы и доступны: counterparty, company, warehouse, nomenclature, price_list, finished_goods_movement, supplier_debt_movement.",
+      "supplier_debt_movement имеет контракт 1b: company, supplier, amount; 1c не меняет его колонки.",
+      "finished_goods_movement имеет контракт 1b: company, warehouse, product, quantity; shipment пишет расход в этот existing регистр.",
+      "price_list содержит активные цены продукции; актуальная цена выбирается как последняя active строка с valid_from <= shipment.date.",
+      "Если декларативные фильтры ролей контрагентов и типов номенклатуры не подтверждены, контроль остаётся в команде prepare_shipment и acceptance-сценариях."
+    ]
+  },
+  "metaObjects": [
+    {
+      "id": "RECORDS-customer_settlements",
+      "action": "CREATE",
+      "kind": "records",
+      "name": "customer_settlements",
+      "title": "Расчёты с покупателями",
+      "purpose": "Хранит движения дебиторской задолженности клиентов по организации и клиенту.",
+      "lifecycle": "create",
+      "properties": [
+        { "field": "Memo", "value": "Регистр записей движений задолженности покупателей по управленческому учёту хлебозавода.", "required": true },
+        { "field": "OrderByExpression", "value": "period, customer", "required": false }
+      ],
+      "headerColumns": [
+        { "name": "company", "title": "Организация", "dataType": "catalog/company", "required": true, "memo": "Организация, у которой возникла дебиторка." },
+        { "name": "customer", "title": "Клиент", "dataType": "catalog/counterparty", "required": true, "memo": "Контрагент с ролью customer или both." },
+        { "name": "amount", "title": "Сумма долга", "dataType": "decimal(2)", "required": true, "memo": "Сумма изменения задолженности: отгрузка увеличивает, оплата уменьшает." }
+      ],
+      "indexes": ["period", "object_uid", "period + customer", "company + customer"],
+      "businessRules": [
+        "Стандартные колонки records (id, period, object_kind, meta_object, object_uid, row) Инженер добавляет по metadata/system/kinds/kind.records.json.",
+        "Сальдо дебиторки считается суммированием amount по company/customer на дату.",
+        "Договоры, счета и авансы не выделяются."
+      ],
+      "sourceDecisionIds": ["DEC-1C-001", "DEC-1C-002"]
+    },
+    {
+      "id": "RECORDS-money_balance",
+      "action": "CREATE",
+      "kind": "records",
+      "name": "money_balance",
+      "title": "Движение денег",
+      "purpose": "Хранит движения общего денежного остатка по организации без разреза касса/банк.",
+      "lifecycle": "create",
+      "properties": [
+        { "field": "Memo", "value": "Регистр записей минимального денежного контура первой очереди: один общий денежный счёт.", "required": true },
+        { "field": "OrderByExpression", "value": "period", "required": false }
+      ],
+      "headerColumns": [
+        { "name": "company", "title": "Организация", "dataType": "catalog/company", "required": true, "memo": "Организация, по которой движутся деньги." },
+        { "name": "amount", "title": "Сумма", "dataType": "decimal(2)", "required": true, "memo": "Сумма денежного движения; Plus увеличивает остаток, Minus уменьшает." }
+      ],
+      "indexes": ["period", "object_uid", "period + company"],
+      "businessRules": [
+        "Стандартные колонки records Инженер добавляет по виду.",
+        "Один абстрактный денежный счёт; касса/банк, статьи ДДС и перемещения не реализуются.",
+        "Общий остаток денег считается суммированием amount по company на дату."
+      ],
+      "sourceDecisionIds": ["DEC-1C-003"]
+    },
+    {
+      "id": "RECORDS-supplier_debt_movement",
+      "action": "MODIFY",
+      "kind": "records",
+      "name": "supplier_debt_movement",
+      "title": "Движение долга поставщикам",
+      "purpose": "Existing регистр 1b; в 1c получает погашение долга поставщику из payment_out. Состав колонок не меняется.",
+      "lifecycle": "reuse-existing",
+      "businessRules": [
+        "Контракт existing регистра 1b: company (catalog/company), supplier (catalog/counterparty), amount (decimal(2)).",
+        "1c не изменяет состав колонок supplier_debt_movement; добавляет только новое проведение payment_out направлением Minus.",
+        "Сальдо кредиторки считается суммированием amount по company/supplier на дату."
+      ],
+      "modify": {
+        "changes": [
+          "Прямо records/supplier_debt_movement.json не редактировать; новое использование регистра задаётся в recordsSettings operation/payment_out: direction Minus, source header, amount = $h.amount."
+        ]
+      },
+      "sourceDecisionIds": ["DEC-1C-002"]
+    },
+    {
+      "id": "RECORDS-finished_goods_movement",
+      "action": "MODIFY",
+      "kind": "records",
+      "name": "finished_goods_movement",
+      "title": "Движение готовой продукции",
+      "purpose": "Existing регистр 1b; shipment пишет расход готовой продукции. Состав колонок не меняется.",
+      "lifecycle": "reuse-existing",
+      "businessRules": [
+        "Контракт existing регистра 1b: company (catalog/company), warehouse (catalog/warehouse), product (catalog/nomenclature), quantity (decimal(3)).",
+        "1c не изменяет состав колонок finished_goods_movement; добавляет только новое проведение shipment направлением Minus.",
+        "Остаток ГП перед отгрузкой считается суммированием quantity по company/warehouse/product на дату shipment."
+      ],
+      "modify": {
+        "changes": [
+          "Прямо records/finished_goods_movement.json не редактировать; новое использование регистра задаётся в recordsSettings operation/shipment: direction Minus, source products, quantity = $r.quantity."
+        ]
+      },
+      "sourceDecisionIds": ["DEC-1C-001"]
+    },
+    {
+      "id": "REG-price_list",
+      "action": "MODIFY",
+      "kind": "register",
+      "name": "price_list",
+      "title": "Прайс-лист",
+      "purpose": "Existing регистр 1a; shipment.prepare_shipment читает из него актуальные цены продукции. Состав колонок не меняется.",
+      "lifecycle": "reuse-existing",
+      "businessRules": [
+        "Контракт existing регистра 1a: product (catalog/nomenclature), valid_from (datetime), price (decimal(2)), is_active (boolean).",
+        "1c не изменяет состав колонок price_list; команда prepare_shipment только читает его данные.",
+        "Актуальная цена выбирается как последняя активная строка price_list по product с valid_from <= shipment.date."
+      ],
+      "modify": {
+        "changes": [
+          "Прямо register/price_list.json не редактировать; использовать регистр как источник чтения для operation.shipment.command.prepare_shipment.bjs."
+        ]
+      },
+      "sourceDecisionIds": ["DEC-1C-004"]
+    },
+    {
+      "id": "OP-shipment",
+      "action": "CREATE",
+      "kind": "operation",
+      "name": "shipment",
+      "title": "Отгрузка",
+      "purpose": "Оформляет отгрузку готовой продукции клиенту, списание склада ГП и рост дебиторской задолженности.",
+      "lifecycle": "create",
+      "properties": [
+        { "field": "Memo", "value": "Документ отгрузки готовой продукции клиенту и возникновения долга клиента.", "required": true },
+        { "field": "OrderByExpression", "value": "number desc, date desc", "required": false },
+        { "field": "DisplayExpression", "value": "Отгрузка №{{number}} от {{date}}", "required": false },
+        { "field": "ListFormUid / ItemFormUid", "value": "автоформа", "required": false }
+      ],
+      "headerColumns": [
+        { "name": "company", "title": "Организация", "dataType": "catalog/company", "required": true, "memo": "Организация, от имени которой выполняется отгрузка." },
+        { "name": "customer", "title": "Клиент", "dataType": "catalog/counterparty", "required": true, "memo": "Контрагент-клиент." },
+        { "name": "warehouse", "title": "Склад ГП", "dataType": "catalog/warehouse", "required": true, "memo": "Склад, с которого списывается готовая продукция." },
+        { "name": "comment", "title": "Комментарий", "dataType": "string(300)", "required": false, "memo": "Примечание по отгрузке." }
+      ],
+      "detailTables": [
+        {
+          "name": "products",
+          "title": "Продукция",
+          "serviceColumnsNote": "Служебные колонки id, object_uid, row_number Инженер добавляет первыми в этом порядке.",
+          "columns": [
+            { "name": "product", "title": "Продукция", "dataType": "catalog/nomenclature", "required": true, "memo": "Отгружаемая номенклатура с типом product." },
+            { "name": "quantity", "title": "Количество", "dataType": "decimal(3)", "required": true, "memo": "Количество отгружаемой продукции." },
+            { "name": "price", "title": "Цена", "dataType": "decimal(2)", "required": true, "memo": "Цена продажи за единицу; заполняется prepare_shipment из price_list и может быть проверена пользователем." },
+            { "name": "amount", "title": "Сумма", "dataType": "decimal(2)", "required": true, "formula": "$r.quantity * $r.price", "memo": "Сумма строки отгрузки." },
+            { "name": "stock_qty_before", "title": "Остаток до отгрузки", "dataType": "decimal(3)", "required": false, "memo": "Остаток finished_goods_movement перед отгрузкой, рассчитанный prepare_shipment." },
+            { "name": "comment", "title": "Комментарий", "dataType": "string(200)", "required": false, "memo": "Примечание по строке." }
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "id": "CMD-prepare_shipment",
+          "name": "prepare_shipment",
+          "title": "Подготовить отгрузку",
+          "binding": "header",
+          "kind": "programmable command",
+          "handler": "operation.shipment.command.prepare_shipment.bjs",
+          "input": "company, date, warehouse, строки products.",
+          "reads": [
+            "register/price_list: последняя активная цена product с valid_from <= $h.date.",
+            "records/finished_goods_movement: Sum(quantity) по company, warehouse, product на дату shipment."
+          ],
+          "changes": ["price, amount, stock_qty_before в строках products."],
+          "logicSteps": [
+            "Для каждой строки products проверить заполненность product и quantity > 0.",
+            "Найти актуальную активную цену в price_list; если цены нет — остановиться с понятной ошибкой.",
+            "Рассчитать stock_qty_before по finished_goods_movement на дату документа; при повторном расчёте сохранённого документа исключить собственные записи shipment по meta_object + object_uid, если такие записи уже есть.",
+            "Если stock_qty_before < quantity — остановиться с понятной ошибкой и не формировать некорректную отгрузку.",
+            "Заполнить price, amount и stock_qty_before; для ссылочных полей при загрузке строк сохранять пары field + field_display, если команда перезагружает таблицу."
+          ],
+          "validations": [
+            "company, date и warehouse заполнены.",
+            "products не пустая.",
+            "quantity и price больше 0.",
+            "остаток ГП достаточен по каждой продукции."
+          ],
+          "onRerun": "Безопасно пересчитывает price/amount/stock_qty_before; не меняет product и quantity без явного пользовательского действия.",
+          "errors": ["нет цены", "нулевое или отрицательное количество", "нулевая или отрицательная цена", "недостаточный остаток готовой продукции"]
+        }
+      ],
+      "recordsSettings": [
+        {
+          "id": "POST-shipment-finished_goods_movement",
+          "target": "records/finished_goods_movement",
+          "direction": "Minus",
+          "source": "products",
+          "condition": "$r.quantity > 0",
+          "columnMappings": [
+            { "column": "period", "expression": "$h.date" },
+            { "column": "company", "expression": "$h.company" },
+            { "column": "warehouse", "expression": "$h.warehouse" },
+            { "column": "product", "expression": "$r.product" },
+            { "column": "quantity", "expression": "$r.quantity" }
+          ],
+          "note": "Расход готовой продукции при отгрузке."
+        },
+        {
+          "id": "POST-shipment-customer_settlements",
+          "target": "records/customer_settlements",
+          "direction": "Plus",
+          "source": "products",
+          "condition": "$r.amount > 0",
+          "columnMappings": [
+            { "column": "period", "expression": "$h.date" },
+            { "column": "company", "expression": "$h.company" },
+            { "column": "customer", "expression": "$h.customer" },
+            { "column": "amount", "expression": "$r.amount" }
+          ],
+          "note": "Рост долга клиента построчно по суммам отгрузки."
+        }
+      ],
+      "businessRules": [
+        "Стандартные колонки operation (number, is_deleted, date, is_files, create_records) Инженер добавляет по виду.",
+        "customer должен иметь роль customer или both; если фильтр декларативно невозможен, контроль остаётся в acceptance-сценариях или prepare_shipment.",
+        "В products допустима только номенклатура с типом product.",
+        "prepare_shipment должен быть выполнен перед проведением корректной отгрузки; если price/amount/stock_qty_before не заполнены, сценарий приёмки считается некорректным.",
+        "При снятом create_records документ не списывает ГП и не создаёт дебиторку; старые записи удаляются штатным механизмом проведения.",
+        "Повторное сохранение не должно дублировать движения — это обеспечивает механизм проведения BaSYS."
+      ],
+      "sourceDecisionIds": ["DEC-1C-001", "DEC-1C-004"]
+    },
+    {
+      "id": "OP-payment_in",
+      "action": "CREATE",
+      "kind": "operation",
+      "name": "payment_in",
+      "title": "Поступление денег",
+      "purpose": "Фиксирует оплату клиента, приход денег и погашение дебиторской задолженности.",
+      "lifecycle": "create",
+      "properties": [
+        { "field": "Memo", "value": "Документ поступления денег от клиента и погашения дебиторской задолженности.", "required": true },
+        { "field": "OrderByExpression", "value": "number desc, date desc", "required": false },
+        { "field": "DisplayExpression", "value": "Поступление денег №{{number}} от {{date}}", "required": false },
+        { "field": "ListFormUid / ItemFormUid", "value": "автоформа", "required": false }
+      ],
+      "headerColumns": [
+        { "name": "company", "title": "Организация", "dataType": "catalog/company", "required": true, "memo": "Организация, получившая оплату." },
+        { "name": "customer", "title": "Клиент", "dataType": "catalog/counterparty", "required": true, "memo": "Клиент, оплативший задолженность." },
+        { "name": "amount", "title": "Сумма", "dataType": "decimal(2)", "required": true, "memo": "Сумма входящей оплаты." },
+        { "name": "comment", "title": "Комментарий", "dataType": "string(300)", "required": false, "memo": "Примечание по оплате." }
+      ],
+      "recordsSettings": [
+        {
+          "id": "POST-payment_in-money_balance",
+          "target": "records/money_balance",
+          "direction": "Plus",
+          "source": "header",
+          "condition": "$h.amount > 0",
+          "columnMappings": [
+            { "column": "period", "expression": "$h.date" },
+            { "column": "company", "expression": "$h.company" },
+            { "column": "amount", "expression": "$h.amount" }
+          ],
+          "note": "Приход денег."
+        },
+        {
+          "id": "POST-payment_in-customer_settlements",
+          "target": "records/customer_settlements",
+          "direction": "Minus",
+          "source": "header",
+          "condition": "$h.amount > 0",
+          "columnMappings": [
+            { "column": "period", "expression": "$h.date" },
+            { "column": "company", "expression": "$h.company" },
+            { "column": "customer", "expression": "$h.customer" },
+            { "column": "amount", "expression": "$h.amount" }
+          ],
+          "note": "Погашение долга клиента."
+        }
+      ],
+      "businessRules": [
+        "amount должен быть больше 0.",
+        "Платёж не разносится по конкретным отгрузкам; он уменьшает общее сальдо клиента.",
+        "Авансы отдельно не выделяются: переплата возможна как отрицательное сальдо customer_settlements, если пользователь так введёт данные."
+      ],
+      "sourceDecisionIds": ["DEC-1C-002", "DEC-1C-003"]
+    },
+    {
+      "id": "OP-payment_out",
+      "action": "CREATE",
+      "kind": "operation",
+      "name": "payment_out",
+      "title": "Оплата поставщику",
+      "purpose": "Фиксирует оплату поставщику, расход денег и погашение кредиторской задолженности.",
+      "lifecycle": "create",
+      "properties": [
+        { "field": "Memo", "value": "Документ оплаты поставщику и погашения кредиторской задолженности.", "required": true },
+        { "field": "OrderByExpression", "value": "number desc, date desc", "required": false },
+        { "field": "DisplayExpression", "value": "Оплата поставщику №{{number}} от {{date}}", "required": false },
+        { "field": "ListFormUid / ItemFormUid", "value": "автоформа", "required": false }
+      ],
+      "headerColumns": [
+        { "name": "company", "title": "Организация", "dataType": "catalog/company", "required": true, "memo": "Организация, оплатившая поставщику." },
+        { "name": "supplier", "title": "Поставщик", "dataType": "catalog/counterparty", "required": true, "memo": "Поставщик, которому перечислены деньги." },
+        { "name": "amount", "title": "Сумма", "dataType": "decimal(2)", "required": true, "memo": "Сумма исходящей оплаты." },
+        { "name": "comment", "title": "Комментарий", "dataType": "string(300)", "required": false, "memo": "Примечание по оплате." }
+      ],
+      "recordsSettings": [
+        {
+          "id": "POST-payment_out-money_balance",
+          "target": "records/money_balance",
+          "direction": "Minus",
+          "source": "header",
+          "condition": "$h.amount > 0",
+          "columnMappings": [
+            { "column": "period", "expression": "$h.date" },
+            { "column": "company", "expression": "$h.company" },
+            { "column": "amount", "expression": "$h.amount" }
+          ],
+          "note": "Расход денег."
+        },
+        {
+          "id": "POST-payment_out-supplier_debt_movement",
+          "target": "records/supplier_debt_movement",
+          "direction": "Minus",
+          "source": "header",
+          "condition": "$h.amount > 0",
+          "columnMappings": [
+            { "column": "period", "expression": "$h.date" },
+            { "column": "company", "expression": "$h.company" },
+            { "column": "supplier", "expression": "$h.supplier" },
+            { "column": "amount", "expression": "$h.amount" }
+          ],
+          "note": "Погашение долга поставщику."
+        }
+      ],
+      "businessRules": [
+        "amount должен быть больше 0.",
+        "Платёж не разносится по конкретным поступлениям сырья; он уменьшает общее сальдо поставщика.",
+        "Отрицательный денежный остаток не блокируется в 1c, если PM отдельно не потребует кассовую дисциплину."
+      ],
+      "sourceDecisionIds": ["DEC-1C-002", "DEC-1C-003"]
+    },
+    {
+      "id": "REPORT-customer_debt_report",
+      "action": "CREATE",
+      "kind": "data_view",
+      "name": "customer_debt_report",
+      "title": "Дебиторка",
+      "purpose": "Показывает сальдо задолженности клиентов на дату.",
+      "lifecycle": "create",
+      "report": {
+        "properties": [
+          { "field": "Memo", "value": "Табличный отчёт по дебиторской задолженности клиентов на выбранную дату.", "required": true }
+        ],
+        "dataSources": [
+          { "name": "rows", "reads": "records/customer_settlements", "logic": "Сгруппировать записи до date_to включительно по company и customer; вывести Sum(amount), исключить нулевые сальдо по возможности.", "result": "DataTable дебиторки." }
+        ],
+        "filters": [
+          { "name": "date_to", "title": "На дату", "dataType": "datetime", "required": true, "memo": "Дата расчёта сальдо." },
+          { "name": "company", "title": "Организация", "dataType": "catalog/company", "required": false, "memo": "Отбор по организации." },
+          { "name": "customer", "title": "Клиент", "dataType": "catalog/counterparty", "required": false, "memo": "Отбор по клиенту." }
+        ],
+        "indicators": ["Таблица customer_debt_table, ширина Full (12), колонки: организация, клиент, сальдо."]
+      },
+      "sourceDecisionIds": ["DEC-1C-005"]
+    },
+    {
+      "id": "REPORT-supplier_debt_report",
+      "action": "CREATE",
+      "kind": "data_view",
+      "name": "supplier_debt_report",
+      "title": "Кредиторка",
+      "purpose": "Показывает сальдо задолженности поставщикам на дату.",
+      "lifecycle": "create",
+      "report": {
+        "properties": [
+          { "field": "Memo", "value": "Табличный отчёт по кредиторской задолженности поставщикам на выбранную дату.", "required": true }
+        ],
+        "dataSources": [
+          { "name": "rows", "reads": "records/supplier_debt_movement", "logic": "Сгруппировать записи до date_to включительно по company и supplier; вывести Sum(amount), исключить нулевые сальдо по возможности.", "result": "DataTable кредиторки." }
+        ],
+        "filters": [
+          { "name": "date_to", "title": "На дату", "dataType": "datetime", "required": true, "memo": "Дата расчёта сальдо." },
+          { "name": "company", "title": "Организация", "dataType": "catalog/company", "required": false, "memo": "Отбор по организации." },
+          { "name": "supplier", "title": "Поставщик", "dataType": "catalog/counterparty", "required": false, "memo": "Отбор по поставщику." }
+        ],
+        "indicators": ["Таблица supplier_debt_table, ширина Full (12), колонки: организация, поставщик, сальдо."]
+      },
+      "sourceDecisionIds": ["DEC-1C-005"]
+    },
+    {
+      "id": "REPORT-money_flow_report",
+      "action": "CREATE",
+      "kind": "data_view",
+      "name": "money_flow_report",
+      "title": "Движение денег",
+      "purpose": "Показывает денежные движения и общий итог за период.",
+      "lifecycle": "create",
+      "report": {
+        "properties": [
+          { "field": "Memo", "value": "Табличный отчёт по денежным движениям минимального денежного контура первой очереди.", "required": true }
+        ],
+        "dataSources": [
+          { "name": "rows", "reads": "records/money_balance; meta_object/object_uid для источника движения", "logic": "Выбрать движения по period за период, сгруппировать по company, дате/источнику движения и вывести Sum(amount). Для итогового сальдо за период вывести общий Sum(amount); при возможности отделить приход payment_in и расход payment_out по meta_object.", "result": "DataTable денежных движений." }
+        ],
+        "filters": [
+          { "name": "date_from", "title": "Дата с", "dataType": "datetime", "required": false, "memo": "Начало периода." },
+          { "name": "date_to", "title": "Дата по", "dataType": "datetime", "required": false, "memo": "Конец периода." },
+          { "name": "company", "title": "Организация", "dataType": "catalog/company", "required": false, "memo": "Отбор по организации." }
+        ],
+        "indicators": ["Таблица money_flow_table, ширина Full (12), колонки: дата, организация, источник движения, сумма; итог по сумме включён."]
+      },
+      "sourceDecisionIds": ["DEC-1C-005"]
+    }
+  ],
+  "menu": {
+    "note": "Если в menu/main или menu/all_metadata_objects уже есть autoFill/общая навигация по видам operation, records, data_view, отдельные ручные пункты не добавлять. URL автоформ: /app#/data-objects/{kind}/{name}; URL data_view Инженер сверяет с существующими меню и документацией.",
+    "items": [
+      { "group": "Хлебозавод / Отгрузка и деньги", "title": "Отгрузка", "url": "/app#/data-objects/operation/shipment", "condition": "если нет autoFill" },
+      { "group": "Хлебозавод / Отгрузка и деньги", "title": "Поступление денег", "url": "/app#/data-objects/operation/payment_in", "condition": "если нет autoFill" },
+      { "group": "Хлебозавод / Отгрузка и деньги", "title": "Оплата поставщику", "url": "/app#/data-objects/operation/payment_out", "condition": "если нет autoFill" },
+      { "group": "Хлебозавод / Отчёты", "title": "Отчёты 1c", "condition": "добавить customer_debt_report, supplier_debt_report, money_flow_report к отчётам" }
+    ]
+  },
+  "implementationOrder": [
+    "Убедиться, что объекты 1a/1b импортированы и доступны: company, counterparty, warehouse, nomenclature, price_list, finished_goods_movement, supplier_debt_movement.",
+    "Создать records/customer_settlements и records/money_balance.",
+    "Создать operation/shipment с detail table products, командой prepare_shipment и проведением в finished_goods_movement и customer_settlements.",
+    "Создать operation/payment_in с проведением в money_balance и customer_settlements.",
+    "Создать operation/payment_out с проведением в money_balance и supplier_debt_movement.",
+    "Создать data_view/customer_debt_report, data_view/supplier_debt_report, data_view/money_flow_report.",
+    "Проверить меню и при необходимости добавить навигацию.",
+    "Из-за перекрёстных ссылок между видами включить в отчёт инструкцию импорта."
+  ],
+  "dataTypesNotes": {
+    "addToDataTypes": ["operation/shipment", "operation/payment_in", "operation/payment_out"],
+    "doNotAdd": ["records/customer_settlements", "records/money_balance", "records/supplier_debt_movement", "records/finished_goods_movement", "data_view/customer_debt_report", "data_view/supplier_debt_report", "data_view/money_flow_report"],
+    "note": "Для новых operations локально добавить записи в metadata/system/dataTypes.json на время редактирования. records/* и data_view/* не являются reference-типами и в dataTypes.json не добавляются. Existing records из 1b не регистрировать повторно."
+  },
+  "acceptanceChecklist": {
+    "fileSelfCheck": [
+      "Все объекты из metaObjects созданы согласно action; existing records/register price_list не изменены по составу колонок.",
+      "Все JSON валидируются по соответствующим JSON-схемам из metadata/system/schemas/.",
+      "Все новые Name — латиница snake_case, <=30 символов, не SQL reserved words.",
+      "MetaObjectKindUid, primitive DataTypeUid, стандартные колонки и схемы взяты из metadata/system/, не из reference/.",
+      "Для новых operations shipment, payment_in, payment_out локально добавлены записи в metadata/system/dataTypes.json.",
+      "Для records/customer_settlements, money_balance и data_view/* записи в dataTypes.json НЕ добавлены.",
+      "Табличная часть shipment.products начинается со служебных колонок id, object_uid, row_number в правильном порядке.",
+      "Команда prepare_shipment имеет .bjs-файл, имя которого совпадает с expression в JSON.",
+      "Data view reports имеют .bjs-файлы data source, имена которых совпадают с expression в JSON.",
+      "Формы списка/редактирования не создавались без отдельного требования; ListFormUid/ItemFormUid оставлены пустыми для автоформ."
+    ],
+    "declarativeJson": [
+      "shipment.recordsSettings пишет products в finished_goods_movement направлением Minus с quantity.",
+      "shipment.recordsSettings пишет products в customer_settlements направлением Plus с amount.",
+      "payment_in.recordsSettings пишет header в money_balance направлением Plus с amount.",
+      "payment_in.recordsSettings пишет header в customer_settlements направлением Minus с amount.",
+      "payment_out.recordsSettings пишет header в money_balance направлением Minus с amount.",
+      "payment_out.recordsSettings пишет header в supplier_debt_movement направлением Minus с amount.",
+      "prepare_shipment читает price_list и finished_goods_movement, заполняет price/amount/stock_qty_before и возвращает понятные ошибки при отсутствии цены или недостатке ГП.",
+      "customer_debt_report читает customer_settlements и группирует по company/customer до date_to.",
+      "supplier_debt_report читает supplier_debt_movement и группирует по company/supplier до date_to.",
+      "money_flow_report читает money_balance и показывает движения/итог за период."
+    ],
+    "functionalStand": [
+      "После выпуска продукции 1b можно создать shipment с одной строкой продукции, выполнить prepare_shipment и сохранить с включённым create_records.",
+      "prepare_shipment заполняет цену из price_list, сумму строки и остаток ГП до отгрузки.",
+      "Если цены в price_list нет, prepare_shipment показывает понятную ошибку и не формирует корректную отгрузку.",
+      "Если остатка ГП недостаточно, prepare_shipment показывает понятную ошибку.",
+      "После сохранения shipment в finished_goods_movement появляется расход готовой продукции.",
+      "После сохранения shipment в customer_settlements появляется рост долга клиента на сумму отгрузки.",
+      "Можно создать payment_in по клиенту; после сохранения money_balance увеличивается, customer_settlements уменьшается.",
+      "Можно создать payment_out по поставщику; после сохранения money_balance уменьшается, supplier_debt_movement уменьшается.",
+      "customer_debt_report показывает долг клиента после shipment и уменьшение после payment_in.",
+      "supplier_debt_report показывает долг поставщику после raw_receipt 1b и уменьшение после payment_out.",
+      "money_flow_report показывает входящее и исходящее денежное движение за период."
+    ]
+  },
+  "openQuestions": [],
+  "risks": [
+    {
+      "id": "RISK-1C-001",
+      "title": "Фильтрация типов номенклатуры и ролей контрагентов может быть не полностью декларативной",
+      "impact": "Пользователь может выбрать не продукцию в отгрузке или контрагента не той роли.",
+      "mitigation": "Если декларативный фильтр не подтверждён, контроль переносится в prepare_shipment и acceptance-сценарии.",
+      "sourceDecisionIds": ["DEC-1C-001", "DEC-1C-002"]
+    },
+    {
+      "id": "RISK-1C-002",
+      "title": "Отгрузка зависит от корректного price_list",
+      "impact": "Без активной цены на дату shipment команда не заполнит price.",
+      "mitigation": "prepare_shipment возвращает понятную ошибку; пользователь заводит цену в price_list до отгрузки.",
+      "sourceDecisionIds": ["DEC-1C-004"]
+    },
+    {
+      "id": "RISK-1C-003",
+      "title": "Контроль остатка ГП выполняется командой подготовки, а не recordsSettings",
+      "impact": "Если пользователь не запустит prepare_shipment, автоформа может не заблокировать отгрузку сверх остатка.",
+      "mitigation": "Acceptance-сценарий требует запуск prepare_shipment. Неподтверждённые save-hooks не проектируются как обязательный механизм."
+    }
+  ],
+  "changelog": [
+    { "date": "2026-06-11", "status": "review", "change": "Создано ТЗ этапа 1c по подтверждённому PM стандартному scope: отгрузка, оплаты, расчёты, деньги и отчёты." },
+    { "date": "2026-06-11", "status": "review", "change": "Синхронизирован обязательный markdown-дизайн sp-001-bakery-stage1c-design.md в meta.sourceInputs; companion JSON остаются дополнительными источниками." },
+    { "date": "2026-06-11", "status": "approved", "change": "PM одобрил review-пакет 1c; ТЗ переведено в approved для запуска fast-track реализации (/implement-spec)." }
+  ]
+}

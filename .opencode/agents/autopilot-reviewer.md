@@ -49,6 +49,7 @@ If the orchestrator did not give you a path, do not seek it out.
 
 Critical if any of the following is true:
 
+- The submitted design artifact is not the required markdown `*-design.md`, or the package relies on `*.design.json` / visualization files as a replacement for the markdown design.
 - The design contradicts an explicit decision in `project/docs/decisions.md`.
 - The design's in-scope/out-of-scope sections are missing, contradictory, or imply unbounded scope.
 - The high-level metaobject table is missing or omits a kind that is required for the proposed operations.
@@ -74,6 +75,7 @@ The spec (ТЗ) is a `spec-json-v0.1` JSON file (`<sp-id>.json`), not markdown. 
 Critical if any of the following is true:
 
 - The spec is not valid against `_spec-json.schema.json`: missing required sections (`meta`, `context`, `scope`, `metaObjects`, `acceptanceChecklist`, `changelog`), wrong enum values (`action`, `direction`, `meta.status`), or `metaObjects` empty.
+- The spec's `meta.sourceInputs` omits the approved markdown `*-design.md` for a non-trivial task, unless an explicit PM quick-change exception is cited.
 - The spec contradicts an explicit decision in `project/docs/decisions.md` or the approved design.
 - A `metaObjects[].name`, column `name`, or detail-table `name` is a SQL reserved word, longer than 30 characters, or not Latin `snake_case`.
 - The spec references a kind or type that does not exist in `metadata/system/`.

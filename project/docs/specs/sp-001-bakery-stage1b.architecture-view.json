@@ -3,9 +3,9 @@
   "meta": {
     "id": "sp-001-bakery-stage1b-architecture-view",
     "title": "Хлебозавод — этап 1b, карта архитектуры для PM",
-    "status": "draft",
+    "status": "approved",
     "version": 2,
-    "sourceDesign": "project/docs/specs/sp-001-bakery-stage1b.design.json"
+    "sourceDesign": "project/docs/specs/archive/sp-001-bakery-stage1/03-stage1b/sp-001-bakery-stage1b.design.json"
   },
   "summary": {
     "goal": "Показать, какие метаобъекты будут созданы или использованы на этапе 1b и как между ними проходят основные связи.",

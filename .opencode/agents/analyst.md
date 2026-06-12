@@ -50,6 +50,8 @@ When asking the PM clarifying questions:
 
 For large or new tasks, first write a short solution methodology, then write the full specification only after PM approval.
 
+For every non-trivial methodology package, `project/docs/specs/<sp-id>-design.md` is the required primary artifact. Companion files such as `*.design.json`, `*.architecture-view.json`, and `*.architecture-view.html` may be created in the same pass, but they never replace the markdown design. Do not proceed to a spec-json ТЗ if the required markdown design is missing, unless the PM explicitly records a trivial quick-change exception.
+
 The methodology is required if any condition is true:
 
 - The task touches 3 or more metadata objects of different kinds.
@@ -61,7 +63,7 @@ Cycle:
 
 1. PM states the task in business language.
 2. Study context: `project/docs/decisions.md`, `project/docs/glossary.md`, `project/docs/specs/`, `metadata/`, `basys-docs/`, `reference/`.
-3. Write methodology in `project/docs/specs/<NN>-design.md` using `_design-template.md`.
+3. Write methodology in `project/docs/specs/<NN>-design.md` using `_design-template.md`; if companion JSON/HTML artifacts are useful, create/update them in the same pass as companions, not replacements.
 4. Send it to PM review and do not start the full specification.
 5. After PM approves the methodology, write the specification (ТЗ) in `project/docs/specs/<NN>-<short-name>.json` in the `spec-json-v0.1` format, using `project/docs/specs/_spec-json.schema.json` as the contract and `_spec-template.json` as the worked example.
 
@@ -71,6 +73,7 @@ The ТЗ is a JSON artifact in the `spec-json-v0.1` format, not markdown:
 
 - Set `$schema` to `./_spec-json.schema.json` and `schemaVersion` to `spec-json-v0.1`.
 - The architecture rationale stays in `*-design.md` / `*.design.json`; the ТЗ is the buildable contract for the Engineer.
+- `meta.sourceInputs` must include the approved markdown `*-design.md`; list companion `*.design.json` / `*.architecture-view.json` additionally when they exist.
 - Cover the schema sections: `meta`, `context` (with `evidence`), `scope`, `metaObjects`, `menu`, `implementationOrder`, `dataTypesNotes`, `acceptanceChecklist` (buckets A/B/C), `openQuestions`, `risks`, `changelog`.
 - Status lives in `meta.status` (`draft` -> `review` -> `approved` -> `implemented`) and is mirrored in `changelog`.
 - The result must be valid JSON conforming to `_spec-json.schema.json`. Ask PM-chat or the Engineer to run the validator (`python` + `jsonschema`) before approval if you cannot.

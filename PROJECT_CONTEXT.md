@@ -4,7 +4,7 @@
 > **Не дублировать:** обсуждения и очередь вопросов -> `OPEN_QUESTIONS.md`; формальные архитектурные решения -> `project/docs/decisions.md`.
 > **Поддерживает AI-ассистент** — обновляет в конце смысловой главы работы.
 
-**Последнее обновление:** 2026-06-11 — этапы 1a и 1b завершены (подтверждено PM): 1a функционально принят на стенде; seed-workflow sp-002 (`seed_refs_1a`/`seed_docs_1a`) реализованы и выполнены; 1b реализован по approved ТЗ `sp-001-bakery-stage1b.json` и approved плану `sp-001-bakery-stage1b-plan.md`, metadata закоммичены (`5062183`), импортированы на стенд и функционально приняты PM. Артефакты 1b: implementation-report, import-notes. Текущий фокус — **этап 1c** (детализация и дизайн). Ранее: формат ТЗ `spec-json-v0.1` (ADR 2026-06-10), Evidence Rule (ADR-2026-06-02).
+**Последнее обновление:** 2026-06-12 — этапы 1a, 1b и 1c завершены (подтверждено PM): 1a функционально принят на стенде; seed-workflow sp-002 (`seed_refs_1a`/`seed_docs_1a`) реализованы и выполнены; 1b реализован по approved ТЗ `sp-001-bakery-stage1b.json` и approved плану `sp-001-bakery-stage1b-plan.md`, metadata закоммичены (`5062183`), импортированы на стенд и функционально приняты PM; 1c реализован fast-track по `sp-001-bakery-stage1c.json`, audit `approved`, импортирован на стенд и функционально принят PM, spec переведён в `implemented`, metadata закоммичена в nested repo `metadata/` (`e3ecacf`). Модернизация визуализации 1b/1c завершена: stable HTML viewer + внешние `architecture-view.json` / `metadata-view.json`, ручная загрузка design JSON через file picker, фиксированный metadata JSON, `build_arch_view.py` в обычном режиме обновляет только fact JSON; `sp-001-bakery-stage1b.architecture-view.json` переведён в `approved`. Cleanup/reorg `project/docs/specs/` выполнен: завершённые stage artifacts 1a/1b/1c и seed-data перенесены в `project/docs/specs/archive/sp-001-bakery-stage1/`, корень specs содержит только инфраструктуру, README и актуальные viewer/tooling файлы. Усилен процесс памяти: Durable Memory Checkpoint обязателен при approval/status/import/acceptance/open-question событиях до финального ответа. Текущий фокус — **root project package commit и housekeeping**.
 
 ---
 
@@ -39,6 +39,7 @@ OpenCode запускается из корня `create-model-3/`. Все пут
 ## Важные Правила
 
 - Перед созданием, редактированием или удалением файлов ассистент даёт краткий план и ждёт явного одобрения PM.
+- Durable Memory Checkpoint обязателен при durable-событиях; `PROJECT_CONTEXT.md`/`OPEN_QUESTIONS.md` нельзя откладывать до неопределённого «конца главы».
 - `metadata/` считается рабочим зеркалом текущего стенда BaSYS, а не архивом экспериментов.
 - Перед существенными metadata-задачами синхронизировать `metadata/` со стендом.
 - `reference/` не редактировать без явного запроса.
@@ -49,8 +50,8 @@ OpenCode запускается из корня `create-model-3/`. Все пут
 
 ## Что Следующее
 
-1. Этап 1c: уточнить scope и входы с PM, затем analyst-дизайн (методика + design-пакет) и ТЗ в формате spec-json.
-2. Перевести статусы ТЗ/планов 1a и 1b в `implemented` (после фиксации приёмки в документах), решить судьбу legacy `sp-001-bakery-stage1b.md`.
+1. Закоммитить root project package 1c после финального просмотра diff.
+2. Перевести статусы ТЗ/планов 1a и 1b в `implemented` (после фиксации приёмки в документах), если архивные документы нужно актуализировать после переноса.
 3. При необходимости версионировать `metadata/` на GitHub — настроить remote и запушить.
 
 ## Реестр Сессий

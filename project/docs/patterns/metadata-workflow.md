@@ -50,8 +50,10 @@
 - Источник правды по семантике полей — `https://opencode.ai/config.json` и страница `https://opencode.ai/docs/config/`.
 - Долговременное состояние всё равно держать в файлах (`PROJECT_CONTEXT.md`, `OPEN_QUESTIONS.md`, `project/docs/specs/`), а не полагаться на context window.
 - Оперативное состояние текущего run держать в `project/docs/session-state.md`: текущая задача, статус, решения PM, активные файлы, blockers, next steps. Это не архив истории и не замена `PROJECT_CONTEXT.md`.
-- `.opencode/plugins/session-memory.ts` подмешивает `PROJECT_CONTEXT.md`, `OPEN_QUESTIONS.md` и `project/docs/session-state.md` в `experimental.session.compacting`. Плагин помогает компакции, но не заменяет дисциплину checkpoint: агент всё равно должен обновлять `session-state.md` перед длинным run, после важных решений и перед рисковой компакцией.
-- После завершения смысловой главы устойчивые факты переносить в `PROJECT_CONTEXT.md`, `OPEN_QUESTIONS.md`, ADR или patterns; `session-state.md` очищать или переводить на следующую задачу.
+- `.opencode/plugins/session-memory.ts` подмешивает `PROJECT_CONTEXT.md`, `OPEN_QUESTIONS.md` и `project/docs/session-state.md` в `experimental.session.compacting`. Плагин помогает компакции, но не заменяет дисциплину checkpoint.
+- Durable Memory Checkpoint выполнять сразу после durable-события, а не «когда-нибудь в конце»: approved/rejected scope, approved spec/design/plan, completed implementation/audit/import, functional acceptance, blocker, opening/closing/defer of an open question, material next-step change.
+- В начале планируемой работы, которая может изменить durable memory, явно включать memory edits в action plan и получать approval PM. Если не включили заранее — остановиться перед финальным ответом, запросить approval на memory update, обновить файлы и только потом завершать.
+- После checkpoint устойчивые факты должны быть в `PROJECT_CONTEXT.md`, `OPEN_QUESTIONS.md`, ADR или patterns; `session-state.md` очищается или переводится на следующую задачу.
 
 ## Read-only Защита Внешних Папок
 

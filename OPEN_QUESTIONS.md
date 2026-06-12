@@ -2,13 +2,12 @@
 
 ## Обсуждается сейчас
 
-- Этап 1c: определить scope, цели и входные данные; затем analyst-дизайн и ТЗ spec-json.
+_(пока пусто)_
 
 ## В очереди
 
-- Судьба legacy `sp-001-bakery-stage1b.md`: 1b принят, можно архивировать или удалить — нужно решение PM.
 - Перевести статусы ТЗ/планов 1a и 1b в `implemented` в файлах specs (приёмка пройдена, статусы в файлах не обновлены).
-- `supplier_debt_report` отложен из 1b (OQ-003) — кандидат в scope 1c.
+- Закоммитить root project package 1c после финального просмотра diff.
 - Документ закрытия месяца (списание стоимости сырья, средневзвешенная оценка) отложен из 1b (OQ-001, ADR 2026-06-10) — кандидат в scope будущих этапов.
 - Проверить UX рецептур (шапка `catalog/recipe` + строки `register/recipe_component`); при неудобстве — форма-конструктор во вторую очередь.
 
@@ -18,6 +17,9 @@ _(пока пусто)_
 
 ## Решено
 
+- Cleanup/reorg `project/docs/specs/` выполнен 2026-06-12: корень specs очищен от завершённых stage artifacts, добавлен `README.md`, завершённые материалы 1a/1b/1c и seed-data перенесены в `project/docs/specs/archive/sp-001-bakery-stage1/`; legacy `sp-001-bakery-stage1b.md` и deprecated `_template.md` перенесены в `deprecated/`; `$schema` у архивных spec-json поправлен, `validate_spec.py` для 1b/1c и `git diff --check` прошли успешно.
+- Этап 1c завершён (подтверждено PM 2026-06-12): scope/design/spec approved и реализован fast-track; scope = `shipment`, `payment_in`, `payment_out`, `customer_settlements`, `money_balance`, использование existing `supplier_debt_movement`, отчёты `customer_debt_report`/`supplier_debt_report`/`money_flow_report`; закрытие месяца не входит. `metadata-auditor` вернул `approved` без critical/non-critical findings; metadata импортирована на стенд, функционально принята и закоммичена в nested repo `metadata/` (`e3ecacf`); `sp-001-bakery-stage1c.json` переведён в `implemented`.
+- Модернизация визуализации 1b/1c завершена (подтверждено PM 2026-06-12): stable HTML viewer загружает внешние `architecture-view.json` / `metadata-view.json`, поддерживает ручной выбор design JSON через file picker, metadata JSON остаётся фиксированным внешним источником, `build_arch_view.py` по умолчанию обновляет только fact JSON.
 - Этап 1b завершён (подтверждено PM 2026-06-11): metadata реализованы по `sp-001-bakery-stage1b.json` + `sp-001-bakery-stage1b-plan.md`, закоммичены (`5062183` в `metadata/`), импортированы на стенд и функционально приняты. Артефакты: `sp-001-bakery-stage1b-implementation-report.md`, `sp-001-bakery-stage1b-import-notes.md`.
 - Этап 1a функционально принят на стенде; sp-002 seed-workflow (`seed_refs_1a`/`seed_docs_1a`) реализованы и выполнены (подтверждено PM 2026-06-11).
 - Формат ТЗ переведён на `spec-json-v0.1` (PM 2026-06-10): ТЗ — JSON `<sp-id>.json` по `_spec-json.schema.json` (draft 2020-12), валидация `validate_spec.py` (Python+jsonschema) обязательна. Решения PM: формат везде (ручной и autopilot); полная JSON-schema + валидация; 1b сконвертирован как первый носитель (`sp-001-bakery-stage1b.json`). Markdown-ТЗ `_template.md` deprecated. Агенты и процессные доки обновлены (ADR 2026-06-10). Требуется перезапуск OpenCode для применения изменений `.opencode/agents/*`.
