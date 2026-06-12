@@ -4,15 +4,15 @@
 
 ## Current Task
 
-- Topic: cleanup/reorg `project/docs/specs/`.
-- Goal: очистить корень specs от завершённых stage artifacts и перенести материалы 1a/1b/1c/seed-data в архивную структуру.
+- Topic: root project package commit.
+- Goal: зафиксировать завершённый package этапа 1c, process updates, visualization updates и cleanup/reorg specs в root repo.
 
 ## Status
 
 - 1a и 1b функционально приняты PM; metadata 1b закоммичена в nested repo `metadata/` как `5062183`.
 - 1c завершён: scope/design/spec approved 2026-06-11; fast-track реализация выполнена; `metadata-auditor` вернул `verdict: approved`, critical/non-critical пусто; metadata импортирована на стенд и функционально принята PM 2026-06-12; `sp-001-bakery-stage1c.json` переведён в `implemented`; metadata закоммичена в nested repo `metadata/` как `e3ecacf`.
 - 2026-06-12 усилены правила памяти: Durable Memory Checkpoint теперь обязателен при approval/status/import/acceptance/open-question событиях; autopilot/engineer/commands обязаны возвращать `Durable memory delta`.
-- В корневом repo остаются незакоммиченные/неотслеживаемые изменения: stage1c spec/artifact package, правки design-gate правил в `AGENTS.md`/workflow/agents, изменения `project/tools/build_arch_view.py`.
+- Root repo package закоммичен: `9f09ec2 chore: finalize bakery stage 1 project package`.
 - Nested repo `metadata/` чистый после commit `e3ecacf` (`feat: implement bakery stage 1c metadata`).
 
 ## PM Decisions
@@ -32,25 +32,17 @@
 - 2026-06-12: PM выбрал ручной выбор входного файла только для design JSON; metadata JSON не выбирается вручную и остаётся фиксированным источником viewer. Реализована кнопка `Выбрать дизайн JSON` через FileReader в stable viewer 1b/1c.
 - 2026-06-12: PM подтвердил, что часть задания по модернизации визуализации выполнена; visual artifacts считаются завершёнными для текущего root package.
 - 2026-06-12: cleanup/reorg `project/docs/specs/` выполнен; завершённые artifacts 1a/1b/1c и seed-data перенесены в `archive/sp-001-bakery-stage1/`, корень specs оставлен под инфраструктуру и viewer/tooling, архивные spec-json валидируются.
+- 2026-06-12: root project package закоммичен в repo commit `9f09ec2`.
 
 ## Active Files
 
 - `PROJECT_CONTEXT.md`
 - `OPEN_QUESTIONS.md`
 - `project/docs/session-state.md`
-- `AGENTS.md`, `project/docs/workflow.md`, `project/docs/autopilot-workflow.md`, `project/docs/patterns/metadata-workflow.md`
-- `.opencode/agents/autopilot-orchestrator.md`, `.opencode/agents/engineer.md`
-- `.opencode/commands/task-to-design.md`, `.opencode/commands/spec-to-metadata-multi.md`, `.opencode/commands/implement-spec.md`, `.opencode/commands/metadata-autopilot.md`, `.opencode/commands/quick-metadata.md`
-- `project/docs/specs/sp-001-bakery-stage1c*`
-- `project/docs/specs/sp-001-bakery-stage1b.architecture-view.html`, `project/docs/specs/sp-001-bakery-stage1b.metadata-view.json`
-- `project/docs/specs/sp-001-bakery-stage1c.architecture-view.html`, `project/docs/specs/sp-001-bakery-stage1c.metadata-view.json`
-- `project/docs/specs/README.md`
-- `project/docs/specs/archive/sp-001-bakery-stage1/`
-- `project/tools/build_arch_view.py`
 
 ## Next Steps
 
-- Закоммитить root project package 1c после финального просмотра diff.
+- Перед новым metadata-этапом синхронизировать `metadata/` с фактическим стендом.
 - Перезапустить OpenCode для применения изменённых `.opencode/agents/*` и `.opencode/commands/*`, если это ещё не сделано.
 - Перевести статусы ТЗ/планов 1a и 1b в `implemented` в архивных файлах specs (отдельный approve PM), если это всё ещё нужно после переноса.
 

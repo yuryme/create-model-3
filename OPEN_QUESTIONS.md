@@ -7,7 +7,6 @@ _(пока пусто)_
 ## В очереди
 
 - Перевести статусы ТЗ/планов 1a и 1b в `implemented` в файлах specs (приёмка пройдена, статусы в файлах не обновлены).
-- Закоммитить root project package 1c после финального просмотра diff.
 - Документ закрытия месяца (списание стоимости сырья, средневзвешенная оценка) отложен из 1b (OQ-001, ADR 2026-06-10) — кандидат в scope будущих этапов.
 - Проверить UX рецептур (шапка `catalog/recipe` + строки `register/recipe_component`); при неудобстве — форма-конструктор во вторую очередь.
 
@@ -17,6 +16,7 @@ _(пока пусто)_
 
 ## Решено
 
+- Root project package закоммичен 2026-06-12: `9f09ec2 chore: finalize bakery stage 1 project package`; commit включает stage 1c artifacts, process/memory-rule updates, visualization/tooling updates и cleanup/reorg `project/docs/specs/`.
 - Cleanup/reorg `project/docs/specs/` выполнен 2026-06-12: корень specs очищен от завершённых stage artifacts, добавлен `README.md`, завершённые материалы 1a/1b/1c и seed-data перенесены в `project/docs/specs/archive/sp-001-bakery-stage1/`; legacy `sp-001-bakery-stage1b.md` и deprecated `_template.md` перенесены в `deprecated/`; `$schema` у архивных spec-json поправлен, `validate_spec.py` для 1b/1c и `git diff --check` прошли успешно.
 - Этап 1c завершён (подтверждено PM 2026-06-12): scope/design/spec approved и реализован fast-track; scope = `shipment`, `payment_in`, `payment_out`, `customer_settlements`, `money_balance`, использование existing `supplier_debt_movement`, отчёты `customer_debt_report`/`supplier_debt_report`/`money_flow_report`; закрытие месяца не входит. `metadata-auditor` вернул `approved` без critical/non-critical findings; metadata импортирована на стенд, функционально принята и закоммичена в nested repo `metadata/` (`e3ecacf`); `sp-001-bakery-stage1c.json` переведён в `implemented`.
 - Модернизация визуализации 1b/1c завершена (подтверждено PM 2026-06-12): stable HTML viewer загружает внешние `architecture-view.json` / `metadata-view.json`, поддерживает ручной выбор design JSON через file picker, metadata JSON остаётся фиксированным внешним источником, `build_arch_view.py` по умолчанию обновляет только fact JSON.
