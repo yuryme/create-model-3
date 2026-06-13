@@ -1,0 +1,1049 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Хлебозавод — карта архитектуры для PM</title>
+  <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.34.0/dist/cytoscape.min.js"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f1ea;
+      --panel: #fffaf2;
+      --panel-2: #ffffff;
+      --ink: #1e293b;
+      --muted: #64748b;
+      --line: #ded7ca;
+      --accent: #b45309;
+      --accent-2: #0f766e;
+      --blue: #2563eb;
+      --green: #15803d;
+      --purple: #7c3aed;
+      --shadow: 0 18px 55px rgba(30, 41, 59, 0.14);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(180, 83, 9, 0.16), transparent 30rem),
+        radial-gradient(circle at bottom right, rgba(15, 118, 110, 0.14), transparent 28rem),
+        var(--bg);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 18px 22px 14px;
+      border-bottom: 1px solid rgba(100, 116, 139, 0.22);
+      background: rgba(255, 250, 242, 0.84);
+      backdrop-filter: blur(12px);
+    }
+
+    .topline {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: start;
+    }
+
+    h1 {
+      margin: 0 0 7px;
+      font-size: clamp(22px, 2.7vw, 34px);
+      letter-spacing: -0.035em;
+      line-height: 1.05;
+    }
+
+    .source {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .tab-button {
+      padding: 11px 18px;
+      border-radius: 14px;
+      border: 1px solid rgba(100, 116, 139, 0.25);
+      background: rgba(255, 255, 255, 0.72);
+      color: var(--ink);
+      font-weight: 750;
+      font-size: 14px;
+      transition: 120ms ease;
+    }
+
+    .tab-button:hover {
+      transform: translateY(-1px);
+      border-color: rgba(180, 83, 9, 0.45);
+    }
+
+    .tab-button.active {
+      color: #fff;
+      background: linear-gradient(135deg, #b45309, #0f766e);
+      border-color: transparent;
+      box-shadow: 0 12px 26px rgba(180, 83, 9, 0.22);
+    }
+
+    .summary {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(110px, auto));
+      gap: 10px;
+      justify-content: start;
+    }
+
+    .metric {
+      padding: 8px 12px;
+      border: 1px solid rgba(100, 116, 139, 0.2);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.68);
+      box-shadow: 0 8px 24px rgba(30, 41, 59, 0.06);
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr) 340px;
+      gap: 16px;
+      padding: 16px;
+      min-height: 0;
+    }
+
+    .panel {
+      min-height: 0;
+      border: 1px solid rgba(100, 116, 139, 0.2);
+      border-radius: 22px;
+      background: rgba(255, 250, 242, 0.88);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .left, .right {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-section {
+      padding: 16px;
+      border-bottom: 1px solid rgba(100, 116, 139, 0.16);
+    }
+
+    .panel-section:last-child { border-bottom: 0; }
+
+    .label {
+      margin: 0 0 9px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+    }
+
+    .goal {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.46;
+    }
+
+    .views {
+      display: grid;
+      gap: 8px;
+    }
+
+    button, input {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .view-button, .tool-button {
+      width: 100%;
+      padding: 10px 11px;
+      border-radius: 14px;
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(100, 116, 139, 0.2);
+      text-align: left;
+      transition: 120ms ease;
+    }
+
+    .view-button:hover, .tool-button:hover {
+      transform: translateY(-1px);
+      border-color: rgba(180, 83, 9, 0.45);
+    }
+
+    .view-button.active {
+      color: #fff;
+      background: linear-gradient(135deg, #b45309, #0f766e);
+      border-color: transparent;
+      box-shadow: 0 12px 26px rgba(180, 83, 9, 0.22);
+    }
+
+    .view-title {
+      display: block;
+      font-weight: 750;
+      line-height: 1.2;
+    }
+
+    .view-description {
+      display: block;
+      margin-top: 4px;
+      color: currentColor;
+      opacity: 0.74;
+      font-size: 12px;
+      line-height: 1.34;
+    }
+
+    .search {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(100, 116, 139, 0.24);
+      background: rgba(255, 255, 255, 0.78);
+      color: var(--ink);
+      outline: none;
+    }
+
+    .search:focus {
+      border-color: rgba(15, 118, 110, 0.55);
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+    }
+
+    .tool-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .tool-button {
+      text-align: center;
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .legend {
+      display: grid;
+      gap: 10px;
+    }
+
+    .legend-item {
+      display: grid;
+      grid-template-columns: 26px 1fr;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .swatch {
+      width: 26px;
+      height: 14px;
+      border-radius: 999px;
+      background: var(--ink);
+    }
+
+    .canvas-card {
+      position: relative;
+      min-height: 640px;
+      overflow: hidden;
+    }
+
+    #cy {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(rgba(100, 116, 139, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(100, 116, 139, 0.08) 1px, transparent 1px),
+        rgba(255, 255, 255, 0.58);
+      background-size: 26px 26px;
+    }
+
+    .hint {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      max-width: 500px;
+      padding: 9px 12px;
+      color: var(--muted);
+      background: rgba(255, 250, 242, 0.9);
+      border: 1px solid rgba(100, 116, 139, 0.2);
+      border-radius: 16px;
+      font-size: 12px;
+      box-shadow: 0 10px 28px rgba(30, 41, 59, 0.1);
+      pointer-events: none;
+    }
+
+    .pipeline-note {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      right: 16px;
+      z-index: 2;
+      display: none;
+      padding: 10px 13px;
+      color: #475569;
+      background: rgba(255, 250, 242, 0.91);
+      border: 1px solid rgba(100, 116, 139, 0.2);
+      border-radius: 16px;
+      font-size: 13px;
+      line-height: 1.38;
+      box-shadow: 0 10px 28px rgba(30, 41, 59, 0.1);
+      pointer-events: none;
+    }
+
+    .details h2 {
+      margin: 0 0 6px;
+      font-size: 22px;
+      letter-spacing: -0.02em;
+    }
+
+    .details .type {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(15, 118, 110, 0.1);
+      color: var(--accent-2);
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .details p {
+      margin: 12px 0 0;
+      color: var(--muted);
+      line-height: 1.48;
+      font-size: 14px;
+    }
+
+    .kv {
+      display: grid;
+      gap: 9px;
+      margin-top: 14px;
+    }
+
+    .kv-row {
+      display: grid;
+      grid-template-columns: 88px 1fr;
+      gap: 8px;
+      font-size: 13px;
+    }
+
+    .kv-row span:first-child {
+      color: var(--muted);
+    }
+
+    .list {
+      display: grid;
+      gap: 7px;
+      max-height: 260px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .object-link {
+      display: grid;
+      grid-template-columns: 8px 1fr;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 9px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.66);
+      border: 1px solid rgba(100, 116, 139, 0.14);
+      color: var(--ink);
+      text-align: left;
+      font-size: 13px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .object-link small {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    @media (max-width: 1180px) {
+      .layout { grid-template-columns: 280px minmax(0, 1fr); }
+      .right { grid-column: 1 / -1; }
+      .canvas-card { min-height: 620px; }
+    }
+
+    @media (max-width: 760px) {
+      .topline, .layout, .summary { grid-template-columns: 1fr; }
+      .layout { padding: 10px; }
+      .canvas-card { min-height: 560px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="topline">
+        <div>
+          <h1 id="pageTitle"></h1>
+          <p class="source" id="sourceLine"></p>
+        </div>
+        <div class="tabs" id="tabs"></div>
+      </div>
+      <div class="summary" id="summary"></div>
+    </header>
+    <main class="layout">
+      <aside class="panel left">
+        <section class="panel-section">
+          <p class="label">Цель</p>
+          <p class="goal" id="goal"></p>
+        </section>
+        <section class="panel-section">
+          <p class="label">PM-виды</p>
+          <div class="views" id="views"></div>
+        </section>
+        <section class="panel-section">
+          <p class="label">Поиск</p>
+          <input class="search" id="search" placeholder="raw_movement, отчет, склад...">
+        </section>
+        <section class="panel-section">
+          <p class="label">Действия</p>
+          <div class="tool-grid">
+            <button class="tool-button" id="fit">Показать всё</button>
+            <button class="tool-button" id="labels">Скрыть подписи</button>
+            <button class="tool-button" id="reset">Сброс</button>
+            <button class="tool-button" id="png">PNG</button>
+            <button class="tool-button" id="chooseDesign">Выбрать дизайн JSON</button>
+          </div>
+          <input id="designFile" type="file" accept=".json,application/json" hidden>
+        </section>
+        <section class="panel-section">
+          <p class="label">Легенда</p>
+          <div class="legend" id="legend"></div>
+        </section>
+      </aside>
+
+      <section class="panel canvas-card">
+        <div id="cy"></div>
+        <div class="pipeline-note" id="pipelineNote"></div>
+        <div class="hint">Клик по объекту или связи открывает пояснение справа. Колёсико масштабирует, карту можно перетаскивать.</div>
+      </section>
+
+      <aside class="panel right">
+        <section class="panel-section details" id="details"></section>
+        <section class="panel-section">
+          <p class="label">Объекты</p>
+          <div class="list" id="objects"></div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    const DATASET_SOURCES = {
+      design: {
+        label: 'Дизайн',
+        source: 'sp-003-recipe-doc.architecture-view.json'
+      },
+      metadata: {
+        label: 'Metadata (факт)',
+        source: 'sp-003-recipe-doc.metadata-view.json'
+      }
+    };
+
+    const LEGEND = {
+      design: [
+        { color: '#b45309', label: 'документы пользователя' },
+        { color: '#0f766e', label: 'регистры хранения результата' },
+        { color: '#2563eb', label: 'отчеты для контроля' },
+        { color: '#7c3aed', label: 'существующие объекты' }
+      ],
+      metadata: [
+        { color: '#b45309', label: 'операции (документы)' },
+        { color: '#0f766e', label: 'регистры записей (движения)' },
+        { color: '#2563eb', label: 'отчёты (data view)' },
+        { color: '#7c3aed', label: 'справочники, перечисления, регистры настроек' },
+        { color: '#9333ea', label: 'workflow-процессы' }
+      ]
+    };
+
+    const PIPELINE_NOTES = {
+      design: 'Последовательность: сначала пользователь оформляет поступление сырья, при необходимости корректирует остатки инвентаризацией, затем выбирает производственное задание и оформляет выпуск.'
+    };
+
+    const nodeColors = {
+      document: '#b45309',
+      'existing-document': '#7c3aed',
+      storage: '#0f766e',
+      'existing-storage': '#7c3aed',
+      report: '#2563eb',
+      'existing-reference': '#7c3aed',
+      reference: '#7c3aed',
+      calculation: '#9333ea',
+      future: '#64748b'
+    };
+
+    const edgeColors = {
+      writes: '#b45309',
+      reads: '#2563eb',
+      'user-sequence': '#16a34a',
+      fills: '#15803d',
+      calculates: '#9333ea',
+      references: '#94a3b8'
+    };
+
+    const viewButtons = document.getElementById('views');
+    const details = document.getElementById('details');
+    const objectList = document.getElementById('objects');
+    const search = document.getElementById('search');
+    const pipelineNote = document.getElementById('pipelineNote');
+    const DATASETS = {};
+    let activeKey = 'design';
+    let VIEW_DATA = null;
+    let currentView = null;
+    let labelsVisible = true;
+    let cy;
+
+    async function loadDataset(key) {
+      const config = DATASET_SOURCES[key];
+      if (!config) throw new Error('Unknown dataset: ' + key);
+      if (DATASETS[key]) return DATASETS[key];
+      const response = await fetch(config.source, { cache: 'no-store' });
+      if (!response.ok) throw new Error('Cannot load ' + config.source + ': HTTP ' + response.status);
+      DATASETS[key] = Object.assign({}, config, { data: await response.json() });
+      return DATASETS[key];
+    }
+
+    function readFileText(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = () => reject(reader.error || new Error('Cannot read file'));
+        reader.readAsText(file, 'utf-8');
+      });
+    }
+
+    function validateArchitectureDataset(data, source) {
+      if (!data || data.schemaVersion !== 'architecture-view-json-v0.1') {
+        throw new Error(source + ': unsupported schemaVersion');
+      }
+      for (const field of ['nodes', 'edges', 'views']) {
+        if (!Array.isArray(data[field])) throw new Error(source + ': missing array ' + field);
+      }
+    }
+
+    async function loadDesignFile(file) {
+      const text = await readFileText(file);
+      const data = JSON.parse(text);
+      validateArchitectureDataset(data, file.name);
+      DATASETS.design = Object.assign({}, DATASET_SOURCES.design, {
+        source: 'выбранный файл: ' + file.name,
+        data
+      });
+      await selectDataset('design');
+    }
+
+    function nodesForView(view) {
+      if (Array.isArray(view.includedNodeIds) && view.includedNodeIds.length > 0) {
+        const include = new Set(view.includedNodeIds);
+        return VIEW_DATA.nodes.filter((node) => include.has(node.id));
+      }
+      if (Array.isArray(view.includedGroups) && view.includedGroups.length > 0) {
+        const groupIds = new Set(view.includedGroups);
+        const nodeIds = new Set();
+        VIEW_DATA.groups
+          .filter((group) => groupIds.has(group.id))
+          .forEach((group) => {
+            (group.nodeIds || []).forEach((nodeId) => nodeIds.add(nodeId));
+          });
+        return VIEW_DATA.nodes.filter((node) => nodeIds.has(node.id));
+      }
+      return VIEW_DATA.nodes;
+    }
+
+    function edgesForView(view, nodeIds) {
+      const edgeTypes = Array.isArray(view.includedEdgeTypes) && view.includedEdgeTypes.length > 0
+        ? new Set(view.includedEdgeTypes)
+        : undefined;
+      return VIEW_DATA.edges.filter((edge) => {
+        if (!nodeIds.has(edge.from) || !nodeIds.has(edge.to)) return false;
+        if (edgeTypes && !edgeTypes.has(edge.type)) return false;
+        return true;
+      });
+    }
+
+    function groupByNodeId() {
+      const map = new Map();
+      for (const group of VIEW_DATA.groups || []) {
+        for (const nodeId of group.nodeIds || []) map.set(nodeId, group.id);
+      }
+      return map;
+    }
+
+    function viewGroups(view, nodes) {
+      if (Array.isArray(view.includedGroups) && view.includedGroups.length > 0) {
+        const groupIds = new Set(view.includedGroups);
+        return VIEW_DATA.groups.filter((group) => groupIds.has(group.id));
+      }
+      const nodeIds = new Set(nodes.map((node) => node.id));
+      return VIEW_DATA.groups.filter((group) => (group.nodeIds || []).some((nodeId) => nodeIds.has(nodeId)));
+    }
+
+    function laneForNode(node, groupId) {
+      if (node.visualType === 'report' || node.kind === 'data_view') return 'reports';
+      if (node.visualType === 'calculation' || node.visualType === 'future' || node.kind === 'workflow') return 'existing';
+      if (node.visualType === 'storage' || node.visualType === 'existing-storage' || node.kind === 'records') return 'storage';
+      if (node.kind === 'catalog' || node.kind === 'enum' || node.kind === 'register') return 'existing';
+      if (groupId && groupId.includes('existing')) return 'existing';
+      return 'documents';
+    }
+
+    function positionNodes(nodes, groups) {
+      if (currentView && currentView.layout === 'pipeline') {
+        const positions = new Map();
+        nodes.forEach((node, index) => {
+          positions.set(node.id, { x: 180 + index * 270, y: index === 2 ? 180 : 320 });
+        });
+        return positions;
+      }
+
+      const groupsByNode = groupByNodeId();
+      const lanes = { existing: [], documents: [], storage: [], reports: [] };
+      for (const node of nodes) lanes[laneForNode(node, groupsByNode.get(node.id))].push(node);
+
+      const positions = new Map();
+      const placeVertical = (items, x, y, gap) => items.forEach((node, index) => positions.set(node.id, { x, y: y + index * gap }));
+      const placeWrapped = (items, x, y, gapX, gapY, perRow) => items.forEach((node, index) => positions.set(node.id, {
+        x: x + (index % perRow) * gapX,
+        y: y + Math.floor(index / perRow) * gapY
+      }));
+
+      const topRows = Math.max(1, Math.ceil(lanes.existing.length / 5));
+      const baseY = 110 + (topRows - 1) * 110 + 200;
+
+      placeWrapped(lanes.existing, 230, 110, 260, 110, 5);
+      placeVertical(lanes.documents, 190, baseY, 150);
+      placeVertical(lanes.storage, 560, baseY - 20, 142);
+      placeVertical(lanes.reports, 930, baseY + 20, 150);
+
+      let fallback = 0;
+      for (const node of nodes) {
+        if (!positions.has(node.id)) {
+          positions.set(node.id, { x: 260 + (fallback % 3) * 280, y: 220 + Math.floor(fallback / 3) * 150 });
+          fallback += 1;
+        }
+      }
+      return positions;
+    }
+
+    function buildElements(view) {
+      const nodes = nodesForView(view);
+      const nodeIds = new Set(nodes.map((node) => node.id));
+      const edges = edgesForView(view, nodeIds);
+      const groups = viewGroups(view, nodes);
+      const groupsByNode = groupByNodeId();
+      const positions = positionNodes(nodes, groups);
+      const elements = [];
+
+      for (const group of groups) {
+        elements.push({
+          data: { id: group.id, label: group.title, description: group.description || '', kind: 'group' },
+          classes: 'group'
+        });
+      }
+
+      for (const node of nodes) {
+        const groupId = groupsByNode.get(node.id);
+        const data = Object.assign({}, node, {
+          label: node.title + '\n' + node.name,
+          color: nodeColors[node.visualType] || '#334155',
+          parent: groups.some((group) => group.id === groupId) ? groupId : undefined
+        });
+        elements.push({ data, position: positions.get(node.id), classes: node.visualType || 'node' });
+      }
+
+      for (const edge of edges) {
+        elements.push({
+          data: Object.assign({}, edge, {
+            source: edge.from,
+            target: edge.to,
+            label: edge.title || edge.type,
+            color: edgeColors[edge.type] || '#64748b'
+          }),
+          classes: edge.type || 'edge'
+        });
+      }
+      return { elements, nodes, edges };
+    }
+
+    function renderTabs() {
+      const tabs = document.getElementById('tabs');
+      tabs.innerHTML = '';
+      for (const key of Object.keys(DATASET_SOURCES)) {
+        const button = document.createElement('button');
+        button.className = 'tab-button' + (key === activeKey ? ' active' : '');
+        button.textContent = DATASET_SOURCES[key].label;
+        button.addEventListener('click', () => selectDataset(key).catch(showStartupError));
+        tabs.appendChild(button);
+      }
+    }
+
+    function renderSummary() {
+      const box = document.getElementById('summary');
+      box.innerHTML = '';
+      const s = VIEW_DATA.summary || {};
+      const items = [];
+      if (activeKey === 'design') {
+        if (typeof s.createdObjectsCount === 'number') items.push([s.createdObjectsCount, 'создаём']);
+        if (typeof s.reusedObjectsCount === 'number') items.push([s.reusedObjectsCount, 'используем']);
+      } else if (typeof s.createdObjectsCount === 'number') {
+        items.push([s.createdObjectsCount, 'метаобъектов']);
+      }
+      items.push([(VIEW_DATA.nodes || []).length, 'объектов на карте']);
+      items.push([(VIEW_DATA.edges || []).length, 'связей']);
+      for (const [value, label] of items) {
+        const metric = document.createElement('div');
+        metric.className = 'metric';
+        const strong = document.createElement('strong');
+        strong.textContent = String(value);
+        const span = document.createElement('span');
+        span.textContent = label;
+        metric.append(strong, span);
+        box.appendChild(metric);
+      }
+    }
+
+    function renderLegend() {
+      const box = document.getElementById('legend');
+      box.innerHTML = '';
+      for (const item of LEGEND[activeKey] || []) {
+        const div = document.createElement('div');
+        div.className = 'legend-item';
+        const swatch = document.createElement('span');
+        swatch.className = 'swatch';
+        swatch.style.background = item.color;
+        const label = document.createElement('span');
+        label.textContent = item.label;
+        div.append(swatch, label);
+        box.appendChild(div);
+      }
+    }
+
+    function renderViews() {
+      viewButtons.innerHTML = '';
+      for (const view of VIEW_DATA.views || []) {
+        const button = document.createElement('button');
+        button.className = 'view-button' + (currentView && view.id === currentView.id ? ' active' : '');
+        button.innerHTML = '<span class="view-title"></span><span class="view-description"></span>';
+        button.querySelector('.view-title').textContent = view.title;
+        button.querySelector('.view-description').textContent = view.description || '';
+        button.addEventListener('click', () => loadView(view.id));
+        viewButtons.appendChild(button);
+      }
+    }
+
+    function renderObjectList(nodes) {
+      objectList.innerHTML = '';
+      for (const node of nodes) {
+        const button = document.createElement('button');
+        button.className = 'object-link';
+        button.innerHTML = '<span class="dot"></span><span></span>';
+        button.querySelector('.dot').style.background = nodeColors[node.visualType] || '#334155';
+        button.querySelector('span:last-child').innerHTML = '<strong></strong><small></small>';
+        button.querySelector('strong').textContent = node.title;
+        button.querySelector('small').textContent = node.kind + '/' + node.name;
+        button.addEventListener('click', () => {
+          const ele = cy.getElementById(node.id);
+          if (ele.nonempty()) {
+            cy.animate({ center: { eles: ele }, zoom: 1.25 }, { duration: 220 });
+            selectElement(ele);
+          }
+        });
+        objectList.appendChild(button);
+      }
+    }
+
+    function selectElement(ele) {
+      cy.elements().removeClass('selected dim-neighborhood');
+      ele.addClass('selected');
+
+      if (ele.isNode()) {
+        const d = ele.data();
+        ele.connectedEdges().addClass('selected');
+        // exclude compound group parents from dimming: in cytoscape a parent's
+        // `opacity` multiplies into all descendants and would wash out the
+        // labels of the selected node and its neighbours.
+        cy.elements().not(ele.closedNeighborhood()).not(':parent').addClass('dim-neighborhood');
+        details.innerHTML = '<span class="type"></span><h2></h2><p></p><div class="kv"></div>';
+        details.querySelector('.type').textContent = d.kind === 'group' ? 'группа' : d.kind + ' / ' + (d.lifecycle || '');
+        details.querySelector('h2').textContent = d.kind === 'group' ? d.label : d.title;
+        details.querySelector('p').textContent = d.pmDescription || d.description || 'Описание не задано.';
+        const kv = details.querySelector('.kv');
+        if (d.name) kv.append(row('Name', d.name));
+        if (d.visualType) kv.append(row('Тип', d.visualType));
+        if (d.lifecycle) kv.append(row('Статус', d.lifecycle));
+      } else {
+        const d = ele.data();
+        ele.connectedNodes().addClass('selected');
+        cy.elements().not(ele.union(ele.connectedNodes())).not(':parent').addClass('dim-neighborhood');
+        const from = VIEW_DATA.nodes.find((node) => node.id === d.from);
+        const to = VIEW_DATA.nodes.find((node) => node.id === d.to);
+        details.innerHTML = '<span class="type"></span><h2></h2><p></p><div class="kv"></div>';
+        details.querySelector('.type').textContent = 'связь / ' + d.type;
+        details.querySelector('h2').textContent = d.title || d.type;
+        details.querySelector('p').textContent = d.pmDescription || 'Описание связи не задано.';
+        const kv = details.querySelector('.kv');
+        kv.append(row('Откуда', from ? from.title + ' (' + from.name + ')' : d.from));
+        kv.append(row('Куда', to ? to.title + ' (' + to.name + ')' : d.to));
+      }
+    }
+
+    function row(key, value) {
+      const div = document.createElement('div');
+      div.className = 'kv-row';
+      const k = document.createElement('span');
+      const v = document.createElement('span');
+      k.textContent = key;
+      v.textContent = value;
+      div.append(k, v);
+      return div;
+    }
+
+    function emptyDetails() {
+      details.innerHTML = '<span class="type">карта архитектуры</span><h2>Выберите объект</h2><p></p>';
+      details.querySelector('p').textContent = (VIEW_DATA.summary && VIEW_DATA.summary.businessResult) || 'Кликните по объекту или связи, чтобы увидеть пояснение для PM.';
+    }
+
+    function loadView(viewId) {
+      currentView = (VIEW_DATA.views || []).find((view) => view.id === viewId) || (VIEW_DATA.views && VIEW_DATA.views.length > 0 ? VIEW_DATA.views[0] : null);
+      if (!currentView) {
+        details.innerHTML = '<span class="type">ошибка данных</span><h2>Нет PM-видов</h2><p>В датасете не найден массив views.</p>';
+        return;
+      }
+      const built = buildElements(currentView);
+      renderViews();
+      renderObjectList(built.nodes);
+      emptyDetails();
+      if (pipelineNote) {
+        const isPipeline = currentView.layout === 'pipeline';
+        pipelineNote.style.display = isPipeline ? 'block' : 'none';
+        pipelineNote.textContent = isPipeline ? (PIPELINE_NOTES[activeKey] || currentView.description || '') : '';
+      }
+
+      if (cy) cy.destroy();
+      if (typeof cytoscape !== 'function') {
+        details.innerHTML = '<span class="type">ошибка загрузки</span><h2>Cytoscape не загружен</h2><p>Проверьте интернет-доступ к cdn.jsdelivr.net или используйте локальную копию библиотеки.</p>';
+        return;
+      }
+      cy = cytoscape({
+        container: document.getElementById('cy'),
+        elements: built.elements,
+        layout: { name: 'preset', padding: 70, fit: true },
+        minZoom: 0.35,
+        maxZoom: 2.2,
+        wheelSensitivity: 0.18,
+        style: [
+          {
+            selector: 'node',
+            style: {
+              'shape': 'round-rectangle',
+              'width': 184,
+              'height': 66,
+              'background-color': 'data(color)',
+              'background-opacity': 0.96,
+              'border-width': 2,
+              'border-color': '#ffffff',
+              'label': 'data(label)',
+              'color': '#ffffff',
+              'font-size': 13,
+              'font-weight': 700,
+              'text-wrap': 'wrap',
+              'text-max-width': 154,
+              'text-valign': 'center',
+              'text-halign': 'center',
+              'overlay-opacity': 0,
+              'shadow-blur': 18,
+              'shadow-color': '#0f172a',
+              'shadow-opacity': 0.2,
+              'shadow-offset-y': 8
+            }
+          },
+          {
+            selector: 'node[visualType *= "existing"]',
+            style: {
+              'background-opacity': 0.82,
+              'border-style': 'dashed'
+            }
+          },
+          {
+            selector: '.group',
+            style: {
+              'shape': 'round-rectangle',
+              'background-color': '#fff7ed',
+              'background-opacity': 0.38,
+              'border-color': '#d6c7b3',
+              'border-width': 1.5,
+              'border-style': 'solid',
+              'label': 'data(label)',
+              'color': '#475569',
+              'font-size': 13,
+              'font-weight': 800,
+              'text-valign': 'top',
+              'text-halign': 'center',
+              'text-margin-y': -10,
+              'padding': 28,
+              'events': 'no',
+              'shadow-opacity': 0
+            }
+          },
+          {
+            selector: 'edge',
+            style: {
+              'curve-style': 'bezier',
+              'control-point-step-size': 42,
+              'width': 2.5,
+              'line-color': 'data(color)',
+              'target-arrow-shape': 'triangle',
+              'target-arrow-color': 'data(color)',
+              'arrow-scale': 1.1,
+              'label': 'data(label)',
+              'font-size': 11,
+              'font-weight': 700,
+              'color': '#334155',
+              'text-background-color': '#fffaf2',
+              'text-background-opacity': 0.86,
+              'text-background-padding': 4,
+              'text-border-color': '#e2e8f0',
+              'text-border-width': 1,
+              'text-border-opacity': 0.7
+            }
+          },
+          { selector: '.reads', style: { 'line-style': 'dashed' } },
+          { selector: '.references', style: { 'line-style': 'dotted', 'width': 1.6, 'arrow-scale': 0.9, 'font-size': 10 } },
+          { selector: '.user-sequence', style: { 'line-style': 'solid', 'width': 4, 'arrow-scale': 1.35, 'font-size': 12, 'font-weight': 800 } },
+          { selector: '.provides-input, .provides-rules', style: { 'line-color': '#64748b', 'target-arrow-color': '#64748b' } },
+          { selector: 'node.selected', style: { 'border-width': 5, 'border-color': '#facc15', 'z-index': 20, 'text-opacity': 1, 'color': '#ffffff' } },
+          { selector: 'edge.selected', style: { 'width': 4.5, 'z-index': 20, 'text-opacity': 1 } },
+          // dimming uses per-channel opacities instead of blanket `opacity`,
+          // so labels stay readable (~0.3) instead of fading to nothing
+          { selector: 'node.dim-neighborhood', style: { 'background-opacity': 0.16, 'border-opacity': 0.2, 'text-opacity': 0.3 } },
+          { selector: 'edge.dim-neighborhood', style: { 'opacity': 0.3, 'text-opacity': 1 } },
+          { selector: 'node.search-dim', style: { 'background-opacity': 0.14, 'border-opacity': 0.2, 'text-opacity': 0.3 } },
+          { selector: '.hide-labels', style: { 'label': '' } }
+        ]
+      });
+
+      cy.on('tap', 'node, edge', (event) => selectElement(event.target));
+      cy.on('tap', (event) => {
+        if (event.target === cy) {
+          cy.elements().removeClass('selected dim-neighborhood');
+          emptyDetails();
+        }
+      });
+      setTimeout(() => cy.fit(undefined, 64), 60);
+      applySearch();
+      applyLabelState();
+    }
+
+    async function selectDataset(key) {
+      const dataset = await loadDataset(key);
+      activeKey = key;
+      VIEW_DATA = dataset.data;
+      currentView = VIEW_DATA.views && VIEW_DATA.views.length > 0 ? VIEW_DATA.views[0] : null;
+      const title = (VIEW_DATA.meta && VIEW_DATA.meta.title) || 'Карта архитектуры';
+      document.getElementById('pageTitle').textContent = title;
+      document.title = title;
+      document.getElementById('sourceLine').textContent = 'Источник: ' + dataset.source;
+      document.getElementById('goal').textContent = (VIEW_DATA.summary && VIEW_DATA.summary.goal) || '';
+      renderTabs();
+      renderSummary();
+      renderLegend();
+      loadView(currentView && currentView.id);
+    }
+
+    function applySearch() {
+      if (!cy) return;
+      const query = search.value.trim().toLowerCase();
+      cy.elements().removeClass('search-dim');
+      if (!query) return;
+      cy.nodes().forEach((node) => {
+        const d = node.data();
+        const haystack = [d.title, d.name, d.kind, d.pmDescription, d.label].join(' ').toLowerCase();
+        if (d.kind !== 'group' && !haystack.includes(query)) node.addClass('search-dim');
+      });
+    }
+
+    function applyLabelState() {
+      if (!cy) return;
+      cy.edges().toggleClass('hide-labels', !labelsVisible);
+    }
+
+    document.getElementById('fit').addEventListener('click', () => { if (cy) cy.fit(undefined, 64); });
+    document.getElementById('reset').addEventListener('click', () => {
+      search.value = '';
+      if (cy) cy.elements().removeClass('selected dim-neighborhood search-dim');
+      emptyDetails();
+      if (cy) cy.fit(undefined, 64);
+    });
+    document.getElementById('labels').addEventListener('click', (event) => {
+      labelsVisible = !labelsVisible;
+      event.currentTarget.textContent = labelsVisible ? 'Скрыть подписи' : 'Показать подписи';
+      applyLabelState();
+    });
+    document.getElementById('png').addEventListener('click', () => {
+      const png = cy.png({ full: true, scale: 2, bg: '#fffaf2' });
+      const link = document.createElement('a');
+      link.download = ((VIEW_DATA.meta && VIEW_DATA.meta.id) || 'architecture-view') + '.png';
+      link.href = png;
+      link.click();
+    });
+    document.getElementById('chooseDesign').addEventListener('click', () => {
+      document.getElementById('designFile').click();
+    });
+    document.getElementById('designFile').addEventListener('change', (event) => {
+      const file = event.target.files && event.target.files[0];
+      event.target.value = '';
+      if (!file) return;
+      loadDesignFile(file).catch(showStartupError);
+    });
+    search.addEventListener('input', applySearch);
+
+    function showStartupError(error) {
+      details.innerHTML = '<span class="type">ошибка запуска</span><h2>Viewer не запустился</h2><p></p>';
+      details.querySelector('p').textContent = (error && error.message ? error.message : String(error)) + '. Если HTML открыт как file:// и браузер блокирует загрузку JSON, запустите локальный HTTP server из корня workspace: python -m http.server 8000';
+      throw error;
+    }
+
+    renderTabs();
+    selectDataset(activeKey).catch(showStartupError);
+  </script>
+</body>
+</html>

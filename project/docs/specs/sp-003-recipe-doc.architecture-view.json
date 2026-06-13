@@ -1,0 +1,175 @@
+{
+  "schemaVersion": "architecture-view-json-v0.1",
+  "meta": {
+    "id": "sp-003-recipe-doc-architecture-view",
+    "title": "Хлебозавод — update блока рецептов, карта архитектуры для PM",
+    "status": "approved",
+    "version": 1,
+    "sourceDesign": "project/docs/specs/sp-003-recipe-doc-design.md",
+    "sourceSpec": "project/docs/specs/sp-003-recipe-doc.json"
+  },
+  "summary": {
+    "goal": "Показать, как старая неудобная модель рецептур заменяется документом рецепта, регистром норм и автоматической миграцией.",
+    "businessResult": "Пользователь вводит рецепт как единый документ с датой, выходом и табличной частью компонентов. Проведение создаёт нормы рецепта, расчёты потребности и выпуска читают последний рецепт на дату, старые рецептуры мигрируются автоматически и остаются архивом.",
+    "createdObjectsCount": 5,
+    "reusedObjectsCount": 7,
+    "createdObjects": [
+      "recipe_doc",
+      "recipe_norm",
+      "migrate_recipe_docs",
+      "recipe_doc_list_form",
+      "recipe_doc_edit_form"
+    ],
+    "reusedObjects": [
+      "recipe",
+      "recipe_component",
+      "nomenclature",
+      "requirement_calc",
+      "production_task",
+      "calc_requirement",
+      "production_output"
+    ]
+  },
+  "groups": [
+    {
+      "id": "GROUP-old-recipe-model",
+      "title": "Старая модель рецептов",
+      "description": "Объекты 1a, которые остаются источником миграции и архивом, но выходят из новых расчётов.",
+      "nodeIds": ["CAT-recipe", "REG-recipe_component"]
+    },
+    {
+      "id": "GROUP-new-recipe-entry",
+      "title": "Новый ввод рецепта",
+      "description": "Документ рецепта и формы, в которых пользователь вводит шапку и компоненты вместе.",
+      "nodeIds": ["OP-recipe_doc", "FORM-recipe_doc_list", "FORM-recipe_doc_edit", "CMD-check_recipe"]
+    },
+    {
+      "id": "GROUP-new-recipe-storage",
+      "title": "Новые нормы",
+      "description": "Регистр записей, в который документ проводит нормализованный расход компонентов.",
+      "nodeIds": ["RECORDS-recipe_norm"]
+    },
+    {
+      "id": "GROUP-migration",
+      "title": "Автоматическая миграция",
+      "description": "Workflow переносит старые рецептуры в новые документы и сразу проводит их.",
+      "nodeIds": ["WF-migrate_recipe_docs"]
+    },
+    {
+      "id": "GROUP-consumers",
+      "title": "Где рецепты используются",
+      "description": "Расчёты, которые после update читают только records/recipe_norm.",
+      "nodeIds": ["WF-requirement_calc", "OP-production_task", "CMD-calc_requirement", "OP-production_output", "CMD-calc_raw_writeoff"]
+    },
+    {
+      "id": "GROUP-reference-data",
+      "title": "Справочные данные",
+      "description": "Номенклатура и единицы используются для проверки типов и показа справочных единиц.",
+      "nodeIds": ["CAT-nomenclature", "CAT-unit"]
+    }
+  ],
+  "nodes": [
+    { "id": "CAT-recipe", "kind": "catalog", "name": "recipe", "title": "Рецептура (старая)", "lifecycle": "reuse-existing", "pmDescription": "Старая шапка рецептуры из 1a. После миграции не используется в расчётах, но остаётся архивом и источником миграции.", "visualType": "existing-reference" },
+    { "id": "REG-recipe_component", "kind": "register", "name": "recipe_component", "title": "Компоненты рецептуры (старые)", "lifecycle": "reuse-existing", "pmDescription": "Старые строки состава рецептур из 1a. После миграции не используются в расчётах, но остаются архивом и источником миграции.", "visualType": "existing-reference" },
+    { "id": "OP-recipe_doc", "kind": "operation", "name": "recipe_doc", "title": "Рецепт", "lifecycle": "create", "pmDescription": "Новый документ: дата рецепта, выходная номенклатура, количество выхода и табличная часть компонентов.", "visualType": "document" },
+    { "id": "RECORDS-recipe_norm", "kind": "records", "name": "recipe_norm", "title": "Нормы рецептов", "lifecycle": "create", "pmDescription": "Проведённые строки рецептов. Хранит расход компонента на output_qty и нормализованный расход на 1 единицу выхода.", "visualType": "storage" },
+    { "id": "WF-migrate_recipe_docs", "kind": "workflow", "name": "migrate_recipe_docs", "title": "Миграция рецептов", "lifecycle": "create", "pmDescription": "Ручной workflow переносит старые recipe/component в новые recipe_doc и проводит их с CreateRecords=true.", "visualType": "calculation" },
+    { "id": "WF-requirement_calc", "kind": "workflow", "name": "requirement_calc", "title": "Расчёт потребности", "lifecycle": "modify", "pmDescription": "Existing workflow: после update выбирает последний рецепт на дату из recipe_norm и сохраняет контракт для задания на производство.", "visualType": "calculation" },
+    { "id": "OP-production_task", "kind": "operation", "name": "production_task", "title": "Задание на производство", "lifecycle": "reuse-existing", "pmDescription": "Existing документ задания: команда calc_requirement запускает requirement_calc, который раскрывает рецепты для плановой потребности.", "visualType": "existing-document" },
+    { "id": "CMD-calc_requirement", "kind": "command", "name": "calc_requirement", "title": "Рассчитать потребность", "lifecycle": "reuse-existing", "pmDescription": "Команда задания вызывает requirement_calc с task_number и заполняет потребность по плану производства.", "visualType": "calculation" },
+    { "id": "OP-production_output", "kind": "operation", "name": "production_output", "title": "Выпуск продукции", "lifecycle": "modify", "pmDescription": "Existing документ выпуска: команда списания сырья после update читает recipe_norm.", "visualType": "existing-document" },
+    { "id": "CMD-calc_raw_writeoff", "kind": "command", "name": "calc_raw_writeoff", "title": "Рассчитать списание сырья", "lifecycle": "modify", "pmDescription": "Команда выпуска раскрывает актуальные рецепты по recipe_norm и заполняет raw_writeoff.", "visualType": "calculation" },
+    { "id": "CMD-check_recipe", "kind": "command", "name": "check_recipe", "title": "Проверить рецепт", "lifecycle": "create", "pmDescription": "Команда проверяет типы номенклатуры, положительные количества, дубль output_item + date и заполняет справочные единицы.", "visualType": "calculation" },
+    { "id": "FORM-recipe_doc_list", "kind": "form", "name": "recipe_doc_list", "title": "Форма списка рецептов", "lifecycle": "create", "pmDescription": "Список рецептов для PM-review и работы пользователя: дата, номер, выход, количество, единица и комментарий.", "visualType": "ui" },
+    { "id": "FORM-recipe_doc_edit", "kind": "form", "name": "recipe_doc_edit", "title": "Форма редактирования рецепта", "lifecycle": "create", "pmDescription": "Единый экран ввода шапки рецепта и табличной части компонентов.", "visualType": "ui" },
+    { "id": "CAT-nomenclature", "kind": "catalog", "name": "nomenclature", "title": "Номенклатура", "lifecycle": "reuse-existing", "pmDescription": "Источник типов product/semi_product/raw и базовых единиц для выхода и компонентов.", "visualType": "existing-reference" },
+    { "id": "CAT-unit", "kind": "catalog", "name": "unit", "title": "Единицы измерения", "lifecycle": "reuse-existing", "pmDescription": "Справочник единиц, которые показываются в recipe_doc и recipe_norm без пересчёта.", "visualType": "existing-reference" }
+  ],
+  "edges": [
+    { "id": "EDGE-old-recipe-components", "from": "REG-recipe_component", "to": "CAT-recipe", "type": "references", "title": "строки старой рецептуры", "pmDescription": "Старый register recipe_component ссылается на старую шапку catalog/recipe." },
+    { "id": "EDGE-old-recipe-output", "from": "CAT-recipe", "to": "CAT-nomenclature", "type": "references", "title": "старый выход", "pmDescription": "Старый recipe хранит output_item как ссылку на номенклатуру." },
+    { "id": "EDGE-old-component-nomenclature", "from": "REG-recipe_component", "to": "CAT-nomenclature", "type": "references", "title": "старые компоненты", "pmDescription": "Старые строки recipe_component хранят component как ссылку на номенклатуру." },
+    { "id": "EDGE-migration-reads-recipe", "from": "CAT-recipe", "to": "WF-migrate_recipe_docs", "type": "reads", "title": "старые шапки", "pmDescription": "Workflow миграции читает старые шапки рецептур." },
+    { "id": "EDGE-migration-reads-components", "from": "REG-recipe_component", "to": "WF-migrate_recipe_docs", "type": "reads", "title": "старые строки", "pmDescription": "Workflow миграции читает старые компоненты рецептур." },
+    { "id": "EDGE-migration-reads-nomenclature", "from": "CAT-nomenclature", "to": "WF-migrate_recipe_docs", "type": "reads", "title": "типы и единицы", "pmDescription": "Workflow миграции берёт типы номенклатуры и базовые единицы." },
+    { "id": "EDGE-migration-fills-recipe-doc", "from": "WF-migrate_recipe_docs", "to": "OP-recipe_doc", "type": "fills", "title": "создаёт документы", "pmDescription": "Workflow создаёт recipe_doc со строками components и marker старого recipe." },
+    { "id": "EDGE-migration-posts-norm", "from": "WF-migrate_recipe_docs", "to": "RECORDS-recipe_norm", "type": "writes", "title": "проводит нормы", "pmDescription": "Через CreateRecords=true миграция сразу создаёт записи recipe_norm." },
+    { "id": "EDGE-list-form-to-recipe-doc", "from": "FORM-recipe_doc_list", "to": "OP-recipe_doc", "type": "ui", "title": "список", "pmDescription": "Форма списка открывает документы рецептов." },
+    { "id": "EDGE-edit-form-to-recipe-doc", "from": "FORM-recipe_doc_edit", "to": "OP-recipe_doc", "type": "ui", "title": "редактирование", "pmDescription": "Форма редактирования показывает шапку и components в одном сценарии." },
+    { "id": "EDGE-check-recipe-reads-nomenclature", "from": "CAT-nomenclature", "to": "CMD-check_recipe", "type": "reads", "title": "проверка типов", "pmDescription": "Команда проверки рецепта читает типы и единицы номенклатуры." },
+    { "id": "EDGE-check-recipe-validates-doc", "from": "CMD-check_recipe", "to": "OP-recipe_doc", "type": "calculates", "title": "проверка и единицы", "pmDescription": "Команда заполняет output_unit/component_unit и проверяет дубль output_item + date." },
+    { "id": "EDGE-recipe-doc-output-ref", "from": "OP-recipe_doc", "to": "CAT-nomenclature", "type": "references", "title": "выход и компоненты", "pmDescription": "Документ рецепта ссылается на номенклатуру в output_item и components.component." },
+    { "id": "EDGE-recipe-doc-unit-ref", "from": "OP-recipe_doc", "to": "CAT-unit", "type": "references", "title": "справочные единицы", "pmDescription": "Документ хранит справочные output_unit и component_unit без пересчёта единиц." },
+    { "id": "EDGE-recipe-doc-writes-norm", "from": "OP-recipe_doc", "to": "RECORDS-recipe_norm", "type": "writes", "title": "проведение рецепта", "pmDescription": "Проведение recipe_doc пишет каждую строку components в recipe_norm." },
+    { "id": "EDGE-recipe-doc-normalizes", "from": "OP-recipe_doc", "to": "RECORDS-recipe_norm", "type": "calculates", "title": "нормализация", "pmDescription": "В recipe_norm записывается component_qty_per_unit = components.quantity / output_qty." },
+    { "id": "EDGE-recipe-norm-output-ref", "from": "RECORDS-recipe_norm", "to": "CAT-nomenclature", "type": "references", "title": "нормы по номенклатуре", "pmDescription": "Регистр норм хранит output_item и component как ссылки на номенклатуру." },
+    { "id": "EDGE-recipe-norm-unit-ref", "from": "RECORDS-recipe_norm", "to": "CAT-unit", "type": "references", "title": "единицы норм", "pmDescription": "Регистр норм хранит справочные единицы выхода и компонента." },
+    { "id": "EDGE-norm-to-requirement-calc", "from": "RECORDS-recipe_norm", "to": "WF-requirement_calc", "type": "reads", "title": "актуальный рецепт", "pmDescription": "Расчёт потребности выбирает последний проведённый рецепт на дату из recipe_norm." },
+    { "id": "EDGE-production-task-to-calc-command", "from": "OP-production_task", "to": "CMD-calc_requirement", "type": "ui", "title": "команда задания", "pmDescription": "Пользователь запускает расчёт потребности из задания на производство." },
+    { "id": "EDGE-calc-command-to-requirement-calc", "from": "CMD-calc_requirement", "to": "WF-requirement_calc", "type": "triggers", "title": "запускает workflow", "pmDescription": "Команда production_task.calc_requirement вызывает requirement_calc с task_number." },
+    { "id": "EDGE-production-task-to-requirement-calc", "from": "OP-production_task", "to": "WF-requirement_calc", "type": "reads", "title": "задание и план", "pmDescription": "Workflow читает production_task.plan_date и plan_products, чтобы рассчитать потребность по рецептам." },
+    { "id": "EDGE-requirement-calc-to-production-task", "from": "WF-requirement_calc", "to": "OP-production_task", "type": "calculates", "title": "возвращает потребность", "pmDescription": "Результат workflow используется командой задания для заполнения потребности." },
+    { "id": "EDGE-norm-to-production-output", "from": "RECORDS-recipe_norm", "to": "CMD-calc_raw_writeoff", "type": "reads", "title": "списание по рецепту", "pmDescription": "Команда выпуска читает recipe_norm и рассчитывает сырьё через component_qty_per_unit." },
+    { "id": "EDGE-command-to-production-output", "from": "CMD-calc_raw_writeoff", "to": "OP-production_output", "type": "calculates", "title": "заполняет сырьё", "pmDescription": "Команда заполняет raw_writeoff в документе выпуска." },
+    { "id": "EDGE-user-create-recipe", "from": "FORM-recipe_doc_edit", "to": "CMD-check_recipe", "type": "user-sequence", "title": "проверить", "pmDescription": "Пользователь вводит рецепт и запускает проверку перед сохранением/проведением." },
+    { "id": "EDGE-user-check-to-post", "from": "CMD-check_recipe", "to": "RECORDS-recipe_norm", "type": "user-sequence", "title": "сохранить", "pmDescription": "После проверки пользователь сохраняет рецепт, и проведение создаёт нормы." },
+    { "id": "EDGE-user-norm-to-calcs", "from": "RECORDS-recipe_norm", "to": "WF-requirement_calc", "type": "user-sequence", "title": "расчёт потребности", "pmDescription": "После появления норм задание на производство использует новые рецепты через requirement_calc." },
+    { "id": "EDGE-user-calcs-to-task", "from": "WF-requirement_calc", "to": "OP-production_task", "type": "user-sequence", "title": "задание", "pmDescription": "Потребность в production_task рассчитывается по recipe_norm на plan_date задания." },
+    { "id": "EDGE-user-norm-to-output", "from": "RECORDS-recipe_norm", "to": "OP-production_output", "type": "user-sequence", "title": "выпуск", "pmDescription": "Выпуск продукции рассчитывает списание сырья по recipe_norm на date выпуска." }
+  ],
+  "views": [
+    {
+      "id": "VIEW-main-map",
+      "title": "Общая карта update рецептов",
+      "description": "Старая модель слева, миграция и новый документ в центре, новые нормы и потребители справа.",
+      "includedGroups": ["GROUP-old-recipe-model", "GROUP-migration", "GROUP-new-recipe-entry", "GROUP-new-recipe-storage", "GROUP-consumers", "GROUP-reference-data"],
+      "includedEdgeTypes": ["reads", "fills", "writes", "calculates", "references", "ui", "triggers"]
+    },
+    {
+      "id": "VIEW-user-entry",
+      "title": "Как пользователь вводит рецепт",
+      "description": "Формы, команда проверки, проведение и запись норм.",
+      "includedNodeIds": ["FORM-recipe_doc_list", "FORM-recipe_doc_edit", "OP-recipe_doc", "CMD-check_recipe", "CAT-nomenclature", "CAT-unit", "RECORDS-recipe_norm"],
+      "includedEdgeTypes": ["ui", "reads", "calculates", "writes", "references", "user-sequence"]
+    },
+    {
+      "id": "VIEW-migration",
+      "title": "Миграция старых рецептов",
+      "description": "Откуда берутся старые данные и куда они попадают после миграции.",
+      "includedNodeIds": ["CAT-recipe", "REG-recipe_component", "CAT-nomenclature", "WF-migrate_recipe_docs", "OP-recipe_doc", "RECORDS-recipe_norm"],
+      "includedEdgeTypes": ["reads", "fills", "writes", "references"]
+    },
+    {
+      "id": "VIEW-calculations",
+      "title": "Какие расчёты читают новые нормы",
+      "description": "После update расчёт задания и расчёт списания выпуска читают records/recipe_norm вместо старых recipe/component.",
+      "includedNodeIds": ["RECORDS-recipe_norm", "WF-requirement_calc", "OP-production_task", "CMD-calc_requirement", "CMD-calc_raw_writeoff", "OP-production_output"],
+      "includedEdgeTypes": ["reads", "calculates", "triggers", "ui"]
+    },
+    {
+      "id": "VIEW-user-sequence",
+      "title": "Порядок работы пользователя",
+      "description": "Ввод рецепта, проверка, сохранение норм, дальнейшие расчёты.",
+      "layout": "pipeline",
+      "includedNodeIds": ["FORM-recipe_doc_edit", "CMD-check_recipe", "RECORDS-recipe_norm", "WF-requirement_calc", "OP-production_task", "OP-production_output"],
+      "includedEdgeTypes": ["user-sequence"]
+    }
+  ],
+  "legend": {
+    "lifecycle": {
+      "create": "Будет создано в sp-003",
+      "modify": "Существующий объект будет изменён",
+      "reuse-existing": "Существующий объект используется без удаления"
+    },
+    "edgeTypes": {
+      "reads": "Объект читает данные",
+      "fills": "Workflow создаёт или заполняет объект",
+      "writes": "Документ или workflow создаёт записи регистра",
+      "calculates": "Команда или проведение рассчитывает значения",
+      "triggers": "Команда запускает workflow",
+      "references": "Ссылочная связь на справочник/объект",
+      "ui": "Форма показывает или редактирует объект",
+      "user-sequence": "Последовательность действий пользователя"
+    }
+  }
+}

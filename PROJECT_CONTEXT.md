@@ -4,7 +4,7 @@
 > **Не дублировать:** обсуждения и очередь вопросов -> `OPEN_QUESTIONS.md`; формальные архитектурные решения -> `project/docs/decisions.md`.
 > **Поддерживает AI-ассистент** — обновляет в конце смысловой главы работы.
 
-**Последнее обновление:** 2026-06-12 — этапы 1a, 1b и 1c завершены (подтверждено PM): 1a функционально принят на стенде; seed-workflow sp-002 (`seed_refs_1a`/`seed_docs_1a`) реализованы и выполнены; 1b реализован по approved ТЗ `sp-001-bakery-stage1b.json` и approved плану `sp-001-bakery-stage1b-plan.md`, metadata закоммичены (`5062183`), импортированы на стенд и функционально приняты PM; 1c реализован fast-track по `sp-001-bakery-stage1c.json`, audit `approved`, импортирован на стенд и функционально принят PM, spec переведён в `implemented`, metadata закоммичена в nested repo `metadata/` (`e3ecacf`). Модернизация визуализации 1b/1c завершена: stable HTML viewer + внешние `architecture-view.json` / `metadata-view.json`, ручная загрузка design JSON через file picker, фиксированный metadata JSON, `build_arch_view.py` в обычном режиме обновляет только fact JSON; `sp-001-bakery-stage1b.architecture-view.json` переведён в `approved`. Cleanup/reorg `project/docs/specs/` выполнен: завершённые stage artifacts 1a/1b/1c и seed-data перенесены в `project/docs/specs/archive/sp-001-bakery-stage1/`, корень specs содержит только инфраструктуру, README и актуальные viewer/tooling файлы. Root project package закоммичен в repo commit `9f09ec2` (`chore: finalize bakery stage 1 project package`). Усилен процесс памяти: Durable Memory Checkpoint обязателен при approval/status/import/acceptance/open-question событиях до финального ответа. Текущий фокус — **готовность к следующему предметному этапу**.
+**Последнее обновление:** 2026-06-13 — этапы 1a, 1b и 1c завершены (подтверждено PM). Update блока рецептов `sp-003-recipe-doc` полностью завершён: design/spec/plan approved, metadata реализована (`records/recipe_norm`, `operation/recipe_doc` с формами list/edit и командой `check_recipe`, `workflow/migrate_recipe_docs`; `requirement_calc` и `production_output.calc_raw_writeoff` переведены на `records.recipe_norm`; старые `catalog/recipe` и `register/recipe_component` сохранены как архив). Импорт и functional acceptance прошли успешно (подтверждено PM 2026-06-13); все артефакты sp-003 (design, spec, plan, import-notes, implementation-report) переведены в `implemented`. Metadata и root project package закоммичены. Текущий фокус — **выбор следующей задачи**; бэклог: перевод статусов 1a/1b в implemented, документ закрытия месяца, опциональное удаление старых recipe-объектов.
 
 ---
 
@@ -14,7 +14,7 @@
 
 OpenCode запускается из корня `create-model-3/`. Все пути в проектных инструкциях относительны этому корню. Исключение: `$schema` внутри BaSYS metadata JSON файлов относителен самому JSON-файлу.
 
-`metadata/` — рабочее зеркало текущего стенда BaSYS. Перед началом предметной разработки его нужно синхронизировать с фактическим стендом нового проекта.
+`metadata/` — рабочее зеркало текущего стенда BaSYS. Перед началом предметной разработки его нужно синхронизировать с фактическим стендом нового проекта. Для update блока рецептов PM подтвердил 2026-06-12, что стенд синхронизирован.
 
 ## Что Перенесено
 
@@ -50,9 +50,10 @@ OpenCode запускается из корня `create-model-3/`. Все пут
 
 ## Что Следующее
 
-1. Перед новым metadata-этапом синхронизировать `metadata/` с фактическим стендом.
-2. Перевести статусы ТЗ/планов 1a и 1b в `implemented` (после фиксации приёмки в документах), если архивные документы нужно актуализировать после переноса.
-3. При необходимости версионировать `metadata/` на GitHub — настроить remote и запушить.
+1. Выбрать следующую предметную задачу с PM.
+2. Перевести статусы ТЗ/планов 1a и 1b в `implemented` (отдельный approve PM), если архивные документы нужно актуализировать после переноса.
+3. Рассмотреть удаление старых `catalog/recipe` и `register/recipe_component` после периода наблюдения (отдельное решение PM).
+4. Документ закрытия месяца (списание стоимости сырья, средневзвешенная оценка) — кандидат в scope будущих этапов.
 
 ## Реестр Сессий
 

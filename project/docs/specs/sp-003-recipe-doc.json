@@ -1,0 +1,574 @@
+{
+  "$schema": "./_spec-json.schema.json",
+  "schemaVersion": "spec-json-v0.1",
+  "meta": {
+    "spId": "sp-003-recipe-doc",
+    "title": "Хлебозавод — документ рецепта и регистр норм",
+    "status": "implemented",
+    "version": 1,
+    "author": "analyst",
+    "created": "2026-06-12",
+    "updated": "2026-06-13",
+    "stage": "recipe-update",
+    "domain": "bakery-operations",
+    "dependsOn": [
+      "sp-001-bakery-stage1a.md",
+      "sp-001-bakery-stage1b.json",
+      "sp-001-bakery-stage1c.json"
+    ],
+    "sourceInputs": [
+      "project/docs/specs/sp-003-recipe-doc-design.md",
+      "project/docs/specs/sp-003-recipe-doc.architecture-view.json",
+      "project/docs/specs/sp-003-recipe-doc.metadata-view.json",
+      "project/docs/specs/sp-003-recipe-doc.architecture-view.html"
+    ]
+  },
+  "context": {
+    "summary": "Текущий блок рецептур неудобен: шапка рецепта хранится в catalog/recipe, строки состава — в отдельном register/recipe_component, поэтому пользователь не видит рецепт как единый документ с датой и историей. Новая модель вводит документ «Рецепт» с выходной номенклатурой, количеством выхода и табличной частью компонентов. Проведение документа создаёт записи recipe_norm, где расход компонента нормализуется на 1 единицу выхода для расчётов. Актуальный рецепт выбирается как последний проведённый рецепт на дату расчёта. Старые рецептуры автоматически мигрируются в новые документы и остаются архивом/fallback до отдельного решения об удалении.",
+    "evidence": [
+      {
+        "capability": "Операция поддерживает табличные части.",
+        "type": "basys-docs",
+        "path": "basys-docs/ru/metadata/dataObject.md",
+        "section": "detailTables",
+        "note": "Также подтверждено текущим metadata/system/kinds/kind.operation.json: useDetailsTables = true."
+      },
+      {
+        "capability": "Операция может проводить строки табличной части в records через recordsSettings; выражения могут вычислять значения колонок.",
+        "type": "basys-docs",
+        "path": "basys-docs/ru/metadata/recordsCreation.md",
+        "section": "Общая схема работы; Табличная часть операции; Выражения в правилах формирования записей"
+      },
+      {
+        "capability": "Повторное сохранение операции пересоздаёт записи регистра без дублей по текущему документу.",
+        "type": "basys-docs",
+        "path": "basys-docs/ru/metadata/recordsCreation.md",
+        "section": "Общая схема работы",
+        "note": "Старые записи текущего объекта удаляются, затем создаются новые."
+      },
+      {
+        "capability": "Программируемые команды имеют доступ к $h, $t, QueryBuilder, save и recalculate.",
+        "type": "basys-docs",
+        "path": "basys-docs/ru/commands/programmableCommands.md",
+        "section": "Контекст выполнения команды; Функции, доступные в командах"
+      },
+      {
+        "capability": "QueryBuilder и DataTable позволяют читать объекты/регистры, фильтровать, группировать и обрабатывать табличные данные.",
+        "type": "basys-docs",
+        "path": "basys-docs/ru/calculations/queryBuilder.md; basys-docs/ru/calculations/dataTable.md",
+        "section": "from/select/where/groupBy/query; Методы DataTable"
+      },
+      {
+        "capability": "Workflow data_object_loader поддерживает загрузку шапки, табличных частей и CreateRecords.",
+        "type": "basys-docs",
+        "path": "basys-docs/ru/workflows/dataObjectLoaderStep.md",
+        "section": "Настройки; CreateRecords; TableMapping"
+      },
+      {
+        "capability": "Формы конструктора могут включать шапку, кнопки и табличные части объекта.",
+        "type": "basys-docs",
+        "path": "basys-docs/ru/userInterface/formConstructor.md",
+        "section": "Быстрое создание формы списка и формы редактирования"
+      }
+    ]
+  },
+  "scope": {
+    "inScope": [
+      "Создать records/recipe_norm как новый источник норм рецептов для расчётов.",
+      "Создать operation/recipe_doc с табличной частью components и интерфейсным названием «Рецепт».",
+      "Создать формы списка и редактирования для operation/recipe_doc.",
+      "Добавить команду recipe_doc.check_recipe для проверки рецепта и заполнения справочных единиц.",
+      "Настроить проведение recipe_doc в recipe_norm с нормализацией component_qty_per_unit = components.quantity / output_qty и guard от деления на ноль.",
+      "Создать workflow/migrate_recipe_docs для автоматической миграции старых catalog/recipe и register/recipe_component в recipe_doc с CreateRecords=true.",
+      "Изменить requirement_calc: читать актуальные рецепты из records/recipe_norm, сохранив контракт результата для production_task.calc_requirement.",
+      "Изменить production_output.command.calc_raw_writeoff.bjs: читать актуальные рецепты из records/recipe_norm.",
+      "Оставить старые catalog/recipe и register/recipe_component как архив/fallback, исключив их из новых расчётов."
+    ],
+    "outOfScope": [
+      "Пересчёт между разными единицами измерения.",
+      "Жёсткий неподтверждённый DB-unique по output_item + date.",
+      "Автоподстановка единиц непосредственно в момент выбора номенклатуры без команды проверки.",
+      "Удаление catalog/recipe и register/recipe_component.",
+      "Себестоимость, закрытие месяца, технологические карты, потери/выходы, утверждение рецептов и маршруты производства."
+    ],
+    "assumptions": [
+      "Стенд синхронизирован перед началом задачи, подтверждено PM 2026-06-12.",
+      "output_item рецепта может быть только номенклатурой типа product или semi_product.",
+      "component рецепта может быть только номенклатурой типа raw или semi_product.",
+      "Количество выхода и количества компонентов вводятся в базовых единицах соответствующей номенклатуры.",
+      "Компоненты с единицей шт не запрещаются.",
+      "Актуальный рецепт выбирается как последний проведённый recipe_doc по output_item с period <= дата расчёта.",
+      "Два рецепта на одну выходную номенклатуру с одной датой являются ошибкой данных.",
+      "Справочные единицы output_unit и component_unit заполняются командой/миграцией и показываются пользователю как справочные поля.",
+      "Дата мигрированных recipe_doc должна быть не позже самой ранней даты существующих production_task.plan_date и production_output.date, чтобы исторические пересчёты находили рецепт; если таких документов нет, допустима дата запуска миграции."
+    ]
+  },
+  "metaObjects": [
+    {
+      "id": "RECORDS-recipe_norm",
+      "action": "CREATE",
+      "kind": "records",
+      "name": "recipe_norm",
+      "title": "Нормы рецептов",
+      "purpose": "Хранит проведённые строки документов рецептов и нормализованный расход компонента на 1 единицу выхода для расчётов потребности и списания сырья.",
+      "lifecycle": "create",
+      "properties": [
+        { "field": "Memo", "value": "Регистр записей норм рецептов: проведённые строки компонентов с нормализацией расхода на 1 единицу выхода.", "required": true },
+        { "field": "OrderByExpression", "value": "period desc, output_item", "required": false }
+      ],
+      "headerColumns": [
+        { "name": "output_item", "title": "Выход", "dataType": "catalog/nomenclature", "required": true, "memo": "Выходная номенклатура recipe_doc: product или semi_product." },
+        { "name": "output_qty", "title": "Количество выхода", "dataType": "decimal(3)", "required": true, "memo": "Количество выхода из шапки документа." },
+        { "name": "output_unit", "title": "Ед. выхода", "dataType": "catalog/unit", "required": false, "memo": "Справочная единица выходной номенклатуры." },
+        { "name": "component", "title": "Компонент", "dataType": "catalog/nomenclature", "required": true, "memo": "Компонент рецепта: raw или semi_product." },
+        { "name": "component_unit", "title": "Ед. компонента", "dataType": "catalog/unit", "required": false, "memo": "Справочная единица компонента." },
+        { "name": "component_qty", "title": "Расход на выход", "dataType": "decimal(3)", "required": true, "memo": "Расход компонента на output_qty, как введено в документе." },
+        { "name": "component_qty_per_unit", "title": "Расход на 1 ед. выхода", "dataType": "decimal(6)", "required": true, "memo": "Нормализованный расход компонента на 1 единицу выхода." }
+      ],
+      "indexes": [
+        "period",
+        "object_uid",
+        "output_item + period",
+        "output_item + component"
+      ],
+      "businessRules": [
+        "Стандартные колонки records (id, period, object_kind, meta_object, object_uid, row) Инженер добавляет по metadata/system/kinds/kind.records.json.",
+        "Записи создаются только проведёнными recipe_doc через recordsSettings.",
+        "Для расчёта актуального рецепта использовать max(period) по output_item при period <= дата расчёта, затем все строки выбранного object_uid.",
+        "Если для output_item + выбранный period найдено больше одного object_uid, расчёт должен остановиться с понятной ошибкой дубля рецепта на дату."
+      ],
+      "sourceDecisionIds": ["DEC-SP003-001", "DEC-SP003-002"]
+    },
+    {
+      "id": "OP-recipe_doc",
+      "action": "CREATE",
+      "kind": "operation",
+      "name": "recipe_doc",
+      "title": "Рецепт",
+      "purpose": "Документ ввода и историзации рецепта изделия или полуфабриката с проведением норм компонентов.",
+      "lifecycle": "create",
+      "properties": [
+        { "field": "Memo", "value": "Документ рецепта: выходная номенклатура, количество выхода и состав компонентов.", "required": true },
+        { "field": "OrderByExpression", "value": "date desc, number desc", "required": false },
+        { "field": "DisplayExpression", "value": "Рецепт №{{number}} от {{date}}", "required": false },
+        { "field": "ListFormUid / ItemFormUid", "value": "обязательные constructor forms для удобного ввода", "required": true }
+      ],
+      "headerColumns": [
+        { "name": "output_item", "title": "Выход", "dataType": "catalog/nomenclature", "required": true, "memo": "Изделие или полуфабрикат, для которого создаётся рецепт." },
+        { "name": "output_qty", "title": "Количество выхода", "dataType": "decimal(3)", "required": true, "memo": "Количество выхода в базовой единице output_item; расход строк вводится на это количество." },
+        { "name": "output_unit", "title": "Ед. выхода", "dataType": "catalog/unit", "required": false, "memo": "Справочная единица output_item, заполняется check_recipe и миграцией." },
+        { "name": "comment", "title": "Комментарий", "dataType": "string(300)", "required": false, "memo": "Технологическое примечание; миграция записывает сюда marker старого recipe." }
+      ],
+      "detailTables": [
+        {
+          "name": "components",
+          "title": "Компоненты",
+          "serviceColumnsNote": "Служебные колонки id, object_uid, row_number Инженер добавляет первыми в этом порядке.",
+          "columns": [
+            { "name": "component", "title": "Компонент", "dataType": "catalog/nomenclature", "required": true, "memo": "Сырьё или полуфабрикат." },
+            { "name": "component_unit", "title": "Ед. компонента", "dataType": "catalog/unit", "required": false, "memo": "Справочная единица компонента, заполняется check_recipe и миграцией." },
+            { "name": "quantity", "title": "Количество", "dataType": "decimal(3)", "required": true, "memo": "Расход компонента на output_qty из шапки, не нормализованная величина." },
+            { "name": "comment", "title": "Комментарий", "dataType": "string(200)", "required": false, "memo": "Примечание строки." }
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "id": "CMD-check_recipe",
+          "name": "check_recipe",
+          "title": "Проверить рецепт",
+          "binding": "header",
+          "kind": "programmable command",
+          "handler": "operation.recipe_doc.command.check_recipe.bjs",
+          "input": "Шапка recipe_doc и табличная часть components.",
+          "reads": [
+            "catalog/nomenclature: id, title, type, unit",
+            "records/recipe_norm или operation/recipe_doc: поиск дубля output_item + date с исключением текущего документа"
+          ],
+          "changes": [
+            "Заполняет output_unit и component_unit.",
+            "При необходимости вызывает recalculate и помечает объект изменённым."
+          ],
+          "logicSteps": [
+            "Проверить output_item и output_qty > 0.",
+            "Загрузить номенклатуру output_item; проверить тип product или semi_product; заполнить output_unit.",
+            "Проверить наличие строк components.",
+            "Для каждой строки проверить component, quantity > 0, тип raw или semi_product, component != output_item; заполнить component_unit.",
+            "Проверить, что нет другого рецепта с тем же output_item и date; при повторном сохранении исключить текущий документ по meta_object + object_uid/number, если возможно по фактическим полям.",
+            "Вернуть понятную ошибку при любом нарушении."
+          ],
+          "validations": [
+            "output_item заполнен и имеет допустимый тип.",
+            "output_qty больше 0.",
+            "components не пустая.",
+            "component заполнен, имеет допустимый тип и не совпадает с output_item.",
+            "quantity больше 0.",
+            "Нет дубля recipe_doc для output_item + date."
+          ],
+          "onRerun": "Безопасно перезаполняет справочные единицы и повторяет проверки; не меняет output_item, output_qty, component и quantity.",
+          "errors": [
+            "Не заполнена выходная номенклатура.",
+            "Количество выхода должно быть больше 0.",
+            "Выход рецепта должен быть продукцией или полуфабрикатом.",
+            "Компонент должен быть сырьём или полуфабрикатом.",
+            "Компонент совпадает с выходом рецепта.",
+            "Для этой выходной номенклатуры уже есть рецепт с такой датой."
+          ]
+        }
+      ],
+      "recordsSettings": [
+        {
+          "id": "POST-recipe_doc-recipe_norm",
+          "target": "records/recipe_norm",
+          "direction": "Plus",
+          "source": "components",
+          "condition": "$r.quantity > 0 && $h.output_qty > 0",
+          "columnMappings": [
+            { "column": "period", "expression": "$h.date" },
+            { "column": "output_item", "expression": "$h.output_item" },
+            { "column": "output_qty", "expression": "$h.output_qty" },
+            { "column": "output_unit", "expression": "$h.output_unit" },
+            { "column": "component", "expression": "$r.component" },
+            { "column": "component_unit", "expression": "$r.component_unit" },
+            { "column": "component_qty", "expression": "$r.quantity" },
+            { "column": "component_qty_per_unit", "expression": "$r.quantity / $h.output_qty" }
+          ],
+          "note": "Строка документа хранит расход на output_qty; records хранит и исходный расход, и норму на 1 единицу выхода. Условие защищает выражение деления от output_qty = 0 при сохранении в обход команды check_recipe."
+        }
+      ],
+      "businessRules": [
+        "Стандартные колонки operation (number, is_deleted, date, is_files, create_records) Инженер добавляет по виду.",
+        "is_active в документе не создавать; актуальность определяется датой последнего проведённого рецепта.",
+        "create_records остаётся штатным флагом проведения: снятие флага удаляет записи норм текущего документа.",
+        "recordsSettings не должны вычислять component_qty_per_unit при output_qty <= 0; условие строк проведения обязано защищать деление на ноль.",
+        "Два recipe_doc с одной date и одним output_item запрещены бизнес-правилом; до подтверждения композитного DB-unique проверка выполняется командой, миграцией и расчётными guards.",
+        "Все количества вводятся в базовых единицах номенклатуры; пересчёт единиц не выполняется.",
+        "Формы list/edit обязательны и должны показывать шапку и components в одном пользовательском сценарии."
+      ],
+      "sourceDecisionIds": ["DEC-SP003-001", "DEC-SP003-002", "DEC-SP003-003"]
+    },
+    {
+      "id": "WF-migrate_recipe_docs",
+      "action": "CREATE",
+      "kind": "workflow",
+      "name": "migrate_recipe_docs",
+      "title": "Миграция рецептов",
+      "purpose": "Однократно переносит старые catalog/recipe и register/recipe_component в operation/recipe_doc и проводит новые документы.",
+      "lifecycle": "create",
+      "workflows": [
+        {
+          "name": "load_old_recipe_data",
+          "trigger": "manual",
+          "input": "Старые catalog/recipe, register/recipe_component, catalog/nomenclature и уже созданные operation/recipe_doc для idempotency check.",
+          "reads": ["catalog/recipe", "register/recipe_component", "catalog/nomenclature", "operation/recipe_doc"],
+          "result": "DataTable шапок recipe_doc с вложенными rows/components или структура, совместимая с TableMapping data_object_loader.",
+          "steps": [
+            "Прочитать старые recipe и recipe_component.",
+            "Проверить output_qty > 0, компоненты и quantity > 0.",
+            "Проверить допустимые типы output_item и component по catalog/nomenclature.",
+            "Заполнить output_unit и component_unit.",
+            "Проставить дату миграции не позже самой ранней даты существующих production_task.plan_date/production_output.date; если таких документов нет, допустима дата запуска миграции.",
+            "Пропустить рецепты, уже перенесённые по marker в comment.",
+            "Остановиться с ошибкой, если старые данные формируют дубль output_item + дата миграции."
+          ],
+          "idempotency": "Marker в comment нового recipe_doc: migrated-from-catalog-recipe:<old id>. Повторный запуск не должен создавать дубли уже перенесённых рецептов."
+        },
+        {
+          "name": "create_recipe_docs",
+          "trigger": "manual",
+          "input": "Результат load_old_recipe_data.",
+          "changes": ["operation/recipe_doc", "records/recipe_norm через CreateRecords=true"],
+          "result": "Созданы документы recipe_doc с табличной частью components и проведёнными нормами.",
+          "steps": [
+            "data_object_loader создаёт operation/recipe_doc.",
+            "HeaderMapping заполняет date, output_item, output_qty, output_unit, comment.",
+            "TableMapping заполняет components: component, component_unit, quantity, comment.",
+            "CreateRecords=true создаёт records/recipe_norm."
+          ],
+          "idempotency": "Loader получает только неперенесённые старые рецепты; повторный запуск после успешной миграции создаёт 0 новых документов."
+        }
+      ],
+      "businessRules": [
+        "Workflow ручной, запускается после импорта новых metadata и перед отключением старого UX.",
+        "Дата миграции должна сохранять пересчёт исторических production_task/production_output и быть явно указана в implementation report/import notes; для production_task использовать plan_date.",
+        "Если старые данные некорректны, workflow должен остановиться с понятной ошибкой; инженер не исправляет бизнес-данные молча."
+      ],
+      "sourceDecisionIds": ["DEC-SP003-004"]
+    },
+    {
+      "id": "WF-requirement_calc",
+      "action": "MODIFY",
+      "kind": "workflow",
+      "name": "requirement_calc",
+      "title": "Расчёт потребности",
+      "purpose": "Existing workflow 1a; должен читать актуальные рецепты из records/recipe_norm вместо catalog/recipe и register/recipe_component, сохраняя контракт для production_task.calc_requirement.",
+      "lifecycle": "reuse-existing",
+      "modify": {
+        "changes": [
+          "В load_recipes заменить чтение catalog.recipe/register.recipe_component на чтение records.recipe_norm.",
+          "Workflow продолжает вызываться существующей командой operation.production_task.command.calc_requirement.bjs с параметром task_number; metadata operation/production_task менять не требуется, если контракт результата сохранён.",
+          "Выбор актуального рецепта: max(period) по output_item при period <= дата производственного задания/плана; для ветки production_task дата расчёта = plan_date.",
+          "Добавить guard: если для output_item + выбранный period найдено больше одного object_uid, остановить расчёт с понятной ошибкой.",
+          "Использовать component_qty_per_unit для расчёта потребности: need = planned_qty * component_qty_per_unit.",
+          "Сохранить формат выходной DataTable/результата, который ожидает production_task.calc_requirement.",
+          "Сохранить проверки циклов, output_qty > 0, component type, component != output_item и понятные ошибки."
+        ]
+      },
+      "calculations": [
+        {
+          "rule": "select_actual_recipe",
+          "when": "при разузловании каждой product/semi_product позиции",
+          "dataSource": "records/recipe_norm",
+          "logic": "Из записей с period <= дата расчёта выбрать максимальный period по output_item; затем выбрать все строки одного object_uid этой даты. Для production_task дата расчёта берётся из plan_date, для production_output — из date выпуска.",
+          "result": "Набор строк компонентов актуального рецепта.",
+          "errors": [
+            "Нет рецепта на дату расчёта.",
+            "Найдено больше одного рецепта для output_item на одну дату.",
+            "Обнаружен цикл рецептов.",
+            "Компонент рецепта имеет недопустимый тип."
+          ]
+        }
+      ],
+      "sourceDecisionIds": ["DEC-SP003-002"]
+    },
+    {
+      "id": "OP-production_task",
+      "action": "MODIFY",
+      "kind": "operation",
+      "name": "production_task",
+      "title": "Задание на производство",
+      "purpose": "Existing документ 1a; его команда calc_requirement остаётся consumer workflow/requirement_calc и должна продолжить работать после перехода рецептов на recipe_norm.",
+      "lifecycle": "reuse-existing",
+      "modify": {
+        "changes": [
+          "Прямые изменения operation.production_task не планируются, если существующая команда calc_requirement продолжает получать совместимый результат requirement_calc.",
+          "Acceptance должен подтвердить, что команда calc_requirement на production_task после миграции считает потребность по records.recipe_norm."
+        ]
+      },
+      "commands": [
+        {
+          "id": "CMD-calc_requirement",
+          "name": "calc_requirement",
+          "title": "Рассчитать потребность",
+          "binding": "header",
+          "kind": "programmable command",
+          "handler": "operation.production_task.command.calc_requirement.bjs",
+          "input": "task_number = $h.number.",
+          "reads": ["workflow/requirement_calc"],
+          "changes": ["Табличная часть потребности production_task, как в текущей реализации."],
+          "logicSteps": [
+            "Вызвать runWorkflow('requirement_calc', 'return_result', task_number).",
+            "Получить результат workflow в прежнем формате.",
+            "Заполнить потребность production_task без изменения пользовательского сценария."
+          ],
+          "validations": [
+            "requirement_calc возвращает совместимый результат.",
+            "Потребность считается по актуальным recipe_norm на production_task.plan_date."
+          ],
+          "onRerun": "Повторно пересчитывает потребность задания по текущим нормам.",
+          "errors": ["нет рецепта", "дубль рецепта на дату", "цикл рецептов", "некорректный результат requirement_calc"]
+        }
+      ],
+      "sourceDecisionIds": ["DEC-SP003-002"]
+    },
+    {
+      "id": "OP-production_output",
+      "action": "MODIFY",
+      "kind": "operation",
+      "name": "production_output",
+      "title": "Выпуск продукции",
+      "purpose": "Existing документ 1b; команда calc_raw_writeoff должна рассчитывать списание сырья по records/recipe_norm.",
+      "lifecycle": "reuse-existing",
+      "modify": {
+        "changes": [
+          "В operation.production_output.command.calc_raw_writeoff.bjs заменить чтение catalog.recipe/register.recipe_component на records.recipe_norm.",
+          "Дата расчёта рецептов = $h.date выпуска.",
+          "Расход компонента = выпускаемое количество * component_qty_per_unit.",
+          "Сохранить текущий контроль остатка raw_movement, исключение собственных записей по meta_object + object_uid, проверки циклов и ошибок."
+        ]
+      },
+      "commands": [
+        {
+          "id": "CMD-calc_raw_writeoff",
+          "name": "calc_raw_writeoff",
+          "title": "Рассчитать списание сырья",
+          "binding": "header",
+          "kind": "programmable command",
+          "handler": "operation.production_output.command.calc_raw_writeoff.bjs",
+          "input": "company, raw_warehouse, date, outputs.",
+          "reads": ["records/recipe_norm", "catalog/nomenclature", "records/raw_movement"],
+          "changes": ["Табличная часть raw_writeoff."],
+          "logicSteps": [
+            "Для каждой строки outputs раскрыть актуальный рецепт по records/recipe_norm на $h.date.",
+            "Рекурсивно раскрывать semi_product до raw.",
+            "Группировать raw потребность по сырью.",
+            "Проверять остаток сырья по raw_movement перед списанием.",
+            "Заполнять raw_writeoff."
+          ],
+          "validations": [
+            "Есть актуальный рецепт для каждой output позиции.",
+            "Нет дубля recipe_doc для output_item + выбранный period.",
+            "Нет циклов рецептов.",
+            "Остаток сырья достаточен."
+          ],
+          "onRerun": "Очищает и заполняет raw_writeoff заново.",
+          "errors": ["нет рецепта", "дубль рецепта на дату", "цикл рецептов", "недостаточный остаток сырья"]
+        }
+      ],
+      "sourceDecisionIds": ["DEC-SP003-002"]
+    },
+    {
+      "id": "CAT-recipe",
+      "action": "MODIFY",
+      "kind": "catalog",
+      "name": "recipe",
+      "title": "Рецептура",
+      "purpose": "Старый объект 1a; после миграции остаётся архивом/fallback и не участвует в новых расчётах.",
+      "lifecycle": "reuse-existing",
+      "modify": {
+        "changes": [
+          "Не удалять объект и данные.",
+          "Новые расчёты не должны читать catalog/recipe.",
+          "После успешной миграции можно скрыть объект из пользовательской навигации, если это безопасно для menu/autoFill; точный способ скрытия фиксируется в implementation plan/report."
+        ]
+      },
+      "businessRules": ["Используется только как источник миграции и аудит старых данных."],
+      "sourceDecisionIds": ["DEC-SP003-004"]
+    },
+    {
+      "id": "REG-recipe_component",
+      "action": "MODIFY",
+      "kind": "register",
+      "name": "recipe_component",
+      "title": "Компоненты рецептуры",
+      "purpose": "Старый объект 1a; после миграции остаётся архивом/fallback и не участвует в новых расчётах.",
+      "lifecycle": "reuse-existing",
+      "modify": {
+        "changes": [
+          "Не удалять объект и данные.",
+          "Новые расчёты не должны читать register/recipe_component.",
+          "После успешной миграции можно скрыть объект из пользовательской навигации, если это безопасно для menu/autoFill; точный способ скрытия фиксируется в implementation plan/report."
+        ]
+      },
+      "businessRules": ["Используется только как источник миграции и аудит старых строк состава."],
+      "sourceDecisionIds": ["DEC-SP003-004"]
+    }
+  ],
+  "menu": {
+    "note": "operation/recipe_doc должен быть доступен пользователю как документ «Рецепт». Если существующий menu/all_metadata_objects с autoFill показывает operation автоматически, ручной пункт меню не обязателен; если старые catalog/recipe и register/recipe_component остаются видимыми и мешают UX, инженер предлагает безопасный способ скрытия в plan/report.",
+    "items": [
+      { "group": "Хлебозавод / Производство", "title": "Рецепты", "url": "/app#/data-objects/operation/recipe_doc", "condition": "если нет autoFill для operation или нужен явный пункт" }
+    ]
+  },
+  "implementationOrder": [
+    "Убедиться, что metadata/ синхронизирована со стендом и старые catalog/recipe, register/recipe_component присутствуют.",
+    "Создать records/recipe_norm.",
+    "Создать operation/recipe_doc с components, командой check_recipe и recordsSettings в recipe_norm.",
+    "Создать list/edit constructor forms для recipe_doc и назначить ListFormUid/ItemFormUid.",
+    "Добавить operation/recipe_doc в metadata/system/dataTypes.json.",
+    "Создать workflow/migrate_recipe_docs, который создаёт recipe_doc из старых recipe/component и проводит их.",
+    "Обновить workflow/requirement_calc на чтение records/recipe_norm.",
+    "Обновить operation/production_output.command.calc_raw_writeoff.bjs на чтение records/recipe_norm.",
+    "Проверить/настроить меню: новый recipe_doc должен быть доступен, старый recipe/component не должны вести пользователя в прежний сценарий после миграции.",
+    "Импортировать metadata, запустить migration workflow, проверить acceptance-сценарии."
+  ],
+  "dataTypesNotes": {
+    "addToDataTypes": ["operation/recipe_doc"],
+    "doNotAdd": ["records/recipe_norm", "workflow/migrate_recipe_docs", "catalog/recipe", "register/recipe_component"],
+    "note": "operation/recipe_doc является reference-kind object и нужен в dataTypes.json. records и workflow в dataTypes.json не добавляются. Старый catalog/recipe уже зарегистрирован и не должен дублироваться."
+  },
+  "acceptanceChecklist": {
+    "fileSelfCheck": [
+      "Созданы records/recipe_norm, operation/recipe_doc, workflow/migrate_recipe_docs и формы recipe_doc list/edit.",
+      "Все JSON валидируются по metadata/system/schemas/.",
+      "Новые Name — латиница snake_case <=30 символов и не SQL reserved words.",
+      "operation/recipe_doc добавлен в metadata/system/dataTypes.json; records/recipe_norm и workflow/migrate_recipe_docs не добавлены.",
+      "Табличная часть recipe_doc.components начинается со служебных колонок id, object_uid, row_number в правильном порядке.",
+      "recipe_doc.recordsSettings пишет components в records/recipe_norm направлением Plus, имеет условие $r.quantity > 0 && $h.output_qty > 0 и заполняет component_qty_per_unit выражением $r.quantity / $h.output_qty.",
+      "requirement_calc больше не читает catalog.recipe и register.recipe_component.",
+      "production_task.command.calc_requirement.bjs сохранён или эквивалентно обновлён так, чтобы запускать requirement_calc и получать прежний контракт результата.",
+      "calc_raw_writeoff больше не читает catalog.recipe и register.recipe_component.",
+      "Старые catalog/recipe и register/recipe_component не удалены."
+    ],
+    "declarativeJson": [
+      "recipe_norm содержит поля output_item, output_qty, output_unit, component, component_unit, component_qty, component_qty_per_unit и стандартные records columns.",
+      "recipe_doc содержит header output_item, output_qty, output_unit, comment и detail table components с component, component_unit, quantity, comment.",
+      "recipe_doc не содержит бизнес-поля is_active.",
+      "recipe_doc имеет команду check_recipe и формы list/edit, назначенные через ListFormUid/ItemFormUid.",
+      "migrate_recipe_docs использует data_object_loader с TableMapping и CreateRecords=true.",
+      "Дата мигрированных recipe_doc не позже самой ранней даты существующих production_task.plan_date/production_output.date; выбранная дата указана в implementation report/import notes.",
+      "Актуальный рецепт в обновлённых скриптах выбирается по max(period) <= дата расчёта и одному object_uid."
+    ],
+    "functionalStand": [
+      "Можно открыть список «Рецепты» и создать новый документ recipe_doc через форму редактирования с табличной частью компонентов.",
+      "Команда «Проверить рецепт» заполняет справочные единицы выхода и компонентов.",
+      "Команда «Проверить рецепт» не допускает output_item типа raw.",
+      "Команда «Проверить рецепт» не допускает component типа product и component, совпадающий с output_item.",
+      "Команда «Проверить рецепт» возвращает понятную ошибку при дубле output_item + date.",
+      "После сохранения recipe_doc с create_records=true в recipe_norm появляются записи компонентов с component_qty и component_qty_per_unit.",
+      "Повторное сохранение recipe_doc не создаёт дублей recipe_norm по текущему документу.",
+      "workflow/migrate_recipe_docs переносит старые рецептуры в recipe_doc и создаёт records/recipe_norm.",
+      "После миграции production_task.calc_requirement успешно рассчитывает потребность по recipe_norm для тестовой производственной задачи и сохраняет прежний пользовательский сценарий.",
+      "После миграции requirement_calc корректно пересчитывает существующую историческую production_task с датой раньше даты запуска миграции, если такая задача есть на стенде.",
+      "После миграции production_output.calc_raw_writeoff успешно рассчитывает raw_writeoff по recipe_norm.",
+      "Если recipe_doc имеет output_qty = 0, проведение не выполняет деление на ноль и расчёты не получают некорректную норму.",
+      "Если на дату расчёта нет рецепта, requirement_calc и calc_raw_writeoff показывают понятную ошибку.",
+      "Если искусственно создан дубль рецепта на одну дату и выход, расчёты останавливаются с понятной ошибкой."
+    ]
+  },
+  "openQuestions": [],
+  "risks": [
+    {
+      "id": "RISK-SP003-001",
+      "title": "Нет подтверждённого композитного DB-unique для output_item + date",
+      "impact": "Пользователь может обойти команду проверки и создать дубль рецепта на ту же дату, если форма/права это позволят.",
+      "mitigation": "Команда check_recipe, migration workflow и расчётные guards обязаны ловить дубль. DB-unique добавлять только после подтверждения capability."
+    },
+    {
+      "id": "RISK-SP003-002",
+      "title": "Справочные единицы заполняются командой, а не мгновенно при выборе номенклатуры",
+      "impact": "Пользователь может временно видеть пустые единицы до запуска проверки.",
+      "mitigation": "Форма должна явно показывать команду «Проверить рецепт»; acceptance требует заполнения единиц этой командой."
+    },
+    {
+      "id": "RISK-SP003-003",
+      "title": "Миграция старых рецептов зависит от качества старых данных",
+      "impact": "Старые рецептуры с некорректными типами, нулевыми количествами или неполными компонентами не смогут быть перенесены автоматически.",
+      "mitigation": "Workflow миграции останавливается с понятной ошибкой; PM решает, исправлять данные вручную или менять migration rules."
+    },
+    {
+      "id": "RISK-SP003-004",
+      "title": "Некорректная дата миграции может скрыть рецепты от исторических расчётов",
+      "impact": "Если мигрированные recipe_doc получат дату позже существующих production_task.plan_date/production_output.date, пересчёт старых документов не найдёт рецепт по правилу period <= дата расчёта.",
+      "mitigation": "Дата миграции выбирается не позже самой ранней даты существующих production_task.plan_date/production_output.date и фиксируется в import notes."
+    },
+    {
+      "id": "RISK-SP003-005",
+      "title": "Сохранение recipe_doc в обход команды check_recipe",
+      "impact": "Пользователь или импорт может сохранить output_qty = 0; без guard recordsSettings попытались бы делить на ноль.",
+      "mitigation": "Команда check_recipe проверяет output_qty > 0, а recordsSettings дополнительно ограничены условием $r.quantity > 0 && $h.output_qty > 0."
+    }
+  ],
+  "changelog": [
+    {
+      "date": "2026-06-12",
+      "status": "review",
+      "change": "Создано ТЗ sp-003 по решениям PM: документ recipe_doc, актуальность по последнему проведённому рецепту на дату, автоматическая миграция старых рецептур, формы обязательны."
+    },
+    {
+      "date": "2026-06-12",
+      "status": "review",
+      "change": "По PM-review уточнены production_task.calc_requirement как consumer requirement_calc, дата миграции для исторических пересчётов и guard от деления на ноль при проведении recipe_doc."
+    },
+    {
+      "date": "2026-06-12",
+      "status": "approved",
+      "change": "PM approved design/spec/visualization для запуска metadata-реализации."
+    },
+    {
+      "date": "2026-06-13",
+      "status": "implemented",
+      "change": "Metadata реализована, импортирована на стенд и функционально принята PM; статус переведён в implemented."
+    }
+  ]
+}
